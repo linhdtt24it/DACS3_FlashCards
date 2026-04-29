@@ -8,6 +8,7 @@ data class Flashcard(
     val answer: String = "",
     val imageUrl: String? = null,
     val audioUrl: String? = null,
+    val explanation: String = "",
     // Spaced Repetition (SM-2 Algorithm)
     val nextReviewDate: Long = System.currentTimeMillis(),
     val interval: Int = 0, // days

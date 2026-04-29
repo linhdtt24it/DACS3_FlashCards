@@ -23,6 +23,10 @@ class FlashcardViewModel(
     val selectedSet: StateFlow<StudySet?> = _selectedSet.asStateFlow()
 
     init {
+        loadData()
+    }
+
+    fun loadData() {
         viewModelScope.launch {
             repository.getStudySets().collectLatest { sets ->
                 if (sets.isEmpty()) {
@@ -53,6 +57,36 @@ class FlashcardViewModel(
         
         viewModelScope.launch {
             repository.saveStudySet(updatedSet)
+        }
+    }
+
+    fun addStudySet(title: String, description: String) {
+        viewModelScope.launch {
+            val newSet = StudySet(
+                id = java.util.UUID.randomUUID().toString(),
+                title = title,
+                description = description,
+                cards = emptyList()
+            )
+            repository.saveStudySet(newSet)
+        }
+    }
+
+    fun updateStudySet(studySet: StudySet) {
+        viewModelScope.launch {
+            repository.saveStudySet(studySet)
+            if (_selectedSet.value?.id == studySet.id) {
+                _selectedSet.value = studySet
+            }
+        }
+    }
+
+    fun deleteStudySet(id: String) {
+        viewModelScope.launch {
+            repository.deleteStudySet(id)
+            if (_selectedSet.value?.id == id) {
+                _selectedSet.value = null
+            }
         }
     }
 }

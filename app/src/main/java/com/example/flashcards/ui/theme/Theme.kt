@@ -9,35 +9,40 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = FlowPrimary,
+    secondary = FlowPrimaryLight,
+    tertiary = FlowSuccess,
+    background = Color(0xFF1E1E1E),
+    surface = Color(0xFF2D2D2D),
+    onPrimary = Color.White,
+    onBackground = Color.White,
+    onSurface = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    primary = FlowPrimary,
+    secondary = FlowPrimaryLight,
+    tertiary = FlowSuccess,
+    background = FlowBackground,
+    surface = FlowSurface,
     onPrimary = Color.White,
-    onSecondary = Color.White,
+    onSecondary = FlowTextPrimary,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    onBackground = FlowTextPrimary,
+    onSurface = FlowTextPrimary,
+    surfaceVariant = FlowBackground,
+    onSurfaceVariant = FlowTextSecondary
 )
 
 @Composable
 fun FlashCardsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Disable dynamicColor to enforce FlowCards branding
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -45,7 +50,6 @@ fun FlashCardsTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
