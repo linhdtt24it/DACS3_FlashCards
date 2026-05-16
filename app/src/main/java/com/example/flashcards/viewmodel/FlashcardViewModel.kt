@@ -34,7 +34,7 @@ class FlashcardViewModel(
 
     private val _currentComments = MutableStateFlow<List<Comment>>(emptyList())
     val currentComments: StateFlow<List<Comment>> = _currentComments.asStateFlow()
-    
+
     private val _notifications = MutableStateFlow<List<SocialNotification>>(emptyList())
     val notifications: StateFlow<List<SocialNotification>> = _notifications.asStateFlow()
 
@@ -74,12 +74,12 @@ class FlashcardViewModel(
     fun updateCardQuality(card: Flashcard, quality: Int) {
         val updatedCard = card.update(quality)
         val currentSet = _selectedSet.value ?: return
-        
-        val newCards = currentSet.cards.map { 
-            if (it.id == card.id) updatedCard else it 
+
+        val newCards = currentSet.cards.map {
+            if (it.id == card.id) updatedCard else it
         }
         val updatedSet = currentSet.copy(cards = newCards)
-        
+
         viewModelScope.launch {
             repository.saveStudySet(updatedSet)
         }
@@ -90,7 +90,7 @@ class FlashcardViewModel(
             val user = FirebaseAuth.getInstance().currentUser
             val creatorId = user?.uid ?: ""
             val creatorName = user?.displayName ?: user?.email?.substringBefore("@") ?: "Unknown User"
-            
+
             val shareCode = if (isPublic) {
                 val charPool : List<Char> = ('A'..'Z') + ('0'..'9')
                 (1..6).map { kotlin.random.Random.nextInt(0, charPool.size).let { charPool[it] } }.joinToString("")
@@ -115,12 +115,12 @@ class FlashcardViewModel(
             val user = FirebaseAuth.getInstance().currentUser
             val updatedCreatorId = if (studySet.creatorId.isEmpty()) user?.uid ?: "" else studySet.creatorId
             val updatedCreatorName = if (studySet.creatorName.isEmpty()) user?.displayName ?: user?.email?.substringBefore("@") ?: "Unknown User" else studySet.creatorName
-            
+
             val updatedShareCode = if (studySet.isPublic && studySet.shareCode == null) {
                 val charPool : List<Char> = ('A'..'Z') + ('0'..'9')
                 (1..6).map { kotlin.random.Random.nextInt(0, charPool.size).let { charPool[it] } }.joinToString("")
             } else if (!studySet.isPublic) null else studySet.shareCode
-            
+
             val finalSet = studySet.copy(
                 creatorId = updatedCreatorId,
                 creatorName = updatedCreatorName,
@@ -156,9 +156,9 @@ class FlashcardViewModel(
                 _publicStudySets.value = sets.sortedByDescending { it.rating }
             } else {
                 _publicStudySets.value = sets.filter {
-                    it.title.contains(query, ignoreCase = true) || 
-                    it.description.contains(query, ignoreCase = true) ||
-                    it.creatorName.contains(query, ignoreCase = true)
+                    it.title.contains(query, ignoreCase = true) ||
+                            it.description.contains(query, ignoreCase = true) ||
+                            it.creatorName.contains(query, ignoreCase = true)
                 }.sortedByDescending { it.rating }
             }
         }
@@ -218,7 +218,7 @@ class FlashcardViewModel(
 
     fun addComment(setId: String, content: String) {
         if (content.isBlank()) return
-        
+
         viewModelScope.launch {
             val user = FirebaseAuth.getInstance().currentUser
             val senderName = user?.displayName ?: user?.email?.substringBefore("@") ?: "Anonymous"
@@ -229,7 +229,7 @@ class FlashcardViewModel(
                 content = content
             )
             repository.addComment(setId, comment)
-            
+
             val currentSet = selectedSet.value ?: publicStudySets.value.find { it.id == setId }
             if (currentSet != null) {
                 userRepository.sendNotification(

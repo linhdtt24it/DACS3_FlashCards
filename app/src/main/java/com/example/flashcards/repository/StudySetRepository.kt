@@ -117,10 +117,10 @@ class StudySetRepository {
                 if (snapshot.exists()) {
                     val currentRating = snapshot.getDouble("rating")?.toFloat() ?: 0f
                     val currentCount = snapshot.getLong("ratingCount")?.toInt() ?: 0
-                    
+
                     val newCount = currentCount + 1
                     val newRating = ((currentRating * currentCount) + rating) / newCount
-                    
+
                     transaction.update(docRef, "rating", newRating)
                     transaction.update(docRef, "ratingCount", newCount)
                 }
@@ -155,15 +155,7 @@ class StudySetRepository {
 
     suspend fun addComment(setId: String, comment: Comment) {
         try {
-            // Add comment to public deck's subcollection
             publicStudySetsCollection.document(setId).collection("comments").document(comment.id).set(comment).await()
-            
-            // Also mirror it to the user's private deck so they see it if they are the owner
-            val ownerId = studySetsCollection.parent?.id
-            // If the deck is public, it might be someone else's. So we just save it to the public collection.
-            // The owner will read from public if they view it in explore, but what if they view their own library?
-            // To be safe and simple, let's keep all comments on the public doc, or mirror it to the owner's doc if we know the owner.
-            // But we don't have owner ID here directly without querying. So we'll just store in publicStudySets.
         } catch (e: Exception) {
             Log.e("StudySetRepository", "Error adding comment", e)
         }

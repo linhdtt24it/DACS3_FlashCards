@@ -56,7 +56,7 @@ fun AddDeckDialog(onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = { 
+            TextButton(onClick = {
                 if (newTitle.isNotBlank()) {
                     onSave(newTitle, newDesc)
                     onDismiss()
@@ -83,7 +83,7 @@ fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = { 
+            TextButton(onClick = {
                 if (shareCode.isNotBlank()) {
                     onImport(shareCode)
                     onDismiss()
@@ -98,7 +98,17 @@ fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
 }
 
 @Composable
-fun HomeScreen(userName: String, studySets: List<StudySet>, unreadNotifCount: Int = 0, onAddDeck: (String, String) -> Unit, onEditDeck: (String) -> Unit, onDeleteDeck: (String) -> Unit, onSetSelected: (StudySet) -> Unit, onQuizDeck: (StudySet) -> Unit, onNotificationsClick: () -> Unit = {}) {
+fun HomeScreen(
+    userName: String,
+    studySets: List<StudySet>,
+    unreadNotifCount: Int = 0,
+    onAddDeck: (String, String) -> Unit,
+    onEditDeck: (String) -> Unit,
+    onDeleteDeck: (String) -> Unit,
+    onSetSelected: (StudySet) -> Unit,
+    onQuizDeck: (StudySet) -> Unit,
+    onNotificationsClick: () -> Unit = {}
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(FlowBackground).padding(horizontal = 16.dp, vertical = 24.dp),
         contentPadding = PaddingValues(bottom = 80.dp),
@@ -199,9 +209,17 @@ fun HomeScreen(userName: String, studySets: List<StudySet>, unreadNotifCount: In
 }
 
 @Composable
-fun LibraryScreen(studySets: List<StudySet>, onAddDeck: (String, String) -> Unit, onEditDeck: (String) -> Unit, onDeleteDeck: (String) -> Unit, onSetSelected: (StudySet) -> Unit, onQuizDeck: (StudySet) -> Unit, onImportDeck: (String) -> Unit) {
+fun LibraryScreen(
+    studySets: List<StudySet>,
+    onAddDeck: (String, String) -> Unit,
+    onEditDeck: (String) -> Unit,
+    onDeleteDeck: (String) -> Unit,
+    onSetSelected: (StudySet) -> Unit,
+    onQuizDeck: (StudySet) -> Unit,
+    onImportDeck: (String) -> Unit
+) {
     var showImportDialog by remember { mutableStateOf(false) }
-    
+
     if (showImportDialog) {
         ImportDeckDialog(onDismiss = { showImportDialog = false }, onImport = onImportDeck)
     }
@@ -215,7 +233,7 @@ fun LibraryScreen(studySets: List<StudySet>, onAddDeck: (String, String) -> Unit
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Tabs
         LazyRow(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
@@ -235,7 +253,7 @@ fun LibraryScreen(studySets: List<StudySet>, onAddDeck: (String, String) -> Unit
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // List of Sets
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -271,7 +289,13 @@ fun LibraryScreen(studySets: List<StudySet>, onAddDeck: (String, String) -> Unit
 }
 
 @Composable
-fun LibraryDeckCard(set: StudySet, onClick: () -> Unit, onEdit: (() -> Unit)? = null, onDelete: (() -> Unit)? = null, onQuiz: (() -> Unit)? = null) {
+fun LibraryDeckCard(
+    set: StudySet,
+    onClick: () -> Unit,
+    onEdit: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
+    onQuiz: (() -> Unit)? = null
+) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     if (showDeleteConfirm) {
@@ -324,7 +348,7 @@ fun LibraryDeckCard(set: StudySet, onClick: () -> Unit, onEdit: (() -> Unit)? = 
             Spacer(modifier = Modifier.height(16.dp))
             Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
             Text("${set.cards.size} cards", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
-            
+
             Spacer(modifier = Modifier.height(20.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Mastery", style = MaterialTheme.typography.labelSmall, color = FlowTextSecondary)
@@ -341,7 +365,7 @@ fun LibraryDeckCard(set: StudySet, onClick: () -> Unit, onEdit: (() -> Unit)? = 
 fun StudySessionScreen(
     studySet: StudySet,
     onBack: () -> Unit,
-    onSpeak: (String) -> Unit,
+    onSpeak: (String, String) -> Unit,  // 👈 GIỮ của bạn tôi (thêm languageCode)
     onUpdateCard: (Flashcard, Int) -> Unit
 ) {
     var currentIndex by remember { mutableIntStateOf(0) }
@@ -370,18 +394,18 @@ fun StudySessionScreen(
                     color = FlowBackground
                 ) {
                     BottomAppBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { if (currentIndex > 0) { currentIndex--; isFlipped = false } }, enabled = currentIndex > 0) { 
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Previous", tint = if (currentIndex > 0) FlowTextPrimary else FlowTextSecondary) 
-                        }
-                        Text("Card: ${currentIndex + 1}/${studySet.cards.size}", color = FlowTextSecondary, fontWeight = FontWeight.Medium)
-                        IconButton(onClick = { if (currentIndex < studySet.cards.size - 1) { currentIndex++; isFlipped = false } }, enabled = currentIndex < studySet.cards.size - 1) { 
-                            Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = if (currentIndex < studySet.cards.size - 1) FlowTextPrimary else FlowTextSecondary) 
+                        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { if (currentIndex > 0) { currentIndex--; isFlipped = false } }, enabled = currentIndex > 0) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Previous", tint = if (currentIndex > 0) FlowTextPrimary else FlowTextSecondary)
+                            }
+                            Text("Card: ${currentIndex + 1}/${studySet.cards.size}", color = FlowTextSecondary, fontWeight = FontWeight.Medium)
+                            IconButton(onClick = { if (currentIndex < studySet.cards.size - 1) { currentIndex++; isFlipped = false } }, enabled = currentIndex < studySet.cards.size - 1) {
+                                Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = if (currentIndex < studySet.cards.size - 1) FlowTextPrimary else FlowTextSecondary)
+                            }
                         }
                     }
                 }
             }
-        }
         }
     ) { padding ->
         Column(
@@ -390,15 +414,15 @@ fun StudySessionScreen(
         ) {
             Text("${studySet.title} Mastery", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             if (currentIndex < studySet.cards.size) {
                 val card = studySet.cards[currentIndex]
-                
+
                 val rotation by animateFloatAsState(
                     targetValue = if (isFlipped) 180f else 0f,
                     animationSpec = tween(durationMillis = 400), label = "flip"
                 )
-                
+
                 Card(
                     modifier = Modifier.fillMaxWidth().weight(1f)
                         .graphicsLayer {
@@ -414,28 +438,29 @@ fun StudySessionScreen(
                     Box(modifier = Modifier.fillMaxSize().graphicsLayer { if (isBackVisible) rotationY = 180f }, contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Spacer(modifier = Modifier.size(48.dp)) // Placeholder for balance
+                                Spacer(modifier = Modifier.size(48.dp))
                                 Surface(color = FlowPrimaryLight, shape = RoundedCornerShape(8.dp)) {
                                     Text(if (!isBackVisible) "QUESTION" else "ANSWER", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = FlowPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                                 }
-                                IconButton(onClick = { onSpeak(if (!isBackVisible) card.question else card.answer) }) {
+                                // 👈 GIỮ của bạn tôi: truyền thêm languageCode
+                                IconButton(onClick = { onSpeak(if (!isBackVisible) card.question else card.answer, studySet.languageCode) }) {
                                     Icon(Icons.Default.VolumeUp, contentDescription = "Speak", tint = FlowPrimary)
                                 }
                             }
                             Spacer(modifier = Modifier.weight(1f))
                             if (!isBackVisible && card.imageUrl != null) {
-                                val imageModel = remember(card.imageUrl) { ImageUtils.getImageModel(card.imageUrl) }
+                                val imageModel = remember(card.imageUrl) { ImageUtils.getImageModel(card.imageUrl) } // 👈 GIỮ của bạn
                                 AsyncImage(
-                                    model = imageModel, 
-                                    contentDescription = null, 
-                                    contentScale = ContentScale.Fit, 
+                                    model = imageModel,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Fit,
                                     modifier = Modifier.fillMaxWidth().height(160.dp).padding(bottom = 16.dp)
                                 )
                             }
                             Text(
-                                if (!isBackVisible) card.question else card.answer, 
-                                style = MaterialTheme.typography.headlineMedium, 
-                                fontWeight = FontWeight.Bold, 
+                                if (!isBackVisible) card.question else card.answer,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
                                 color = FlowTextPrimary,
                                 textAlign = TextAlign.Center
                             )
@@ -452,7 +477,7 @@ fun StudySessionScreen(
                                 }
                             }
                             Spacer(modifier = Modifier.weight(1f))
-                            
+
                             if (!isBackVisible) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.TouchApp, contentDescription = null, tint = FlowTextSecondary)
@@ -463,8 +488,7 @@ fun StudySessionScreen(
                                 Spacer(modifier = Modifier.height(48.dp))
                             }
                         }
-                        
-                        // Action buttons overlay when flipped
+
                         if (isBackVisible) {
                             Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp)) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -497,9 +521,9 @@ fun StudySessionScreen(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
             } else {
                 Text("Session Complete!", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = FlowTextPrimary)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -518,7 +542,7 @@ fun StudySessionScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatisticsScreen(userStats: com.example.flashcards.model.UserStats, onBack: () -> Unit) {
+fun StatisticsScreen(userStats: com.example.flashcards.model.UserStats, onBack: () -> Unit) {  // 👈 GIỮ của bạn
     Scaffold(
         topBar = {
             TopAppBar(
@@ -534,7 +558,7 @@ fun StatisticsScreen(userStats: com.example.flashcards.model.UserStats, onBack: 
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
             Text("Your cognitive flow is at its peak. Keep the momentum going!", style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             val totalAnswers = userStats.correctAnswers + userStats.wrongAnswers
             val accuracy = if (totalAnswers > 0) (userStats.correctAnswers * 100 / totalAnswers) else 0
 
@@ -542,9 +566,9 @@ fun StatisticsScreen(userStats: com.example.flashcards.model.UserStats, onBack: 
                 StatCard("Current Streak", "${userStats.streakDays} days", Icons.Default.DateRange, Modifier.weight(1f), FlowPrimary)
                 StatCard("Accuracy", "$accuracy%", Icons.Default.CheckCircle, Modifier.weight(1f), FlowSuccess)
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 StatCard("Studied Today", "${userStats.cardsStudiedToday}", Icons.Default.Flag, Modifier.weight(1f), FlowPrimary)
                 StatCard("Total Answers", "$totalAnswers", Icons.Default.DoneAll, Modifier.weight(1f), FlowTextSecondary)
@@ -586,7 +610,8 @@ fun FlashcardEditItem(
             }
         }
     }
-    
+
+    // 👈 GIỮ của bạn: menu dropdown để upload từ URL
     var expanded by remember { mutableStateOf(false) }
     var showUrlDialog by remember { mutableStateOf(false) }
     var tempUrl by remember { mutableStateOf("") }
@@ -650,17 +675,17 @@ fun FlashcardEditItem(
                     modifier = Modifier.weight(1f).heightIn(min = 64.dp)
                 )
                 Spacer(modifier = Modifier.width(16.dp))
-                
+
                 Box(
                     modifier = Modifier
                         .size(64.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .border(1.dp, FlowPrimary, RoundedCornerShape(8.dp))
-                        .clickable { expanded = true },
+                        .clickable { expanded = true },  // 👈 GIỮ của bạn
                     contentAlignment = Alignment.Center
                 ) {
                     if (card.imageUrl != null) {
-                        val imageModel = remember(card.imageUrl) { ImageUtils.getImageModel(card.imageUrl) }
+                        val imageModel = remember(card.imageUrl) { ImageUtils.getImageModel(card.imageUrl) }  // 👈 GIỮ của bạn
                         AsyncImage(model = imageModel, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                     } else {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -668,7 +693,8 @@ fun FlashcardEditItem(
                             Text("Image", color = FlowPrimary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
-                    
+
+                    // 👈 GIỮ của bạn: dropdown menu
                     DropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
@@ -709,14 +735,26 @@ fun FlashcardEditItem(
 @Composable
 fun DeckEditorScreen(
     studySet: StudySet,
-    isCreateMode: Boolean = false,
+    isCreateMode: Boolean = false,  // 👈 GIỮ của bạn
     onSave: (StudySet) -> Unit,
     onBack: () -> Unit
 ) {
     var title by remember { mutableStateOf(studySet.title) }
     var description by remember { mutableStateOf(studySet.description) }
     var cards by remember { mutableStateOf(studySet.cards) }
-    var isPublic by remember { mutableStateOf(studySet.isPublic) }
+    var isPublic by remember { mutableStateOf(studySet.isPublic) }  // 👈 GIỮ của bạn
+
+    // 👈 LẤY của bạn tôi: languageCode cho TTS
+    var languageCode by remember { mutableStateOf(studySet.languageCode) }
+    val languages = listOf(
+        "en" to "English",
+        "vi" to "Vietnamese",
+        "ja" to "Japanese",
+        "ko" to "Korean",
+        "fr" to "French",
+        "de" to "German"
+    )
+    var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -728,7 +766,13 @@ fun DeckEditorScreen(
                 actions = {
                     TextButton(onClick = {
                         if (title.isNotBlank()) {
-                            onSave(studySet.copy(title = title, description = description, cards = cards, isPublic = isPublic))
+                            onSave(studySet.copy(
+                                title = title,
+                                description = description,
+                                cards = cards,
+                                isPublic = isPublic,
+                                languageCode = languageCode  // 👈 LẤY của bạn tôi
+                            ))
                             onBack()
                         }
                     }) {
@@ -763,6 +807,7 @@ fun DeckEditorScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
             }
+            // 👈 GIỮ của bạn: switch Public/Private
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -778,6 +823,37 @@ fun DeckEditorScreen(
                         onCheckedChange = { isPublic = it },
                         colors = SwitchDefaults.colors(checkedThumbColor = FlowPrimary, checkedTrackColor = FlowPrimary.copy(alpha = 0.5f))
                     )
+                }
+            }
+            // 👈 LẤY của bạn tôi: dropdown chọn ngôn ngữ TTS
+            item {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = languages.find { it.first == languageCode }?.second ?: "Select Language",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Language for Text-to-Speech") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        languages.forEach { (code, name) ->
+                            DropdownMenuItem(
+                                text = { Text(name) },
+                                onClick = {
+                                    languageCode = code
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
             item {
@@ -797,7 +873,7 @@ fun DeckEditorScreen(
             }
             item {
                 Button(
-                    onClick = { 
+                    onClick = {
                         cards = cards + Flashcard(id = java.util.UUID.randomUUID().toString(), question = "", answer = "")
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),

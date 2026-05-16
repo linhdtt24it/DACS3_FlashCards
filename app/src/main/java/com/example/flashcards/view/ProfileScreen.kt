@@ -30,8 +30,8 @@ import com.google.firebase.auth.FirebaseAuth
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    userName: String, 
-    userEmail: String, 
+    userName: String,
+    userEmail: String,
     onLogout: () -> Unit,
     onNavigateToPersonalInfo: () -> Unit,
     onNavigateToSecurity: () -> Unit,
@@ -170,12 +170,12 @@ fun SettingsItemRow(icon: ImageVector, title: String, value: String? = null, onC
         Icon(icon, contentDescription = null, tint = FlowTextSecondary)
         Spacer(modifier = Modifier.width(16.dp))
         Text(title, style = MaterialTheme.typography.bodyLarge, color = FlowTextPrimary, modifier = Modifier.weight(1f))
-        
+
         if (value != null) {
             Text(value, style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
             Spacer(modifier = Modifier.width(8.dp))
         }
-        
+
         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = FlowTextSecondary)
     }
 }

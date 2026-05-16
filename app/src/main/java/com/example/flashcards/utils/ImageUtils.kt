@@ -13,13 +13,13 @@ object ImageUtils {
         return try {
             val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
             val originalBitmap = BitmapFactory.decodeStream(inputStream) ?: return null
-            
+
             // Giới hạn kích thước ảnh (500x500) để nén dung lượng, tránh lỗi Firestore
             val maxWidth = 500
             val maxHeight = 500
             var width = originalBitmap.width
             var height = originalBitmap.height
-            
+
             val resizedBitmap = if (width > maxWidth || height > maxHeight) {
                 val ratioBitmap = width.toFloat() / height.toFloat()
                 val ratioMax = maxWidth.toFloat() / maxHeight.toFloat()
@@ -34,7 +34,7 @@ object ImageUtils {
             } else {
                 originalBitmap
             }
-            
+
             val outputStream = ByteArrayOutputStream()
             resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
             val byteArray = outputStream.toByteArray()

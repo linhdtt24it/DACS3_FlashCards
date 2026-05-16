@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -23,7 +24,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.flashcards.ui.theme.*
 import com.example.flashcards.view.*
-import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
@@ -133,13 +133,13 @@ fun AppNavHost(
     NavHost(navController = navController, startDestination = startDestination) {
         composable("auth") {
             AuthScreen(
-                onLoginSuccess = { 
+                onLoginSuccess = {
                     viewModel.loadData()
-                    navController.navigate("home") { popUpTo("auth") { inclusive = true } } 
+                    navController.navigate("home") { popUpTo("auth") { inclusive = true } }
                 },
-                onRegisterSuccess = { 
+                onRegisterSuccess = {
                     viewModel.loadData()
-                    navController.navigate("home") { popUpTo("auth") { inclusive = true } } 
+                    navController.navigate("home") { popUpTo("auth") { inclusive = true } }
                 }
             )
         }
@@ -148,7 +148,7 @@ fun AppNavHost(
             val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
             val notifications by viewModel.notifications.collectAsState()
             val unreadNotifCount = notifications.count { !it.isRead }
-            
+
             HomeScreen(
                 userName = userName,
                 studySets = studySets,
@@ -171,7 +171,7 @@ fun AppNavHost(
             val user = FirebaseAuth.getInstance().currentUser
             val creatorId = user?.uid ?: ""
             val creatorName = user?.displayName ?: user?.email?.substringBefore("@") ?: "Unknown User"
-            
+
             val emptySet = remember {
                 com.example.flashcards.model.StudySet(
                     id = java.util.UUID.randomUUID().toString(),
@@ -181,20 +181,21 @@ fun AppNavHost(
                     isPublic = false,
                     shareCode = null,
                     creatorId = creatorId,
-                    creatorName = creatorName
+                    creatorName = creatorName,
+                    languageCode = "en"  // 👈 Thêm languageCode mặc định
                 )
             }
-            
+
             DeckEditorScreen(
                 studySet = emptySet,
                 isCreateMode = true,
-                onSave = { updatedSet -> 
+                onSave = { updatedSet ->
                     val finalSet = if (updatedSet.isPublic && updatedSet.shareCode == null) {
                         val charPool : List<Char> = ('A'..'Z') + ('0'..'9')
                         val code = (1..6).map { kotlin.random.Random.nextInt(0, charPool.size).let { charPool[it] } }.joinToString("")
                         updatedSet.copy(shareCode = code)
                     } else updatedSet
-                    
+
                     viewModel.updateStudySet(finalSet)
                     navController.popBackStack()
                 },
@@ -231,10 +232,10 @@ fun AppNavHost(
             ExploreScreen(
                 publicDecks = publicStudySets,
                 onSearch = { query -> viewModel.searchPublicDecks(query) },
-                onImportDeck = { code -> 
+                onImportDeck = { code ->
                     viewModel.importDeckByCode(
                         code = code,
-                        onSuccess = { 
+                        onSuccess = {
                             navController.navigate("library") {
                                 popUpTo("explore") { inclusive = false }
                             }
@@ -257,7 +258,7 @@ fun AppNavHost(
                     viewModel.loadComments(studySet.id)
                 }
                 val comments by viewModel.currentComments.collectAsState()
-                
+
                 DeckDetailScreen(
                     studySet = studySet,
                     userName = FirebaseAuth.getInstance().currentUser?.displayName ?: FirebaseAuth.getInstance().currentUser?.email?.substringBefore("@") ?: "User",
@@ -283,7 +284,9 @@ fun AppNavHost(
                 StudySessionScreen(
                     studySet = studySet,
                     onBack = { navController.popBackStack() },
-                    onSpeak = { text ->
+                    // 👈 LẤY của bạn tôi: thêm languageCode parameter
+                    onSpeak = { text: String, lang: String ->
+                        tts?.language = Locale.forLanguageTag(lang)
                         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
                     },
                     onUpdateCard = { card, quality ->
@@ -329,9 +332,9 @@ fun AppNavHost(
             ProfileScreen(
                 userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User",
                 userEmail = user?.email ?: "No email",
-                onLogout = { 
+                onLogout = {
                     FirebaseAuth.getInstance().signOut()
-                    navController.navigate("auth") { popUpTo(0) } 
+                    navController.navigate("auth") { popUpTo(0) }
                 },
                 onNavigateToPersonalInfo = { navController.navigate("personal_info") },
                 onNavigateToSecurity = { navController.navigate("security") },

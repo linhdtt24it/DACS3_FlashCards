@@ -20,6 +20,7 @@ data class StudySet(
     val id: String = UUID.randomUUID().toString(),
     val title: String = "",
     val description: String = "",
+    val languageCode: String = "en", // 👈 Lấy từ nhánh của bạn tôi (sửa âm thanh)
     val cards: List<Flashcard> = emptyList(),
     @get:com.google.firebase.firestore.PropertyName("isPublic")
     @set:com.google.firebase.firestore.PropertyName("isPublic")
