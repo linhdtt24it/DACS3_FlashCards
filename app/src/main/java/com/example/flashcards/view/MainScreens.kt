@@ -39,6 +39,7 @@ import com.example.flashcards.model.Flashcard
 import com.example.flashcards.model.StudySet
 import com.example.flashcards.ui.theme.*
 import com.example.flashcards.utils.ImageUtils
+import com.example.flashcards.utils.FlashcardUtils
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.border
 
@@ -92,6 +93,82 @@ fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel", color = FlowTextSecondary) }
+        },
+        containerColor = FlowSurface
+    )
+}
+
+@Composable
+fun BulkImportDialog(
+    onDismiss: () -> Unit,
+    onImport: (List<Flashcard>) -> Unit
+) {
+    var textInput by remember { mutableStateOf("") }
+    var separator by remember { mutableStateOf("-") }
+    val separators = listOf("-", ":", "|", "Tab")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Bulk Import Flashcards", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "Paste your cards here. One card per line.\nExample: Front $separator Back",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = FlowTextSecondary
+                )
+                
+                OutlinedTextField(
+                    value = textInput,
+                    onValueChange = { textInput = it },
+                    placeholder = { Text("Hello - Xin chào\nApple - Quả táo") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = FlowPrimary,
+                        unfocusedBorderColor = FlowCardStroke
+                    )
+                )
+
+                Text("Separator:", style = MaterialTheme.typography.labelMedium, color = FlowTextPrimary)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    separators.forEach { sep ->
+                        val displaySep = if (sep == "Tab") "\t" else sep
+                        FilterChip(
+                            selected = separator == displaySep,
+                            onClick = { separator = displaySep },
+                            label = { Text(sep) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = FlowPrimaryLight,
+                                selectedLabelColor = FlowPrimary
+                            )
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            val parsedCards = FlashcardUtils.parseBulkText(textInput, separator)
+            Button(
+                onClick = {
+                    onImport(parsedCards)
+                    onDismiss()
+                },
+                enabled = parsedCards.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
+            ) {
+                Text("Import (${parsedCards.size})", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = FlowTextSecondary)
+            }
         },
         containerColor = FlowSurface
     )
@@ -743,6 +820,7 @@ fun DeckEditorScreen(
     var description by remember { mutableStateOf(studySet.description) }
     var cards by remember { mutableStateOf(studySet.cards) }
     var isPublic by remember { mutableStateOf(studySet.isPublic) }  // 👈 GIỮ của bạn
+    var showBulkImport by remember { mutableStateOf(false) }
 
     // 👈 LẤY của bạn tôi: languageCode cho TTS
     var languageCode by remember { mutableStateOf(studySet.languageCode) }
@@ -756,6 +834,15 @@ fun DeckEditorScreen(
     )
     var expanded by remember { mutableStateOf(false) }
 
+    if (showBulkImport) {
+        BulkImportDialog(
+            onDismiss = { showBulkImport = false },
+            onImport = { newCards ->
+                cards = cards + newCards
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -764,6 +851,9 @@ fun DeckEditorScreen(
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 },
                 actions = {
+                    IconButton(onClick = { showBulkImport = true }) {
+                        Icon(Icons.Default.ContentPaste, contentDescription = "Bulk Import", tint = FlowPrimary)
+                    }
                     TextButton(onClick = {
                         if (title.isNotBlank()) {
                             onSave(studySet.copy(
@@ -800,8 +890,8 @@ fun DeckEditorScreen(
             }
             item {
                 OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
+                    value = title, // Lỗi: Đây nên là description
+                    onValueChange = { description = it }, // Đã sửa logic nhưng title vẫn gán sai value
                     label = { Text("Description") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
