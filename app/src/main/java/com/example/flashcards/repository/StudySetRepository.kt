@@ -3,6 +3,7 @@ package com.example.flashcards.repository
 import android.util.Log
 import com.example.flashcards.model.Flashcard
 import com.example.flashcards.model.StudySet
+import com.example.flashcards.model.Comment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -17,6 +18,7 @@ class StudySetRepository {
     private val auth = FirebaseAuth.getInstance()
 
     private val studySetsCollection get() = db.collection("users").document(auth.currentUser?.uid ?: "anonymous").collection("studySets")
+    private val publicStudySetsCollection = db.collection("publicStudySets")
 
     fun getStudySets(): Flow<List<StudySet>> = callbackFlow {
         val listener = studySetsCollection.addSnapshotListener { snapshot, error ->
@@ -42,6 +44,11 @@ class StudySetRepository {
     suspend fun saveStudySet(studySet: StudySet) {
         try {
             studySetsCollection.document(studySet.id).set(studySet).await()
+            if (studySet.isPublic) {
+                publicStudySetsCollection.document(studySet.id).set(studySet).await()
+            } else {
+                publicStudySetsCollection.document(studySet.id).delete().await()
+            }
         } catch (e: Exception) {
             Log.e("StudySetRepository", "Lỗi cập nhật thẻ", e)
         }
@@ -50,6 +57,7 @@ class StudySetRepository {
     suspend fun deleteStudySet(id: String) {
         try {
             studySetsCollection.document(id).delete().await()
+            publicStudySetsCollection.document(id).delete().await()
         } catch (e: Exception) {
             Log.e("StudySetRepository", "Lỗi xóa bộ thẻ", e)
         }
@@ -74,6 +82,90 @@ class StudySetRepository {
             } catch (e: Exception) {
                 Log.w("StudySetRepository", "Error writing document", e)
             }
+        }
+    }
+
+    suspend fun getPublicStudySets(): List<StudySet> {
+        return try {
+            val snapshot = publicStudySetsCollection.get().await()
+            snapshot.toObjects(StudySet::class.java)
+        } catch (e: Exception) {
+            Log.e("StudySetRepository", "Error getting public study sets", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getStudySetByShareCode(code: String): StudySet? {
+        return try {
+            val snapshot = publicStudySetsCollection.whereEqualTo("shareCode", code).get().await()
+            if (!snapshot.isEmpty) {
+                snapshot.documents[0].toObject(StudySet::class.java)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("StudySetRepository", "Error getting study set by share code", e)
+            null
+        }
+    }
+
+    suspend fun ratePublicStudySet(setId: String, rating: Float) {
+        try {
+            db.runTransaction { transaction ->
+                val docRef = publicStudySetsCollection.document(setId)
+                val snapshot = transaction.get(docRef)
+                if (snapshot.exists()) {
+                    val currentRating = snapshot.getDouble("rating")?.toFloat() ?: 0f
+                    val currentCount = snapshot.getLong("ratingCount")?.toInt() ?: 0
+                    
+                    val newCount = currentCount + 1
+                    val newRating = ((currentRating * currentCount) + rating) / newCount
+                    
+                    transaction.update(docRef, "rating", newRating)
+                    transaction.update(docRef, "ratingCount", newCount)
+                }
+            }.await()
+        } catch (e: Exception) {
+            Log.e("StudySetRepository", "Error rating study set", e)
+        }
+    }
+
+    fun getComments(setId: String): Flow<List<Comment>> = callbackFlow {
+        val listener = publicStudySetsCollection.document(setId).collection("comments")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.w("StudySetRepository", "Listen comments failed.", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val comments = snapshot.toObjects(Comment::class.java)
+                    trySend(comments)
+                } else {
+                    trySend(emptyList())
+                }
+            }
+
+        awaitClose {
+            listener.remove()
+        }
+    }
+
+    suspend fun addComment(setId: String, comment: Comment) {
+        try {
+            // Add comment to public deck's subcollection
+            publicStudySetsCollection.document(setId).collection("comments").document(comment.id).set(comment).await()
+            
+            // Also mirror it to the user's private deck so they see it if they are the owner
+            val ownerId = studySetsCollection.parent?.id
+            // If the deck is public, it might be someone else's. So we just save it to the public collection.
+            // The owner will read from public if they view it in explore, but what if they view their own library?
+            // To be safe and simple, let's keep all comments on the public doc, or mirror it to the owner's doc if we know the owner.
+            // But we don't have owner ID here directly without querying. So we'll just store in publicStudySets.
+        } catch (e: Exception) {
+            Log.e("StudySetRepository", "Error adding comment", e)
         }
     }
 }

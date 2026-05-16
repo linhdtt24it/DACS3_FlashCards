@@ -44,4 +44,18 @@ object ImageUtils {
             null
         }
     }
+
+    fun getImageModel(imageUrl: String?): Any? {
+        if (imageUrl == null) return null
+        return if (imageUrl.startsWith("data:image")) {
+            try {
+                val base64 = imageUrl.substringAfter("base64,")
+                Base64.decode(base64, Base64.DEFAULT)
+            } catch (e: Exception) {
+                imageUrl
+            }
+        } else {
+            imageUrl
+        }
+    }
 }

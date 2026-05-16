@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -70,103 +71,127 @@ fun AddDeckDialog(onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
 }
 
 @Composable
-fun HomeScreen(userName: String, studySets: List<StudySet>, onAddDeck: (String, String) -> Unit, onEditDeck: (String) -> Unit, onDeleteDeck: (String) -> Unit, onSetSelected: (StudySet) -> Unit) {
-    var showAddDialog by remember { mutableStateOf(false) }
+fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
+    var shareCode by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Import Deck", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Enter a 6-character share code to import a public deck.", style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
+                OutlinedTextField(value = shareCode, onValueChange = { shareCode = it.uppercase() }, label = { Text("Share Code") }, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { 
+                if (shareCode.isNotBlank()) {
+                    onImport(shareCode)
+                    onDismiss()
+                }
+            }) { Text("Import", fontWeight = FontWeight.Bold, color = FlowPrimary) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel", color = FlowTextSecondary) }
+        },
+        containerColor = FlowSurface
+    )
+}
 
-    if (showAddDialog) {
-        AddDeckDialog(onDismiss = { showAddDialog = false }, onSave = onAddDeck)
-    }
-
+@Composable
+fun HomeScreen(userName: String, studySets: List<StudySet>, unreadNotifCount: Int = 0, onAddDeck: (String, String) -> Unit, onEditDeck: (String) -> Unit, onDeleteDeck: (String) -> Unit, onSetSelected: (StudySet) -> Unit, onQuizDeck: (StudySet) -> Unit, onNotificationsClick: () -> Unit = {}) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(FlowBackground).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(FlowBackground).padding(horizontal = 16.dp, vertical = 24.dp),
         contentPadding = PaddingValues(bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+        // Top Bar: Search and Avatar
         item {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    val firstName = userName.split(" ").firstOrNull()?.ifEmpty { "User" } ?: "User"
-                    Text("Welcome back, $firstName", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-                    Text("You have ${studySets.size} decks to review.\nReady to achieve flow?", style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = { showAddDialog = true }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add New Deck", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-            }
-        }
-
-        item {
-            OutlinedTextField(
-                value = "", onValueChange = {},
-                placeholder = { Text("Search your library...", color = FlowTextSecondary) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = FlowTextSecondary) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = FlowCardStroke, focusedBorderColor = FlowPrimary, unfocusedContainerColor = FlowSurface, focusedContainerColor = FlowSurface)
-            )
-        }
-
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = FlowSurface), border = BorderStroke(1.dp, FlowCardStroke)) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Weekly Streak", style = MaterialTheme.typography.labelSmall, color = FlowTextSecondary)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("12 Days", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = "", onValueChange = {},
+                    placeholder = { Text("Search", color = FlowTextSecondary) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = FlowTextSecondary) },
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.Transparent, focusedBorderColor = Color.Transparent, unfocusedContainerColor = FlowSurface, focusedContainerColor = FlowSurface)
+                )
+                Box(modifier = Modifier.size(48.dp)) {
+                    IconButton(onClick = onNotificationsClick, modifier = Modifier.fillMaxSize()) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = FlowTextPrimary)
+                    }
+                    if (unreadNotifCount > 0) {
+                        Box(
+                            modifier = Modifier.align(Alignment.TopEnd).size(12.dp).clip(CircleShape).background(FlowWarning),
+                            contentAlignment = Alignment.Center
+                        ) {}
                     }
                 }
-                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = FlowPrimary)) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Daily Mastery", style = MaterialTheme.typography.labelSmall, color = FlowPrimaryLight)
-                        Text("84% Correct", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(FlowPrimary), contentAlignment = Alignment.Center) {
+                    Text(userName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                }
+            }
+        }
+
+        if (studySets.isNotEmpty()) {
+            item {
+                Text("Continue studying", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+                Spacer(modifier = Modifier.height(16.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(studySets.take(3)) { set ->
+                        Card(
+                            modifier = Modifier.width(300.dp).clickable { onSetSelected(set) },
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(containerColor = FlowSurface)
+                        ) {
+                            Column(modifier = Modifier.padding(24.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Icon(Icons.Default.Folder, contentDescription = null, tint = FlowTextSecondary)
+                                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = FlowTextSecondary)
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(set.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+                                Spacer(modifier = Modifier.height(32.dp))
+                                Button(
+                                    onClick = { onSetSelected(set) },
+                                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                                    shape = RoundedCornerShape(24.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
+                                ) {
+                                    Text("Continue", fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
         item {
-            Text("Recent Decks", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+            Text("Recent", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
         }
 
         items(studySets) { set ->
-            LibraryDeckCard(set, onClick = { onSetSelected(set) }, onEdit = { onEditDeck(set.id) }, onDelete = { onDeleteDeck(set.id) })
-        }
-    }
-}
-
-@Composable
-fun LibraryScreen(studySets: List<StudySet>, onAddDeck: (String, String) -> Unit, onEditDeck: (String) -> Unit, onDeleteDeck: (String) -> Unit, onSetSelected: (StudySet) -> Unit) {
-    var showAddDialog by remember { mutableStateOf(false) }
-
-    if (showAddDialog) {
-        AddDeckDialog(onDismiss = { showAddDialog = false }, onSave = onAddDeck)
-    }
-
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = FlowPrimary,
-                contentColor = Color.White
+            Card(
+                modifier = Modifier.fillMaxWidth().clickable { onSetSelected(set) },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = FlowSurface)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Deck")
-            }
-        },
-        containerColor = FlowBackground
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
-            Text("Your Library", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("All your study sets in one place.", style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
-            Spacer(modifier = Modifier.height(24.dp))
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(studySets) { set ->
-                    LibraryDeckCard(set, onClick = { onSetSelected(set) }, onEdit = { onEditDeck(set.id) }, onDelete = { onDeleteDeck(set.id) })
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Folder, contentDescription = null, tint = FlowTextSecondary, modifier = Modifier.size(32.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = if (set.isPublic) Icons.Default.Public else Icons.Default.Lock,
+                                contentDescription = if (set.isPublic) "Public" else "Private",
+                                tint = FlowTextSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Text("${set.cards.size} cards • author: ${if (set.creatorName.isNotBlank()) set.creatorName else "you"}", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
+                    }
                 }
             }
         }
@@ -174,7 +199,79 @@ fun LibraryScreen(studySets: List<StudySet>, onAddDeck: (String, String) -> Unit
 }
 
 @Composable
-fun LibraryDeckCard(set: StudySet, onClick: () -> Unit, onEdit: (() -> Unit)? = null, onDelete: (() -> Unit)? = null) {
+fun LibraryScreen(studySets: List<StudySet>, onAddDeck: (String, String) -> Unit, onEditDeck: (String) -> Unit, onDeleteDeck: (String) -> Unit, onSetSelected: (StudySet) -> Unit, onQuizDeck: (StudySet) -> Unit, onImportDeck: (String) -> Unit) {
+    var showImportDialog by remember { mutableStateOf(false) }
+    
+    if (showImportDialog) {
+        ImportDeckDialog(onDismiss = { showImportDialog = false }, onImport = onImportDeck)
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(FlowBackground).padding(top = 24.dp)) {
+        // Header
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Library", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+            IconButton(onClick = { showImportDialog = true }) {
+                Icon(Icons.Default.Download, contentDescription = "Import", tint = FlowTextPrimary)
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Tabs
+        LazyRow(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                Surface(shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, FlowPrimary), color = FlowPrimaryLight.copy(alpha = 0.2f)) {
+                    Text("Sets", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = FlowPrimary, fontWeight = FontWeight.Bold)
+                }
+            }
+            item {
+                Surface(shape = RoundedCornerShape(20.dp), color = FlowSurface) {
+                    Text("Classes", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = FlowTextSecondary, fontWeight = FontWeight.Medium)
+                }
+            }
+            item {
+                Surface(shape = RoundedCornerShape(20.dp), color = FlowSurface) {
+                    Text("Folders", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = FlowTextSecondary, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // List of Sets
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(bottom = 80.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(studySets) { set ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { onSetSelected(set) }.padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(FlowSurface), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Folder, contentDescription = null, tint = FlowTextSecondary)
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = if (set.isPublic) Icons.Default.Public else Icons.Default.Lock,
+                                contentDescription = if (set.isPublic) "Public" else "Private",
+                                tint = FlowTextSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Text("Set • ${set.cards.size} terms • Author: ${if (set.creatorName.isNotBlank()) set.creatorName else "you"}", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LibraryDeckCard(set: StudySet, onClick: () -> Unit, onEdit: (() -> Unit)? = null, onDelete: (() -> Unit)? = null, onQuiz: (() -> Unit)? = null) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     if (showDeleteConfirm) {
@@ -206,6 +303,11 @@ fun LibraryDeckCard(set: StudySet, onClick: () -> Unit, onEdit: (() -> Unit)? = 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(color = FlowPrimaryLight.copy(alpha = 0.5f), shape = RoundedCornerShape(12.dp)) {
                         Text("Due", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), color = FlowPrimary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    }
+                    if (onQuiz != null) {
+                        IconButton(onClick = { onQuiz.invoke() }) {
+                            Icon(Icons.Default.Quiz, contentDescription = "Quiz", tint = FlowPrimary)
+                        }
                     }
                     if (onEdit != null) {
                         IconButton(onClick = { onEdit.invoke() }) {
@@ -322,8 +424,9 @@ fun StudySessionScreen(
                             }
                             Spacer(modifier = Modifier.weight(1f))
                             if (!isBackVisible && card.imageUrl != null) {
+                                val imageModel = remember(card.imageUrl) { ImageUtils.getImageModel(card.imageUrl) }
                                 AsyncImage(
-                                    model = card.imageUrl, 
+                                    model = imageModel, 
                                     contentDescription = null, 
                                     contentScale = ContentScale.Fit, 
                                     modifier = Modifier.fillMaxWidth().height(160.dp).padding(bottom = 16.dp)
@@ -413,22 +516,40 @@ fun StudySessionScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatisticsScreen() {
-    Column(modifier = Modifier.fillMaxSize().background(FlowBackground).padding(24.dp)) {
-        Text("Learning Progress", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Your cognitive flow is at its peak. Keep the momentum going!", style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            StatCard("Current Streak", "14", Icons.Default.DateRange, Modifier.weight(1f), FlowPrimary)
-            StatCard("Accuracy", "92%", Icons.Default.CheckCircle, Modifier.weight(1f), FlowSuccess)
+fun StatisticsScreen(userStats: com.example.flashcards.model.UserStats, onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Learning Progress", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FlowTextPrimary) }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = FlowBackground)
+            )
+        },
+        containerColor = FlowBackground
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
+            Text("Your cognitive flow is at its peak. Keep the momentum going!", style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            val totalAnswers = userStats.correctAnswers + userStats.wrongAnswers
+            val accuracy = if (totalAnswers > 0) (userStats.correctAnswers * 100 / totalAnswers) else 0
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                StatCard("Current Streak", "${userStats.streakDays} days", Icons.Default.DateRange, Modifier.weight(1f), FlowPrimary)
+                StatCard("Accuracy", "$accuracy%", Icons.Default.CheckCircle, Modifier.weight(1f), FlowSuccess)
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                StatCard("Studied Today", "${userStats.cardsStudiedToday}", Icons.Default.Flag, Modifier.weight(1f), FlowPrimary)
+                StatCard("Total Answers", "$totalAnswers", Icons.Default.DoneAll, Modifier.weight(1f), FlowTextSecondary)
+            }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        StatCard("Daily Goal", "42/50", Icons.Default.Flag, Modifier.fillMaxWidth(), FlowPrimary)
     }
 }
 
@@ -464,6 +585,39 @@ fun FlashcardEditItem(
                 onCardChange(card.copy(imageUrl = base64))
             }
         }
+    }
+    
+    var expanded by remember { mutableStateOf(false) }
+    var showUrlDialog by remember { mutableStateOf(false) }
+    var tempUrl by remember { mutableStateOf("") }
+
+    if (showUrlDialog) {
+        AlertDialog(
+            onDismissRequest = { showUrlDialog = false; tempUrl = "" },
+            title = { Text("Enter Image URL", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+            text = {
+                OutlinedTextField(
+                    value = tempUrl,
+                    onValueChange = { tempUrl = it },
+                    label = { Text("Image URL") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (tempUrl.isNotBlank()) {
+                        onCardChange(card.copy(imageUrl = tempUrl))
+                    }
+                    showUrlDialog = false
+                    tempUrl = ""
+                }) { Text("Save", fontWeight = FontWeight.Bold, color = FlowPrimary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUrlDialog = false; tempUrl = "" }) { Text("Cancel", color = FlowTextSecondary) }
+            },
+            containerColor = FlowSurface
+        )
     }
 
     Card(
@@ -502,15 +656,40 @@ fun FlashcardEditItem(
                         .size(64.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .border(1.dp, FlowPrimary, RoundedCornerShape(8.dp))
-                        .clickable { launcher.launch("image/*") },
+                        .clickable { expanded = true },
                     contentAlignment = Alignment.Center
                 ) {
                     if (card.imageUrl != null) {
-                        AsyncImage(model = card.imageUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                        val imageModel = remember(card.imageUrl) { ImageUtils.getImageModel(card.imageUrl) }
+                        AsyncImage(model = imageModel, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                     } else {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Default.Image, contentDescription = null, tint = FlowPrimary, modifier = Modifier.size(24.dp))
                             Text("Image", color = FlowPrimary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.background(FlowSurface)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Upload from Device", color = FlowTextPrimary) },
+                            onClick = { expanded = false; launcher.launch("image/*") },
+                            leadingIcon = { Icon(Icons.Default.Upload, contentDescription = null, tint = FlowPrimary) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Enter Image URL", color = FlowTextPrimary) },
+                            onClick = { expanded = false; showUrlDialog = true },
+                            leadingIcon = { Icon(Icons.Default.Link, contentDescription = null, tint = FlowPrimary) }
+                        )
+                        if (card.imageUrl != null) {
+                            DropdownMenuItem(
+                                text = { Text("Remove Image", color = FlowWarning) },
+                                onClick = { expanded = false; onCardChange(card.copy(imageUrl = null)) },
+                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = FlowWarning) }
+                            )
                         }
                     }
                 }
@@ -530,24 +709,26 @@ fun FlashcardEditItem(
 @Composable
 fun DeckEditorScreen(
     studySet: StudySet,
+    isCreateMode: Boolean = false,
     onSave: (StudySet) -> Unit,
     onBack: () -> Unit
 ) {
     var title by remember { mutableStateOf(studySet.title) }
     var description by remember { mutableStateOf(studySet.description) }
     var cards by remember { mutableStateOf(studySet.cards) }
+    var isPublic by remember { mutableStateOf(studySet.isPublic) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Deck", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isCreateMode) "Create Deck" else "Edit Deck", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 },
                 actions = {
                     TextButton(onClick = {
                         if (title.isNotBlank()) {
-                            onSave(studySet.copy(title = title, description = description, cards = cards))
+                            onSave(studySet.copy(title = title, description = description, cards = cards, isPublic = isPublic))
                             onBack()
                         }
                     }) {
@@ -581,6 +762,23 @@ fun DeckEditorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
+            }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text("Public Deck", fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+                        Text("Anyone can find and study this deck", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
+                    }
+                    Switch(
+                        checked = isPublic,
+                        onCheckedChange = { isPublic = it },
+                        colors = SwitchDefaults.colors(checkedThumbColor = FlowPrimary, checkedTrackColor = FlowPrimary.copy(alpha = 0.5f))
+                    )
+                }
             }
             item {
                 Spacer(modifier = Modifier.height(16.dp))
