@@ -268,6 +268,7 @@ fun AppNavHost(
                     onBack = { navController.popBackStack() },
                     onStudyFlashcards = { navController.navigate("study_session") },
                     onQuiz = { navController.navigate("quiz_session") },
+                    onTypingQuiz = { navController.navigate("typing_session") },
                     onMatch = { /* TODO Phase 2 */ },
                     onEditDeck = { navController.navigate("edit_deck/${studySet.id}") },
                     onDeleteDeck = {
@@ -307,6 +308,23 @@ fun AppNavHost(
                 QuizScreen(
                     studySet = studySet,
                     onBack = { navController.popBackStack() }
+                )
+            } ?: run {
+                Text("Deck not found", modifier = Modifier.padding(16.dp))
+            }
+        }
+        composable("typing_session") {
+            selectedSet?.let { studySet ->
+                TypingQuizScreen(
+                    studySet = studySet,
+                    onBack = { navController.popBackStack() },
+                    onRecordResult = { correct, wrong ->
+                        viewModel.recordStudySession(
+                            cardsStudied = correct + wrong,
+                            correct = correct,
+                            wrong = wrong
+                        )
+                    }
                 )
             } ?: run {
                 Text("Deck not found", modifier = Modifier.padding(16.dp))

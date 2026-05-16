@@ -38,6 +38,7 @@ fun DeckDetailScreen(
     onBack: () -> Unit,
     onStudyFlashcards: () -> Unit,
     onQuiz: () -> Unit,
+    onTypingQuiz: () -> Unit = {},
     onMatch: () -> Unit,
     onEditDeck: () -> Unit,
     onDeleteDeck: () -> Unit
@@ -131,10 +132,11 @@ fun DeckDetailScreen(
             // Features List
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FeatureCard("Flashcards", Icons.Default.Style, onStudyFlashcards)
-                    FeatureCard("Learn", Icons.Default.Autorenew, onStudyFlashcards)
-                    FeatureCard("Test", Icons.Default.FactCheck, onQuiz)
-                    FeatureCard("Match", Icons.Default.DashboardCustomize, onMatch)
+                    FeatureCard("Flashcards", "Flip & memorize cards", Icons.Default.Style, onStudyFlashcards)
+                    FeatureCard("Learn", "Spaced repetition study", Icons.Default.Autorenew, onStudyFlashcards)
+                    FeatureCard("Test", "Multiple choice quiz", Icons.Default.FactCheck, onQuiz)
+                    FeatureCard("Typing", "Type the answer", Icons.Default.Keyboard, onTypingQuiz)
+                    FeatureCard("Match", "Coming soon", Icons.Default.DashboardCustomize, onMatch)
                 }
             }
 
@@ -202,7 +204,7 @@ fun DeckDetailScreen(
 }
 
 @Composable
-fun FeatureCard(title: String, icon: ImageVector, onClick: () -> Unit) {
+fun FeatureCard(title: String, subtitle: String = "", icon: ImageVector, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
@@ -211,7 +213,13 @@ fun FeatureCard(title: String, icon: ImageVector, onClick: () -> Unit) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, contentDescription = null, tint = FlowPrimary, modifier = Modifier.size(28.dp))
             Spacer(modifier = Modifier.width(16.dp))
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+                if (subtitle.isNotBlank()) {
+                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
+                }
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = FlowTextSecondary)
         }
     }
 }
