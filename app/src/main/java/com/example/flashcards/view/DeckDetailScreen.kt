@@ -134,8 +134,7 @@ fun DeckDetailScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     FeatureCard("Flashcards", "Flip & memorize cards", Icons.Default.Style, onStudyFlashcards)
                     FeatureCard("Learn", "Spaced repetition study", Icons.Default.Autorenew, onStudyFlashcards)
-                    FeatureCard("Test", "Multiple choice quiz", Icons.Default.FactCheck, onQuiz)
-                    FeatureCard("Typing", "Type the answer", Icons.Default.Keyboard, onTypingQuiz)
+                    FeatureCard("Test", "Multiple choice + Typing combined", Icons.Default.FactCheck, onQuiz)
                     FeatureCard("Match", "Coming soon", Icons.Default.DashboardCustomize, onMatch)
                 }
             }

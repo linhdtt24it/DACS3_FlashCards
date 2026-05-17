@@ -307,7 +307,14 @@ fun AppNavHost(
             selectedSet?.let { studySet ->
                 QuizScreen(
                     studySet = studySet,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onRecordResult = { correct, wrong ->
+                        viewModel.recordStudySession(
+                            cardsStudied = correct + wrong,
+                            correct = correct,
+                            wrong = wrong
+                        )
+                    }
                 )
             } ?: run {
                 Text("Deck not found", modifier = Modifier.padding(16.dp))
