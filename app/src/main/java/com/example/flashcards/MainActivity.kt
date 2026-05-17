@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.example.flashcards.viewmodel.FlashcardViewModel
 import java.util.Locale
 
@@ -44,6 +45,12 @@ class MainActivity : ComponentActivity() {
                 tts?.language = Locale.US
             }
         }
+
+        // Firebase Firestore — enable offline cache (giảm network wait khi mở app)
+        FirebaseFirestore.getInstance().firestoreSettings =
+            com.google.firebase.firestore.FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)
+                .build()
 
         setContent {
             FlashCardsTheme {
@@ -68,44 +75,51 @@ fun MainApp(tts: TextToSpeech?, viewModel: FlashcardViewModel = viewModel()) {
     Scaffold(
         bottomBar = {
             if (currentRoute !in listOf("auth", "study_session", "quiz_session", "deck_detail", "create_deck")) {
-                NavigationBar(
-                    containerColor = FlowBackground,
-                    contentColor = FlowTextSecondary
+        NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ) {
+                    val navItemColors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = FlowPrimary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        selectedTextColor = FlowPrimary,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.Home, contentDescription = null) },
                         label = { Text("Home", fontSize = 10.sp) },
                         selected = currentRoute == "home",
                         onClick = { navController.navigate("home") },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = FlowPrimary, unselectedIconColor = FlowTextSecondary, selectedTextColor = FlowPrimary, unselectedTextColor = FlowTextSecondary, indicatorColor = Color.Transparent)
+                        colors = navItemColors
                     )
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.AddCircleOutline, contentDescription = null, modifier = Modifier.size(28.dp)) },
                         label = { Text("Create", fontSize = 10.sp) },
                         selected = currentRoute == "create_deck",
                         onClick = { navController.navigate("create_deck") },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = FlowPrimary, unselectedIconColor = FlowTextSecondary, selectedTextColor = FlowPrimary, unselectedTextColor = FlowTextSecondary, indicatorColor = Color.Transparent)
+                        colors = navItemColors
                     )
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.FolderOpen, contentDescription = null) },
                         label = { Text("Library", fontSize = 10.sp) },
                         selected = currentRoute == "library",
                         onClick = { navController.navigate("library") },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = FlowPrimary, unselectedIconColor = FlowTextSecondary, selectedTextColor = FlowPrimary, unselectedTextColor = FlowTextSecondary, indicatorColor = Color.Transparent)
+                        colors = navItemColors
                     )
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.Explore, contentDescription = null) },
                         label = { Text("Explore", fontSize = 10.sp) },
                         selected = currentRoute == "explore",
                         onClick = { navController.navigate("explore") },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = FlowPrimary, unselectedIconColor = FlowTextSecondary, selectedTextColor = FlowPrimary, unselectedTextColor = FlowTextSecondary, indicatorColor = Color.Transparent)
+                        colors = navItemColors
                     )
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.PersonOutline, contentDescription = null) },
                         label = { Text("Profile", fontSize = 10.sp) },
                         selected = currentRoute == "profile",
                         onClick = { navController.navigate("profile") },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = FlowPrimary, unselectedIconColor = FlowTextSecondary, selectedTextColor = FlowPrimary, unselectedTextColor = FlowTextSecondary, indicatorColor = Color.Transparent)
+                        colors = navItemColors
                     )
                 }
             }
@@ -127,18 +141,29 @@ fun AppNavHost(
     val studySets by viewModel.studySets.collectAsState()
     val selectedSet by viewModel.selectedSet.collectAsState()
     val publicStudySets by viewModel.publicStudySets.collectAsState()
+    val folders by viewModel.folders.collectAsState()
+    var selectedFolder by remember { mutableStateOf<com.example.flashcards.model.Folder?>(null) }
 
     val startDestination = if (FirebaseAuth.getInstance().currentUser != null) "home" else "auth"
+
+    // Nếu user đã đăng nhập sẵn (không qua Auth screen), load data xã hội ngay
+    LaunchedEffect(Unit) {
+        if (FirebaseAuth.getInstance().currentUser != null) {
+            viewModel.onUserSignedIn()
+        }
+    }
 
     NavHost(navController = navController, startDestination = startDestination) {
         composable("auth") {
             AuthScreen(
                 onLoginSuccess = {
                     viewModel.loadData()
+                    viewModel.onUserSignedIn()
                     navController.navigate("home") { popUpTo("auth") { inclusive = true } }
                 },
                 onRegisterSuccess = {
                     viewModel.loadData()
+                    viewModel.onUserSignedIn()
                     navController.navigate("home") { popUpTo("auth") { inclusive = true } }
                 }
             )
@@ -205,6 +230,7 @@ fun AppNavHost(
         composable("library") {
             LibraryScreen(
                 studySets = studySets,
+                folders = folders,
                 onAddDeck = { title, desc -> viewModel.addStudySet(title, desc) },
                 onEditDeck = { id -> navController.navigate("edit_deck/$id") },
                 onDeleteDeck = { id -> viewModel.deleteStudySet(id) },
@@ -219,11 +245,40 @@ fun AppNavHost(
                 onImportDeck = { code ->
                     viewModel.importDeckByCode(
                         code = code,
-                        onSuccess = { /* Handle success if needed */ },
-                        onError = { /* Handle error if needed */ }
+                        onSuccess = { },
+                        onError = { }
                     )
+                },
+                onCreateFolder = { name, emoji -> viewModel.createFolder(name, emoji) },
+                onFolderClick = { folder ->
+                    selectedFolder = folder
+                    navController.navigate("folder_detail")
                 }
             )
+        }
+        composable("folder_detail") {
+            selectedFolder?.let { folder ->
+                // Keep folder in sync with latest data from Firebase
+                val liveFolder = folders.find { it.id == folder.id } ?: folder
+                FolderDetailScreen(
+                    folder = liveFolder,
+                    allSets = studySets,
+                    onBack = { navController.popBackStack() },
+                    onSetSelected = { set ->
+                        viewModel.selectSet(set)
+                        navController.navigate("deck_detail")
+                    },
+                    onAddSet = { setId -> viewModel.addSetToFolder(liveFolder.id, setId) },
+                    onRemoveSet = { setId -> viewModel.removeSetFromFolder(liveFolder.id, setId) },
+                    onRenameFolder = { name, emoji -> viewModel.renameFolder(liveFolder.id, name, emoji) },
+                    onDeleteFolder = {
+                        viewModel.deleteFolder(liveFolder.id)
+                        navController.popBackStack()
+                    }
+                )
+            } ?: run {
+                Text("Folder not found", modifier = Modifier.padding(16.dp))
+            }
         }
         composable("explore") {
             LaunchedEffect(Unit) {

@@ -8,8 +8,11 @@ import com.example.flashcards.model.Comment
 import com.example.flashcards.model.update
 import com.example.flashcards.model.SocialNotification
 import com.example.flashcards.model.UserStats
+import com.example.flashcards.model.Folder
 import com.example.flashcards.repository.StudySetRepository
 import com.example.flashcards.repository.UserRepository
+import com.example.flashcards.repository.FolderRepository
+import com.google.firebase.auth.FirebaseAuth as FA
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +23,8 @@ import com.google.firebase.auth.FirebaseAuth
 
 class FlashcardViewModel(
     private val repository: StudySetRepository = StudySetRepository(),
-    private val userRepository: UserRepository = UserRepository()
+    private val userRepository: UserRepository = UserRepository(),
+    private val folderRepository: FolderRepository = FolderRepository()
 ) : ViewModel() {
 
     private val _studySets = MutableStateFlow<List<StudySet>>(emptyList())
@@ -41,14 +45,23 @@ class FlashcardViewModel(
     private val _userStats = MutableStateFlow(UserStats())
     val userStats: StateFlow<UserStats> = _userStats.asStateFlow()
 
+    private val _folders = MutableStateFlow<List<Folder>>(emptyList())
+    val folders: StateFlow<List<Folder>> = _folders.asStateFlow()
+
     private var commentsJob: Job? = null
     private var statsJob: Job? = null
     private var notifJob: Job? = null
 
     init {
+        // Chỉ load study sets ngay — phần còn lại defer đến sau khi auth xác nhận
         loadData()
+    }
+
+    /** Gọi sau khi user đã đăng nhập thành công **/
+    fun onUserSignedIn() {
         loadUserStats()
         loadNotifications()
+        loadFolders()
     }
 
     fun loadData() {
@@ -275,6 +288,48 @@ class FlashcardViewModel(
     fun recordStudySession(cardsStudied: Int, correct: Int, wrong: Int) {
         viewModelScope.launch {
             userRepository.recordStudySession(cardsStudied, correct, wrong)
+        }
+    }
+
+    // ---- Folder functions ----
+    private fun loadFolders() {
+        viewModelScope.launch {
+            folderRepository.getFolders().collectLatest { list ->
+                _folders.value = list
+            }
+        }
+    }
+
+    fun createFolder(name: String, emoji: String = "📁") {
+        viewModelScope.launch {
+            val uid = FA.getInstance().currentUser?.uid ?: return@launch
+            val folder = Folder(name = name, emoji = emoji, userId = uid)
+            folderRepository.saveFolder(folder)
+        }
+    }
+
+    fun renameFolder(folderId: String, newName: String, newEmoji: String) {
+        viewModelScope.launch {
+            val existing = _folders.value.find { it.id == folderId } ?: return@launch
+            folderRepository.saveFolder(existing.copy(name = newName, emoji = newEmoji))
+        }
+    }
+
+    fun deleteFolder(folderId: String) {
+        viewModelScope.launch {
+            folderRepository.deleteFolder(folderId)
+        }
+    }
+
+    fun addSetToFolder(folderId: String, setId: String) {
+        viewModelScope.launch {
+            folderRepository.addSetToFolder(folderId, setId)
+        }
+    }
+
+    fun removeSetFromFolder(folderId: String, setId: String) {
+        viewModelScope.launch {
+            folderRepository.removeSetFromFolder(folderId, setId)
         }
     }
 }

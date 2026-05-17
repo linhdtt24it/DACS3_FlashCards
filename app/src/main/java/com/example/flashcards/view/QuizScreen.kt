@@ -1,4 +1,4 @@
-package com.example.flashcards.view
+﻿package com.example.flashcards.view
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -28,8 +28,8 @@ fun QuizScreen(
     onBack: () -> Unit
 ) {
     if (studySet.cards.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize().background(FlowBackground), contentAlignment = Alignment.Center) {
-            Text("This deck has no cards.", color = FlowTextPrimary)
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
+            Text("This deck has no cards.", color = MaterialTheme.colorScheme.onBackground)
             Button(onClick = onBack, modifier = Modifier.padding(top = 16.dp)) {
                 Text("Go Back")
             }
@@ -59,19 +59,19 @@ fun QuizScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quiz Mode", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+                title = { Text("Quiz Mode", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.Close, contentDescription = "Close", tint = FlowTextPrimary) }
+                    IconButton(onClick = onBack) { Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onBackground) }
                 },
                 actions = {
                     if (!isFinished) {
-                        Text("${currentIndex + 1}/${studySet.cards.size}", modifier = Modifier.padding(end = 16.dp), color = FlowTextSecondary, fontWeight = FontWeight.Bold)
+                        Text("${currentIndex + 1}/${studySet.cards.size}", modifier = Modifier.padding(end = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = FlowBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = FlowBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -85,7 +85,7 @@ fun QuizScreen(
                     progress = { progress },
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                     color = FlowPrimary,
-                    trackColor = FlowCardStroke
+                    trackColor = MaterialTheme.colorScheme.outline
                 )
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -94,7 +94,7 @@ fun QuizScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = FlowSurface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
                     Column(
@@ -106,7 +106,7 @@ fun QuizScreen(
                             text = currentCard.question,
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = FlowTextPrimary,
+                            color = MaterialTheme.colorScheme.onBackground,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -124,20 +124,20 @@ fun QuizScreen(
                         val backgroundColor = when {
                             showCorrectness && isCorrect -> FlowSuccessLight
                             showCorrectness && isSelected && !isCorrect -> FlowWarningLight
-                            else -> FlowSurface
+                            else -> MaterialTheme.colorScheme.surface
                         }
                         
                         val borderColor = when {
                             showCorrectness && isCorrect -> FlowSuccess
                             showCorrectness && isSelected && !isCorrect -> FlowWarning
                             isSelected -> FlowPrimary
-                            else -> FlowCardStroke
+                            else -> MaterialTheme.colorScheme.outline
                         }
 
                         val textColor = when {
                             showCorrectness && isCorrect -> FlowSuccess
                             showCorrectness && isSelected && !isCorrect -> FlowWarning
-                            else -> FlowTextPrimary
+                            else -> MaterialTheme.colorScheme.onBackground
                         }
 
                         Card(
@@ -189,7 +189,7 @@ fun QuizScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text("Quiz Complete!", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+                    Text("Quiz Complete!", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     val percentage = if (studySet.cards.isNotEmpty()) (score.toFloat() / studySet.cards.size * 100).toInt() else 0
@@ -199,14 +199,14 @@ fun QuizScreen(
                             progress = { percentage / 100f },
                             modifier = Modifier.fillMaxSize(),
                             color = FlowPrimary,
-                            trackColor = FlowCardStroke,
+                            trackColor = MaterialTheme.colorScheme.outline,
                             strokeWidth = 12.dp
                         )
                         Text("$percentage%", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = FlowPrimary)
                     }
                     
                     Spacer(modifier = Modifier.height(24.dp))
-                    Text("You scored $score out of ${studySet.cards.size}", style = MaterialTheme.typography.bodyLarge, color = FlowTextSecondary)
+                    Text("You scored $score out of ${studySet.cards.size}", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
                     Spacer(modifier = Modifier.height(48.dp))
                     Button(

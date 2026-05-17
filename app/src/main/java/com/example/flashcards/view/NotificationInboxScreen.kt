@@ -1,4 +1,4 @@
-package com.example.flashcards.view
+﻿package com.example.flashcards.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,18 +35,18 @@ fun NotificationInboxScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notifications", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+                title = { Text("Notifications", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FlowTextPrimary) }
+                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground) }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = FlowBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = FlowBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (notifications.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("No notifications yet", color = FlowTextSecondary)
+                Text("No notifications yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(
@@ -65,7 +65,7 @@ fun NotificationInboxScreen(
 @Composable
 fun NotificationItem(notification: SocialNotification, onClick: () -> Unit) {
     val isUnread = !notification.isRead
-    val bgColor = if (isUnread) FlowPrimaryLight.copy(alpha = 0.3f) else FlowSurface
+    val bgColor = if (isUnread) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surface
     
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
@@ -74,7 +74,7 @@ fun NotificationItem(notification: SocialNotification, onClick: () -> Unit) {
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(if (notification.type == "RATING") FlowWarningLight else FlowPrimaryLight),
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(if (notification.type == "RATING") FlowWarningLight else MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -90,15 +90,15 @@ fun NotificationItem(notification: SocialNotification, onClick: () -> Unit) {
                     text = "${notification.senderName} $actionText ${notification.deckTitle}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Normal,
-                    color = FlowTextPrimary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 if (notification.type == "COMMENT") {
-                    Text("\"${notification.content}\"", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary, maxLines = 1)
+                    Text("\"${notification.content}\"", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 } else if (notification.type == "RATING") {
                     Text("⭐ ${notification.content}", style = MaterialTheme.typography.bodySmall, color = FlowWarning, maxLines = 1)
                 }
                 val date = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(notification.timestamp))
-                Text(date, style = MaterialTheme.typography.labelSmall, color = FlowTextSecondary)
+                Text(date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (isUnread) {
                 Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(FlowPrimary))

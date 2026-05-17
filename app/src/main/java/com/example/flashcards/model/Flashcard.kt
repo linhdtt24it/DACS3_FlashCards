@@ -62,3 +62,12 @@ data class UserStats(
     val correctAnswers: Int = 0,
     val wrongAnswers: Int = 0
 )
+
+data class Folder(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String = "",
+    val emoji: String = "📁",
+    val userId: String = "",
+    val setIds: List<String> = emptyList(),
+    val createdAt: Long = System.currentTimeMillis()
+)

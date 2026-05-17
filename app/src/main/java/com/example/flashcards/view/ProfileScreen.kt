@@ -1,4 +1,4 @@
-package com.example.flashcards.view
+﻿package com.example.flashcards.view
 
 import android.content.Context
 import android.content.Intent
@@ -60,28 +60,28 @@ fun ProfileScreen(
     val reviewAlgorithm = prefs.getString("review_algorithm", "Standard") ?: "Standard"
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(FlowBackground).padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(24.dp),
         contentPadding = PaddingValues(bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
-            Text("Profile", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+            Text("Profile", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
         }
 
         item {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(80.dp).clip(CircleShape).background(FlowPrimaryLight),
+                    modifier = Modifier.size(80.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(if (initials.isNotEmpty()) initials else "U", style = MaterialTheme.typography.headlineMedium, color = FlowPrimary, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(currentName.ifEmpty { "User" }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-                    Text(userEmail.ifEmpty { "No Email" }, style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
+                    Text(currentName.ifEmpty { "User" }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text(userEmail.ifEmpty { "No Email" }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Surface(color = FlowPrimaryLight, shape = RoundedCornerShape(12.dp)) {
+                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp)) {
                     Text("PRO", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = FlowPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                 }
             }
@@ -98,7 +98,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("FlowCards Pro", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("Your plan unlocks all features", style = MaterialTheme.typography.bodySmall, color = FlowPrimaryLight)
+                        Text("Your plan unlocks all features", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primaryContainer)
                     }
                     TextButton(onClick = { Toast.makeText(context, "Pro features coming soon!", Toast.LENGTH_SHORT).show() }) {
                         Text("Manage", color = Color.White, fontWeight = FontWeight.Bold)
@@ -156,7 +156,7 @@ fun SettingSectionHeader(title: String) {
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        color = FlowTextPrimary,
+        color = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
     )
 }
@@ -167,15 +167,15 @@ fun SettingsItemRow(icon: ImageVector, title: String, value: String? = null, onC
         modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = FlowTextSecondary)
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.width(16.dp))
-        Text(title, style = MaterialTheme.typography.bodyLarge, color = FlowTextPrimary, modifier = Modifier.weight(1f))
+        Text(title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
 
         if (value != null) {
-            Text(value, style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.width(8.dp))
         }
 
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = FlowTextSecondary)
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

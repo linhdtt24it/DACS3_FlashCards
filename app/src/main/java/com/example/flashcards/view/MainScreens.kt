@@ -42,6 +42,9 @@ import com.example.flashcards.utils.ImageUtils
 import com.example.flashcards.utils.FlashcardUtils
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.border
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.ui.graphics.Brush
+import com.example.flashcards.ui.theme.LocalFlowColors
 
 @Composable
 fun AddDeckDialog(onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
@@ -49,7 +52,7 @@ fun AddDeckDialog(onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
     var newDesc by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add New Deck", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+        title = { Text("Add New Deck", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = newTitle, onValueChange = { newTitle = it }, label = { Text("Deck Title") }, modifier = Modifier.fillMaxWidth())
@@ -65,9 +68,9 @@ fun AddDeckDialog(onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
             }) { Text("Save", fontWeight = FontWeight.Bold, color = FlowPrimary) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = FlowTextSecondary) }
+            TextButton(onClick = onDismiss) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         },
-        containerColor = FlowSurface
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -76,10 +79,10 @@ fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
     var shareCode by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Import Deck", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+        title = { Text("Import Deck", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Enter a 6-character share code to import a public deck.", style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
+                Text("Enter a 6-character share code to import a public deck.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(value = shareCode, onValueChange = { shareCode = it.uppercase() }, label = { Text("Share Code") }, modifier = Modifier.fillMaxWidth())
             }
         },
@@ -92,9 +95,9 @@ fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
             }) { Text("Import", fontWeight = FontWeight.Bold, color = FlowPrimary) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = FlowTextSecondary) }
+            TextButton(onClick = onDismiss) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         },
-        containerColor = FlowSurface
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -109,13 +112,13 @@ fun BulkImportDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Bulk Import Flashcards", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+        title = { Text("Bulk Import Flashcards", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     "Paste your cards here. One card per line.\nExample: Front $separator Back",
                     style = MaterialTheme.typography.bodySmall,
-                    color = FlowTextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 OutlinedTextField(
@@ -127,11 +130,11 @@ fun BulkImportDialog(
                         .height(200.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = FlowPrimary,
-                        unfocusedBorderColor = FlowCardStroke
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
 
-                Text("Separator:", style = MaterialTheme.typography.labelMedium, color = FlowTextPrimary)
+                Text("Separator:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -144,7 +147,7 @@ fun BulkImportDialog(
                             onClick = { separator = displaySep },
                             label = { Text(sep) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = FlowPrimaryLight,
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                 selectedLabelColor = FlowPrimary
                             )
                         )
@@ -167,10 +170,10 @@ fun BulkImportDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = FlowTextSecondary)
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        containerColor = FlowSurface
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -184,10 +187,17 @@ fun HomeScreen(
     onDeleteDeck: (String) -> Unit,
     onSetSelected: (StudySet) -> Unit,
     onQuizDeck: (StudySet) -> Unit,
-    onNotificationsClick: () -> Unit = {}
+    onNotificationsClick: () -> Unit = {
+    }
 ) {
+    val fc = LocalFlowColors.current
+    val heroBrush = Brush.linearGradient(
+        colors = listOf(fc.gradientStart, fc.gradientEnd),
+        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+        end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+    )
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(FlowBackground).padding(horizontal = 16.dp, vertical = 24.dp),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp, vertical = 24.dp),
         contentPadding = PaddingValues(bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
@@ -196,15 +206,15 @@ fun HomeScreen(
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
                     value = "", onValueChange = {},
-                    placeholder = { Text("Search", color = FlowTextSecondary) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = FlowTextSecondary) },
+                    placeholder = { Text("Search", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.weight(1f).height(56.dp),
                     shape = RoundedCornerShape(28.dp),
-                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.Transparent, focusedBorderColor = Color.Transparent, unfocusedContainerColor = FlowSurface, focusedContainerColor = FlowSurface)
+                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.Transparent, focusedBorderColor = Color.Transparent, unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedContainerColor = MaterialTheme.colorScheme.surface)
                 )
                 Box(modifier = Modifier.size(48.dp)) {
                     IconButton(onClick = onNotificationsClick, modifier = Modifier.fillMaxSize()) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = FlowTextPrimary)
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = MaterialTheme.colorScheme.onBackground)
                     }
                     if (unreadNotifCount > 0) {
                         Box(
@@ -221,30 +231,58 @@ fun HomeScreen(
 
         if (studySets.isNotEmpty()) {
             item {
-                Text("Continue studying", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+                Text("Continue studying", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(16.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(studySets.take(3)) { set ->
                         Card(
                             modifier = Modifier.width(300.dp).clickable { onSetSelected(set) },
                             shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = FlowSurface)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
-                            Column(modifier = Modifier.padding(24.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Icon(Icons.Default.Folder, contentDescription = null, tint = FlowTextSecondary)
-                                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = FlowTextSecondary)
-                                }
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(set.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-                                Spacer(modifier = Modifier.height(32.dp))
-                                Button(
-                                    onClick = { onSetSelected(set) },
-                                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                                    shape = RoundedCornerShape(24.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
-                                ) {
-                                    Text("Continue", fontWeight = FontWeight.Bold, color = Color.White)
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                // Gradient strip at top
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .background(heroBrush)
+                                )
+                                Column(modifier = Modifier.padding(24.dp)) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer
+                                        ) {
+                                            Text(
+                                                "${set.cards.size} terms",
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = FlowPrimary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Icon(if (set.isPublic) Icons.Default.Public else Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                                    }
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    Text(set.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, maxLines = 2)
+                                    Spacer(modifier = Modifier.height(28.dp))
+                                    Button(
+                                        onClick = { onSetSelected(set) },
+                                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                                        shape = RoundedCornerShape(24.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize().background(heroBrush, RoundedCornerShape(24.dp)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text("Continue", fontWeight = FontWeight.Bold, color = Color.White)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -254,30 +292,30 @@ fun HomeScreen(
         }
 
         item {
-            Text("Recent", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+            Text("Recent", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
         }
 
         items(studySets) { set ->
             Card(
                 modifier = Modifier.fillMaxWidth().clickable { onSetSelected(set) },
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = FlowSurface)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Folder, contentDescription = null, tint = FlowTextSecondary, modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(32.dp))
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+                            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 imageVector = if (set.isPublic) Icons.Default.Public else Icons.Default.Lock,
                                 contentDescription = if (set.isPublic) "Public" else "Private",
-                                tint = FlowTextSecondary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
-                        Text("${set.cards.size} cards • author: ${if (set.creatorName.isNotBlank()) set.creatorName else "you"}", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
+                        Text("${set.cards.size} cards • author: ${if (set.creatorName.isNotBlank()) set.creatorName else "you"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -288,79 +326,222 @@ fun HomeScreen(
 @Composable
 fun LibraryScreen(
     studySets: List<StudySet>,
+    folders: List<com.example.flashcards.model.Folder> = emptyList(),
     onAddDeck: (String, String) -> Unit,
     onEditDeck: (String) -> Unit,
     onDeleteDeck: (String) -> Unit,
     onSetSelected: (StudySet) -> Unit,
     onQuizDeck: (StudySet) -> Unit,
-    onImportDeck: (String) -> Unit
+    onImportDeck: (String) -> Unit,
+    onCreateFolder: (String, String) -> Unit = {
+    _, _ -> },
+    onFolderClick: (com.example.flashcards.model.Folder) -> Unit = {}
 ) {
     var showImportDialog by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var showCreateFolder by remember { mutableStateOf(false) }
 
     if (showImportDialog) {
         ImportDeckDialog(onDismiss = { showImportDialog = false }, onImport = onImportDeck)
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(FlowBackground).padding(top = 24.dp)) {
+    if (showCreateFolder) {
+        EditFolderDialog(
+            initialName = "",
+            initialEmoji = "📁",
+            onDismiss = { showCreateFolder = false },
+            onSave = { name, emoji ->
+                onCreateFolder(name, emoji)
+                showCreateFolder = false
+            }
+        )
+    }
+
+    val tabs = listOf("Sets", "Folders", "Classes")
+
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(top = 24.dp)) {
         // Header
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Library", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-            IconButton(onClick = { showImportDialog = true }) {
-                Icon(Icons.Default.Download, contentDescription = "Import", tint = FlowTextPrimary)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Library", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Row {
+                if (selectedTab == 1) {
+                    IconButton(onClick = { showCreateFolder = true }) {
+                        Icon(Icons.Default.CreateNewFolder, contentDescription = "New Folder", tint = FlowPrimary)
+                    }
+                }
+                IconButton(onClick = { showImportDialog = true }) {
+                    Icon(Icons.Default.Download, contentDescription = "Import", tint = MaterialTheme.colorScheme.onBackground)
+                }
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
 
         // Tabs
-        LazyRow(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item {
-                Surface(shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, FlowPrimary), color = FlowPrimaryLight.copy(alpha = 0.2f)) {
-                    Text("Sets", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = FlowPrimary, fontWeight = FontWeight.Bold)
+        ScrollableTabRow(
+            selectedTabIndex = selectedTab,
+            modifier = Modifier.fillMaxWidth(),
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = FlowPrimary,
+            edgePadding = 16.dp,
+            indicator = { tabPositions ->
+                if (selectedTab < tabPositions.size) {
+                    TabRowDefaults.SecondaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        height = 3.dp,
+                        color = FlowPrimary
+                    )
                 }
-            }
-            item {
-                Surface(shape = RoundedCornerShape(20.dp), color = FlowSurface) {
-                    Text("Classes", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = FlowTextSecondary, fontWeight = FontWeight.Medium)
-                }
-            }
-            item {
-                Surface(shape = RoundedCornerShape(20.dp), color = FlowSurface) {
-                    Text("Folders", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = FlowTextSecondary, fontWeight = FontWeight.Medium)
-                }
+            },
+            divider = {}
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = {
+                        Text(
+                            title,
+                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
+                            color = if (selectedTab == index) FlowPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                )
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
 
-        // List of Sets
+        Spacer(modifier = Modifier.height(8.dp))
+
+        when (selectedTab) {
+            0 -> SetsTabContent(studySets, onSetSelected)
+            1 -> FoldersTabContent(folders, onFolderClick) { showCreateFolder = true }
+            2 -> ClassesPlaceholder()
+        }
+    }
+}
+
+@Composable
+private fun SetsTabContent(studySets: List<StudySet>, onSetSelected: (StudySet) -> Unit) {
+    if (studySets.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No sets yet. Create one!", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(bottom = 80.dp, top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(studySets) { set ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().clickable { onSetSelected(set) }.padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().clickable { onSetSelected(set) }.padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(FlowSurface), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Folder, contentDescription = null, tint = FlowTextSecondary)
+                    Box(
+                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Style, contentDescription = null, tint = FlowPrimary)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                set.title.ifBlank { "Untitled" },
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Icon(
                                 imageVector = if (set.isPublic) Icons.Default.Public else Icons.Default.Lock,
-                                contentDescription = if (set.isPublic) "Public" else "Private",
-                                tint = FlowTextSecondary,
-                                modifier = Modifier.size(16.dp)
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(14.dp)
                             )
                         }
-                        Text("Set • ${set.cards.size} terms • Author: ${if (set.creatorName.isNotBlank()) set.creatorName else "you"}", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
+                        Text(
+                            "Set  •  ${set.cards.size} terms  •  ${if (set.creatorName.isNotBlank()) set.creatorName else "you"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.surface, thickness = 0.5.dp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FoldersTabContent(
+    folders: List<com.example.flashcards.model.Folder>,
+    onFolderClick: (com.example.flashcards.model.Folder) -> Unit,
+    onCreateFolder: () -> Unit
+) {
+    if (folders.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("📁", style = MaterialTheme.typography.displayMedium)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("No folders yet", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onCreateFolder,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Create Folder")
+                }
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(bottom = 80.dp, top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(folders) { folder ->
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable { onFolderClick(folder) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(modifier = Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(folder.emoji, style = MaterialTheme.typography.headlineMedium)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(folder.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            Text(
+                                "${folder.setIds.size} set${if (folder.setIds.size != 1) "s" else ""}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ClassesPlaceholder() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("🏫", style = MaterialTheme.typography.displayMedium)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Classes coming soon!", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Create and join classes to study together", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -378,31 +559,31 @@ fun LibraryDeckCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete Deck?", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
-            text = { Text("Are you sure you want to delete '${set.title}'? This action cannot be undone.", color = FlowTextSecondary) },
+            title = { Text("Delete Deck?", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
+            text = { Text("Are you sure you want to delete '${set.title}'? This action cannot be undone.", color = MaterialTheme.colorScheme.onSurfaceVariant) },
             confirmButton = {
                 TextButton(onClick = { showDeleteConfirm = false; onDelete?.invoke() }) { Text("Delete", fontWeight = FontWeight.Bold, color = FlowWarning) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel", color = FlowTextSecondary) }
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             },
-            containerColor = FlowSurface
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = FlowSurface),
-        border = BorderStroke(1.dp, FlowCardStroke)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).background(FlowPrimaryLight, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.Language, contentDescription = null, tint = FlowPrimary, modifier = Modifier.size(24.dp))
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(color = FlowPrimaryLight.copy(alpha = 0.5f), shape = RoundedCornerShape(12.dp)) {
+                    Surface(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), shape = RoundedCornerShape(12.dp)) {
                         Text("Due", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), color = FlowPrimary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                     if (onQuiz != null) {
@@ -412,7 +593,7 @@ fun LibraryDeckCard(
                     }
                     if (onEdit != null) {
                         IconButton(onClick = { onEdit.invoke() }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = FlowTextSecondary)
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     if (onDelete != null) {
@@ -423,16 +604,16 @@ fun LibraryDeckCard(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-            Text("${set.cards.size} cards", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
+            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text("${set.cards.size} cards", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(modifier = Modifier.height(20.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Mastery", style = MaterialTheme.typography.labelSmall, color = FlowTextSecondary)
-                Text("45%", style = MaterialTheme.typography.labelSmall, color = FlowTextPrimary, fontWeight = FontWeight.Bold)
+                Text("Mastery", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("45%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(progress = { 0.45f }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape), color = FlowPrimary, trackColor = FlowBackground)
+            LinearProgressIndicator(progress = { 0.45f }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape), color = FlowPrimary, trackColor = MaterialTheme.colorScheme.background)
         }
     }
 }
@@ -454,30 +635,30 @@ fun StudySessionScreen(
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.Close, contentDescription = null, tint = FlowTextPrimary) }
+                    IconButton(onClick = onBack) { Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground) }
                 },
                 actions = {
                     Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        LinearProgressIndicator(progress = { progress }, modifier = Modifier.width(200.dp).height(8.dp).clip(CircleShape), color = FlowPrimary, trackColor = FlowBackground)
+                        LinearProgressIndicator(progress = { progress }, modifier = Modifier.width(200.dp).height(8.dp).clip(CircleShape), color = FlowPrimary, trackColor = MaterialTheme.colorScheme.background)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = FlowBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
             if (currentIndex < studySet.cards.size) {
                 Surface(
                     shadowElevation = 8.dp,
-                    color = FlowBackground
+                    color = MaterialTheme.colorScheme.background
                 ) {
                     BottomAppBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
                         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { if (currentIndex > 0) { currentIndex--; isFlipped = false } }, enabled = currentIndex > 0) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Previous", tint = if (currentIndex > 0) FlowTextPrimary else FlowTextSecondary)
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Previous", tint = if (currentIndex > 0) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Text("Card: ${currentIndex + 1}/${studySet.cards.size}", color = FlowTextSecondary, fontWeight = FontWeight.Medium)
+                            Text("Card: ${currentIndex + 1}/${studySet.cards.size}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
                             IconButton(onClick = { if (currentIndex < studySet.cards.size - 1) { currentIndex++; isFlipped = false } }, enabled = currentIndex < studySet.cards.size - 1) {
-                                Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = if (currentIndex < studySet.cards.size - 1) FlowTextPrimary else FlowTextSecondary)
+                                Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = if (currentIndex < studySet.cards.size - 1) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -486,10 +667,10 @@ fun StudySessionScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().background(FlowBackground).padding(padding).padding(20.dp),
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(padding).padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("${studySet.title} Mastery", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+            Text("${studySet.title} Mastery", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(24.dp))
 
             if (currentIndex < studySet.cards.size) {
@@ -508,7 +689,7 @@ fun StudySessionScreen(
                         }
                         .clickable { isFlipped = !isFlipped },
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = FlowSurface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
                 ) {
                     val isBackVisible = rotation >= 90f
@@ -516,7 +697,7 @@ fun StudySessionScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Spacer(modifier = Modifier.size(48.dp))
-                                Surface(color = FlowPrimaryLight, shape = RoundedCornerShape(8.dp)) {
+                                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
                                     Text(if (!isBackVisible) "QUESTION" else "ANSWER", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = FlowPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                                 }
                                 // 👈 GIỮ của bạn tôi: truyền thêm languageCode
@@ -538,16 +719,16 @@ fun StudySessionScreen(
                                 if (!isBackVisible) card.question else card.answer,
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = FlowTextPrimary,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 textAlign = TextAlign.Center
                             )
                             if (isBackVisible && card.explanation.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Surface(color = FlowPrimaryLight.copy(alpha = 0.3f), shape = RoundedCornerShape(12.dp)) {
+                                Surface(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), shape = RoundedCornerShape(12.dp)) {
                                     Text(
                                         card.explanation,
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = FlowTextSecondary,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier.padding(16.dp)
                                     )
@@ -557,9 +738,9 @@ fun StudySessionScreen(
 
                             if (!isBackVisible) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.TouchApp, contentDescription = null, tint = FlowTextSecondary)
+                                    Icon(Icons.Default.TouchApp, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Tap to reveal answer", color = FlowTextSecondary, fontWeight = FontWeight.Medium)
+                                    Text("Tap to reveal answer", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
                                 }
                             } else {
                                 Spacer(modifier = Modifier.height(48.dp))
@@ -581,7 +762,7 @@ fun StudySessionScreen(
                                         onClick = { onUpdateCard(card, 3); isFlipped = false; currentIndex++ },
                                         modifier = Modifier.weight(1f).height(52.dp),
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = FlowPrimaryLight)
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                                     ) {
                                         Text("Good", color = FlowPrimary, fontWeight = FontWeight.Bold)
                                     }
@@ -602,7 +783,7 @@ fun StudySessionScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
             } else {
-                Text("Session Complete!", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = FlowTextPrimary)
+                Text("Session Complete!", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onBack,
@@ -619,21 +800,22 @@ fun StudySessionScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatisticsScreen(userStats: com.example.flashcards.model.UserStats, onBack: () -> Unit) {  // 👈 GIỮ của bạn
+fun StatisticsScreen(userStats: com.example.flashcards.model.UserStats, onBack: () -> Unit) {
+    // 👈 GIỮ của bạn
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Learning Progress", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+                title = { Text("Learning Progress", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FlowTextPrimary) }
+                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground) }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = FlowBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = FlowBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
-            Text("Your cognitive flow is at its peak. Keep the momentum going!", style = MaterialTheme.typography.bodyMedium, color = FlowTextSecondary)
+            Text("Your cognitive flow is at its peak. Keep the momentum going!", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(32.dp))
 
             val totalAnswers = userStats.correctAnswers + userStats.wrongAnswers
@@ -648,7 +830,7 @@ fun StatisticsScreen(userStats: com.example.flashcards.model.UserStats, onBack: 
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 StatCard("Studied Today", "${userStats.cardsStudiedToday}", Icons.Default.Flag, Modifier.weight(1f), FlowPrimary)
-                StatCard("Total Answers", "$totalAnswers", Icons.Default.DoneAll, Modifier.weight(1f), FlowTextSecondary)
+                StatCard("Total Answers", "$totalAnswers", Icons.Default.DoneAll, Modifier.weight(1f), MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -659,14 +841,14 @@ fun StatCard(label: String, value: String, icon: ImageVector, modifier: Modifier
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = FlowSurface),
-        border = BorderStroke(1.dp, FlowCardStroke)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Icon(icon, contentDescription = null, tint = iconColor)
             Spacer(modifier = Modifier.height(12.dp))
-            Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = FlowTextSecondary)
+            Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -696,7 +878,7 @@ fun FlashcardEditItem(
     if (showUrlDialog) {
         AlertDialog(
             onDismissRequest = { showUrlDialog = false; tempUrl = "" },
-            title = { Text("Enter Image URL", fontWeight = FontWeight.Bold, color = FlowTextPrimary) },
+            title = { Text("Enter Image URL", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
             text = {
                 OutlinedTextField(
                     value = tempUrl,
@@ -716,21 +898,21 @@ fun FlashcardEditItem(
                 }) { Text("Save", fontWeight = FontWeight.Bold, color = FlowPrimary) }
             },
             dismissButton = {
-                TextButton(onClick = { showUrlDialog = false; tempUrl = "" }) { Text("Cancel", color = FlowTextSecondary) }
+                TextButton(onClick = { showUrlDialog = false; tempUrl = "" }) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             },
-            containerColor = FlowSurface
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = FlowSurface),
-        border = BorderStroke(1.dp, FlowCardStroke)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(index.toString(), fontWeight = FontWeight.Bold, color = FlowTextPrimary, fontSize = 18.sp)
+                Text(index.toString(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp)
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete", tint = FlowWarning)
                 }
@@ -775,15 +957,15 @@ fun FlashcardEditItem(
                     DropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
-                        modifier = Modifier.background(FlowSurface)
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Upload from Device", color = FlowTextPrimary) },
+                            text = { Text("Upload from Device", color = MaterialTheme.colorScheme.onBackground) },
                             onClick = { expanded = false; launcher.launch("image/*") },
                             leadingIcon = { Icon(Icons.Default.Upload, contentDescription = null, tint = FlowPrimary) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Enter Image URL", color = FlowTextPrimary) },
+                            text = { Text("Enter Image URL", color = MaterialTheme.colorScheme.onBackground) },
                             onClick = { expanded = false; showUrlDialog = true },
                             leadingIcon = { Icon(Icons.Default.Link, contentDescription = null, tint = FlowPrimary) }
                         )
@@ -869,10 +1051,10 @@ fun DeckEditorScreen(
                         Text("Save", color = FlowPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = FlowBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = FlowBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
@@ -905,8 +1087,8 @@ fun DeckEditorScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("Public Deck", fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-                        Text("Anyone can find and study this deck", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
+                        Text("Public Deck", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text("Anyone can find and study this deck", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Switch(
                         checked = isPublic,
@@ -968,7 +1150,7 @@ fun DeckEditorScreen(
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FlowPrimaryLight)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = FlowPrimary)
                     Spacer(modifier = Modifier.width(8.dp))

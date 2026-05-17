@@ -22,8 +22,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flashcards.ui.theme.FlowPrimary
-import com.example.flashcards.ui.theme.FlowSurface
-import com.example.flashcards.ui.theme.FlowBackground
 import com.example.flashcards.viewmodel.AuthViewModel
 import com.example.flashcards.viewmodel.AuthState
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -48,13 +46,13 @@ fun AuthScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(FlowBackground)
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
         Card(
             modifier = Modifier.fillMaxWidth().wrapContentHeight(),
-            colors = CardDefaults.cardColors(containerColor = FlowSurface),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             shape = RoundedCornerShape(32.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
@@ -336,4 +334,3 @@ fun SocialLogins() {
         }
     }
 }
-

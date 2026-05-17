@@ -1,4 +1,4 @@
-package com.example.flashcards.view
+﻿package com.example.flashcards.view
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween

@@ -1,4 +1,4 @@
-package com.example.flashcards.view
+﻿package com.example.flashcards.view
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -38,10 +38,10 @@ fun ExploreScreen(
         onSearch(searchQuery)
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(FlowBackground).padding(top = 24.dp)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(top = 24.dp)) {
         // Header
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Explore", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+            Text("Explore", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
         }
         Spacer(modifier = Modifier.height(16.dp))
         
@@ -50,15 +50,15 @@ fun ExploreScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search public decks...", color = FlowTextSecondary) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = FlowTextSecondary) },
+                placeholder = { Text("Search public decks...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent, 
                     focusedBorderColor = Color.Transparent, 
-                    unfocusedContainerColor = FlowSurface, 
-                    focusedContainerColor = FlowSurface
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface, 
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         }
@@ -101,7 +101,7 @@ fun PublicDeckCard(set: StudySet, onClick: () -> Unit, onImportClick: () -> Unit
                             Icon(
                                 imageVector = if (i <= userRating) Icons.Default.Star else Icons.Default.StarBorder,
                                 contentDescription = "Star $i",
-                                tint = if (i <= userRating) Color(0xFFFFD700) else FlowTextSecondary,
+                                tint = if (i <= userRating) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clickable { userRating = i.toFloat() }
@@ -114,25 +114,25 @@ fun PublicDeckCard(set: StudySet, onClick: () -> Unit, onImportClick: () -> Unit
                 TextButton(onClick = { onRateClick(userRating); showRatingDialog = false }) { Text("Submit", color = FlowPrimary) }
             },
             dismissButton = {
-                TextButton(onClick = { showRatingDialog = false }) { Text("Cancel", color = FlowTextSecondary) }
+                TextButton(onClick = { showRatingDialog = false }) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             },
-            containerColor = FlowSurface
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = FlowSurface),
-        border = BorderStroke(1.dp, FlowCardStroke)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).background(FlowPrimaryLight, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.Public, contentDescription = null, tint = FlowPrimary, modifier = Modifier.size(24.dp))
                 }
                 Surface(
-                    color = FlowPrimaryLight.copy(alpha = 0.5f), 
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), 
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.clickable { showRatingDialog = true }
                 ) {
@@ -140,20 +140,20 @@ fun PublicDeckCard(set: StudySet, onClick: () -> Unit, onImportClick: () -> Unit
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(String.format("%.1f", set.rating), color = FlowPrimary, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                        Text(" (${set.ratingCount})", color = FlowTextSecondary, style = MaterialTheme.typography.labelSmall)
+                        Text(" (${set.ratingCount})", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FlowTextPrimary)
+            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Text("by ${set.creatorName}", style = MaterialTheme.typography.bodyMedium, color = FlowPrimary)
             if (set.description.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(set.description, style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary, maxLines = 2)
+                Text(set.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
             }
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("${set.cards.size} terms", style = MaterialTheme.typography.labelMedium, color = FlowTextSecondary)
+                Text("${set.cards.size} terms", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 
                 Button(
                     onClick = onImportClick,

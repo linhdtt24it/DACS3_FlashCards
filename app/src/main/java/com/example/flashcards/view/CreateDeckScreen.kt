@@ -18,10 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flashcards.ui.theme.FlowBackground
 import com.example.flashcards.ui.theme.FlowPrimary
-import com.example.flashcards.ui.theme.FlowSurface
-import com.example.flashcards.ui.theme.FlowTextPrimary
 import com.example.flashcards.ui.theme.FlowTextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,7 +43,7 @@ fun CreateDeckScreen(
                         Icon(Icons.Default.Check, contentDescription = "Save", tint = FlowPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = FlowBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         floatingActionButton = {
@@ -59,7 +56,7 @@ fun CreateDeckScreen(
                 Icon(Icons.Default.Add, contentDescription = "Add Term", modifier = Modifier.size(32.dp))
             }
         },
-        containerColor = FlowBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
@@ -70,16 +67,16 @@ fun CreateDeckScreen(
                 TextField(
                     value = title,
                     onValueChange = { title = it },
-                    placeholder = { Text("Title, subject, or chapter", color = FlowTextSecondary) },
+                    placeholder = { Text("Title, subject, or chapter", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedIndicatorColor = FlowPrimary,
-                        unfocusedIndicatorColor = FlowTextSecondary
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
-                Text("TITLE", modifier = Modifier.padding(top = 8.dp), style = MaterialTheme.typography.labelSmall, color = FlowTextSecondary, fontWeight = FontWeight.Bold)
+                Text("TITLE", modifier = Modifier.padding(top = 8.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
 
             item {
@@ -89,8 +86,8 @@ fun CreateDeckScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("Public Deck", fontWeight = FontWeight.Bold, color = FlowTextPrimary)
-                        Text("Anyone can find and study this deck", style = MaterialTheme.typography.bodySmall, color = FlowTextSecondary)
+                        Text("Public Deck", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text("Anyone can find and study this deck", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Switch(
                         checked = isPublic,
@@ -125,7 +122,7 @@ fun CreateDeckScreen(
             items(2) { index ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = FlowSurface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -137,10 +134,10 @@ fun CreateDeckScreen(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
                                 focusedIndicatorColor = FlowPrimary,
-                                unfocusedIndicatorColor = FlowTextSecondary
+                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
-                        Text("TERM", modifier = Modifier.padding(top = 4.dp), style = MaterialTheme.typography.labelSmall, color = FlowTextSecondary, fontWeight = FontWeight.Bold)
+                        Text("TERM", modifier = Modifier.padding(top = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
@@ -152,10 +149,10 @@ fun CreateDeckScreen(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
                                 focusedIndicatorColor = FlowPrimary,
-                                unfocusedIndicatorColor = FlowTextSecondary
+                                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
-                        Text("DEFINITION", modifier = Modifier.padding(top = 4.dp), style = MaterialTheme.typography.labelSmall, color = FlowTextSecondary, fontWeight = FontWeight.Bold)
+                        Text("DEFINITION", modifier = Modifier.padding(top = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     }
                 }
             }
