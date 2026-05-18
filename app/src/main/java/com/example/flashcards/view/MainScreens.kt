@@ -102,6 +102,65 @@ fun ImportDeckDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
 }
 
 @Composable
+fun AIGenerationDialog(
+    onDismiss: () -> Unit,
+    onGenerate: (String) -> Unit
+) {
+    var textInput by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { 
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = FlowPrimary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("AI Magic Creation", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "Paste your notes, an article, or a list of facts below. Gemini will extract flashcards for you automatically.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                OutlinedTextField(
+                    value = textInput,
+                    onValueChange = { textInput = it },
+                    placeholder = { Text("Example: Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water...") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = FlowPrimary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onGenerate(textInput)
+                    onDismiss()
+                },
+                enabled = textInput.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
+            ) {
+                Text("Generate with AI", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    )
+}
+
+@Composable
 fun BulkImportDialog(
     onDismiss: () -> Unit,
     onImport: (List<Flashcard>) -> Unit
@@ -994,17 +1053,28 @@ fun FlashcardEditItem(
 @Composable
 fun DeckEditorScreen(
     studySet: StudySet,
-    isCreateMode: Boolean = false,  // 👈 GIỮ của bạn
+    isCreateMode: Boolean = false,
+    isGenerating: Boolean = false, // 👈 Thêm trạng thái AI
     onSave: (StudySet) -> Unit,
+    onGenerateAI: (String) -> Unit = {}, // 👈 Thêm callback AI
     onBack: () -> Unit
 ) {
     var title by remember { mutableStateOf(studySet.title) }
     var description by remember { mutableStateOf(studySet.description) }
     var cards by remember { mutableStateOf(studySet.cards) }
-    var isPublic by remember { mutableStateOf(studySet.isPublic) }  // 👈 GIỮ của bạn
+    var isPublic by remember { mutableStateOf(studySet.isPublic) }
     var showBulkImport by remember { mutableStateOf(false) }
+    var showAIGenerator by remember { mutableStateOf(false) }
 
-    // 👈 LẤY của bạn tôi: languageCode cho TTS
+    // Đồng bộ cards khi AI trả về kết quả qua studySet (cách đơn giản nhất)
+    LaunchedEffect(studySet.cards) {
+        if (studySet.cards.isNotEmpty() && cards.isEmpty()) {
+            cards = studySet.cards
+        } else if (studySet.cards.size > cards.size) {
+            cards = studySet.cards
+        }
+    }
+
     var languageCode by remember { mutableStateOf(studySet.languageCode) }
     val languages = listOf(
         "en" to "English",
@@ -1022,6 +1092,13 @@ fun DeckEditorScreen(
             onImport = { newCards ->
                 cards = cards + newCards
             }
+        )
+    }
+
+    if (showAIGenerator) {
+        AIGenerationDialog(
+            onDismiss = { showAIGenerator = false },
+            onGenerate = onGenerateAI
         )
     }
 
@@ -1043,7 +1120,7 @@ fun DeckEditorScreen(
                                 description = description,
                                 cards = cards,
                                 isPublic = isPublic,
-                                languageCode = languageCode  // 👈 LẤY của bạn tôi
+                                languageCode = languageCode
                             ))
                             onBack()
                         }
@@ -1056,105 +1133,153 @@ fun DeckEditorScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 80.dp)
-        ) {
-            item {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Deck Title") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = title, // Lỗi: Đây nên là description
-                    onValueChange = { description = it }, // Đã sửa logic nhưng title vẫn gán sai value
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-            }
-            // 👈 GIỮ của bạn: switch Public/Private
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("Public Deck", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                        Text("Anyone can find and study this deck", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(
-                        checked = isPublic,
-                        onCheckedChange = { isPublic = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = FlowPrimary, checkedTrackColor = FlowPrimary.copy(alpha = 0.5f))
-                    )
-                }
-            }
-            // 👈 LẤY của bạn tôi: dropdown chọn ngôn ngữ TTS
-            item {
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                item {
                     OutlinedTextField(
-                        value = languages.find { it.first == languageCode }?.second ?: "Select Language",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Language for Text-to-Speech") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Deck Title") },
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                }
+                item {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Description") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                item {
+                    // AI Magic Banner
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable { showAIGenerator = true },
+                        colors = CardDefaults.cardColors(containerColor = FlowPrimary.copy(alpha = 0.1f)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, FlowPrimary.copy(alpha = 0.3f))
                     ) {
-                        languages.forEach { (code, name) ->
-                            DropdownMenuItem(
-                                text = { Text(name) },
-                                onClick = {
-                                    languageCode = code
-                                    expanded = false
-                                }
-                            )
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier.size(40.dp).clip(CircleShape).background(FlowPrimary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("AI Flashcard Generator", fontWeight = FontWeight.Bold, color = FlowPrimary)
+                                Text("Create a full deck from text in seconds", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = FlowPrimary)
                         }
                     }
                 }
-            }
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            itemsIndexed(cards) { index, card ->
-                FlashcardEditItem(
-                    index = index + 1,
-                    card = card,
-                    onCardChange = { updatedCard ->
-                        cards = cards.map { if (it.id == card.id) updatedCard else it }
-                    },
-                    onDelete = {
-                        cards = cards.filter { it.id != card.id }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text("Public Deck", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            Text("Anyone can find and study this deck", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(
+                            checked = isPublic,
+                            onCheckedChange = { isPublic = it },
+                            colors = SwitchDefaults.colors(checkedThumbColor = FlowPrimary, checkedTrackColor = FlowPrimary.copy(alpha = 0.5f))
+                        )
                     }
-                )
+                }
+                item {
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded }
+                    ) {
+                        OutlinedTextField(
+                            value = languages.find { it.first == languageCode }?.second ?: "Select Language",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Language for Text-to-Speech") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            languages.forEach { (code, name) ->
+                                DropdownMenuItem(
+                                    text = { Text(name) },
+                                    onClick = {
+                                        languageCode = code
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                itemsIndexed(cards) { index, card ->
+                    FlashcardEditItem(
+                        index = index + 1,
+                        card = card,
+                        onCardChange = { updatedCard ->
+                            cards = cards.map { if (it.id == card.id) updatedCard else it }
+                        },
+                        onDelete = {
+                            cards = cards.filter { it.id != card.id }
+                        }
+                    )
+                }
+                item {
+                    Button(
+                        onClick = {
+                            cards = cards + Flashcard(id = java.util.UUID.randomUUID().toString(), question = "", answer = "")
+                        },
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = FlowPrimary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add Flashcard", color = FlowPrimary, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
-            item {
-                Button(
-                    onClick = {
-                        cards = cards + Flashcard(id = java.util.UUID.randomUUID().toString(), question = "", answer = "")
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+
+            if (isGenerating) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)).clickable(enabled = false) {},
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = FlowPrimary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add Flashcard", color = FlowPrimary, fontWeight = FontWeight.Bold)
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator(color = FlowPrimary)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Gemini is thinking...", fontWeight = FontWeight.Bold)
+                            Text("Generating your cards", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 }
             }
         }

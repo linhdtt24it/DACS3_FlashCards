@@ -12,6 +12,7 @@ import com.example.flashcards.model.Folder
 import com.example.flashcards.repository.StudySetRepository
 import com.example.flashcards.repository.UserRepository
 import com.example.flashcards.repository.FolderRepository
+import com.example.flashcards.utils.GeminiService
 import com.google.firebase.auth.FirebaseAuth as FA
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,8 @@ class FlashcardViewModel(
     private val userRepository: UserRepository = UserRepository(),
     private val folderRepository: FolderRepository = FolderRepository()
 ) : ViewModel() {
+
+    private val geminiService = GeminiService()
 
     private val _studySets = MutableStateFlow<List<StudySet>>(emptyList())
     val studySets: StateFlow<List<StudySet>> = _studySets.asStateFlow()
@@ -47,6 +50,9 @@ class FlashcardViewModel(
 
     private val _folders = MutableStateFlow<List<Folder>>(emptyList())
     val folders: StateFlow<List<Folder>> = _folders.asStateFlow()
+
+    private val _isGenerating = MutableStateFlow(false)
+    val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
 
     private var commentsJob: Job? = null
     private var statsJob: Job? = null
@@ -120,6 +126,15 @@ class FlashcardViewModel(
                 creatorName = creatorName
             )
             repository.saveStudySet(newSet)
+        }
+    }
+
+    fun generateAIFields(text: String, onGenerated: (List<Flashcard>) -> Unit) {
+        viewModelScope.launch {
+            _isGenerating.value = true
+            val cards = geminiService.generateFlashcardsFromText(text)
+            onGenerated(cards)
+            _isGenerating.value = false
         }
     }
 
