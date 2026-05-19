@@ -5,6 +5,7 @@ import com.example.flashcards.model.SocialNotification
 import com.example.flashcards.model.UserStats
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue  // ← THÊM IMPORT NÀY
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -53,7 +54,7 @@ class UserRepository {
     }
 
     suspend fun sendNotification(receiverId: String, notification: SocialNotification) {
-        if (receiverId.isEmpty() || receiverId == currentUserId) return // Don't notify yourself
+        if (receiverId.isEmpty() || receiverId == currentUserId) return
         try {
             db.collection("users").document(receiverId)
                 .collection("notifications").document(notification.id)
@@ -97,7 +98,6 @@ class UserRepository {
                     UserStats(userId = currentUserId)
                 }
 
-                // Check Streak logic
                 val calendar = Calendar.getInstance()
                 calendar.timeInMillis = System.currentTimeMillis()
                 val today = calendar.get(Calendar.DAY_OF_YEAR)
@@ -112,15 +112,12 @@ class UserRepository {
                 var newCardsToday = currentStats.cardsStudiedToday
 
                 if (currentYear == lastYear && today == lastDay) {
-                    // Studied already today
                     newCardsToday += cardsStudied
-                } else if ((currentYear == lastYear && today - lastDay == 1) || 
-                           (currentYear > lastYear && today == 1 && lastDay >= 365)) {
-                    // Studied yesterday
+                } else if ((currentYear == lastYear && today - lastDay == 1) ||
+                    (currentYear > lastYear && today == 1 && lastDay >= 365)) {
                     newStreak += 1
                     newCardsToday = cardsStudied
                 } else {
-                    // Missed a day or first time
                     newStreak = 1
                     newCardsToday = cardsStudied
                 }
@@ -136,6 +133,18 @@ class UserRepository {
             }.await()
         } catch (e: Exception) {
             Log.e("UserRepository", "Error updating stats", e)
+        }
+    }
+
+    // ✅ THÊM HÀM NÀY
+    suspend fun addAchievement(achievementName: String) {
+        if (currentUserId.isEmpty()) return
+        try {
+            val userRef = db.collection("users").document(currentUserId)
+            userRef.update("achievements", FieldValue.arrayUnion(achievementName)).await()
+            Log.d("UserRepository", "Added achievement: $achievementName")
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error adding achievement", e)
         }
     }
 }

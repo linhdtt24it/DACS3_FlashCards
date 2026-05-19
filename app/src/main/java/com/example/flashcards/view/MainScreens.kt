@@ -37,6 +37,7 @@ import coil.compose.AsyncImage
 import com.example.flashcards.R
 import com.example.flashcards.model.Flashcard
 import com.example.flashcards.model.StudySet
+import com.example.flashcards.model.UserStats
 import com.example.flashcards.ui.theme.*
 import com.example.flashcards.utils.ImageUtils
 import com.example.flashcards.utils.FlashcardUtils
@@ -45,6 +46,7 @@ import androidx.compose.foundation.border
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.graphics.Brush
 import com.example.flashcards.ui.theme.LocalFlowColors
+
 
 @Composable
 fun AddDeckDialog(onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
@@ -181,14 +183,14 @@ fun BulkImportDialog(
 fun HomeScreen(
     userName: String,
     studySets: List<StudySet>,
+    userStats: UserStats,  // ← THÊM DÒNG NÀY
     unreadNotifCount: Int = 0,
     onAddDeck: (String, String) -> Unit,
     onEditDeck: (String) -> Unit,
     onDeleteDeck: (String) -> Unit,
     onSetSelected: (StudySet) -> Unit,
     onQuizDeck: (StudySet) -> Unit,
-    onNotificationsClick: () -> Unit = {
-    }
+    onNotificationsClick: () -> Unit = {}
 ) {
     val fc = LocalFlowColors.current
     val heroBrush = Brush.linearGradient(
@@ -201,7 +203,6 @@ fun HomeScreen(
         contentPadding = PaddingValues(bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Top Bar: Search and Avatar
         item {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
@@ -225,6 +226,30 @@ fun HomeScreen(
                 }
                 Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(FlowPrimary), contentAlignment = Alignment.Center) {
                     Text(userName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                }
+            }
+        }
+
+        // --- STREAK SECTION ---
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(50.dp).clip(CircleShape).background(FlowWarning.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = FlowWarning, modifier = Modifier.size(32.dp))
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text("${userStats.streakDays} Day Streak", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("You've studied ${userStats.cardsStudiedToday} cards today", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
         }

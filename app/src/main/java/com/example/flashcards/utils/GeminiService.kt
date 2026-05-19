@@ -9,7 +9,7 @@ class GeminiService {
     // Lưu ý: Trong thực tế, bạn nên để API Key trong local.properties hoặc dùng giải pháp bảo mật hơn.
     private val apiKey = "YOUR_GEMINI_API_KEY" 
     private val generativeModel = GenerativeModel(
-        modelName = "gemini-1.5-flash",
+        modelName = "gemini-2.0-flash",  // Nhanh, mạnh, free
         apiKey = apiKey
     )
 

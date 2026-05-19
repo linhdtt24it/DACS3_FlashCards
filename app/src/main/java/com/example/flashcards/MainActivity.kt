@@ -2,6 +2,7 @@ package com.example.flashcards
 
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -9,11 +10,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -24,10 +23,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.flashcards.ui.theme.*
 import com.example.flashcards.view.*
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.LaunchedEffect
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.flashcards.viewmodel.FlashcardViewModel
@@ -46,7 +41,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Firebase Firestore — enable offline cache (giảm network wait khi mở app)
         FirebaseFirestore.getInstance().firestoreSettings =
             com.google.firebase.firestore.FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
@@ -74,8 +68,8 @@ fun MainApp(tts: TextToSpeech?, viewModel: FlashcardViewModel = viewModel()) {
 
     Scaffold(
         bottomBar = {
-            if (currentRoute !in listOf("auth", "study_session", "quiz_session", "deck_detail", "create_deck")) {
-        NavigationBar(
+            if (currentRoute !in listOf("auth", "study_session", "quiz_session", "deck_detail", "create_deck", "battle_session")) {
+                NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ) {
@@ -137,16 +131,16 @@ fun AppNavHost(
     viewModel: FlashcardViewModel,
     tts: TextToSpeech?
 ) {
-    // Thu thập State từ ViewModel
     val studySets by viewModel.studySets.collectAsState()
     val selectedSet by viewModel.selectedSet.collectAsState()
     val publicStudySets by viewModel.publicStudySets.collectAsState()
     val folders by viewModel.folders.collectAsState()
+    val userStats by viewModel.userStats.collectAsState()
     var selectedFolder by remember { mutableStateOf<com.example.flashcards.model.Folder?>(null) }
+    val context = LocalContext.current
 
     val startDestination = if (FirebaseAuth.getInstance().currentUser != null) "home" else "auth"
 
-    // Nếu user đã đăng nhập sẵn (không qua Auth screen), load data xã hội ngay
     LaunchedEffect(Unit) {
         if (FirebaseAuth.getInstance().currentUser != null) {
             viewModel.onUserSignedIn()
@@ -168,6 +162,7 @@ fun AppNavHost(
                 }
             )
         }
+
         composable("home") {
             val user = FirebaseAuth.getInstance().currentUser
             val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
@@ -177,6 +172,7 @@ fun AppNavHost(
             HomeScreen(
                 userName = userName,
                 studySets = studySets,
+                userStats = userStats,
                 unreadNotifCount = unreadNotifCount,
                 onAddDeck = { title, desc -> viewModel.addStudySet(title, desc) },
                 onEditDeck = { id -> navController.navigate("edit_deck/$id") },
@@ -192,6 +188,7 @@ fun AppNavHost(
                 onNotificationsClick = { navController.navigate("notifications") }
             )
         }
+
         composable("create_deck") {
             val user = FirebaseAuth.getInstance().currentUser
             val creatorId = user?.uid ?: ""
@@ -207,7 +204,7 @@ fun AppNavHost(
                     shareCode = null,
                     creatorId = creatorId,
                     creatorName = creatorName,
-                    languageCode = "en"  // 👈 Thêm languageCode mặc định
+                    languageCode = "en"
                 )
             }
 
@@ -215,18 +212,13 @@ fun AppNavHost(
                 studySet = emptySet,
                 isCreateMode = true,
                 onSave = { updatedSet ->
-                    val finalSet = if (updatedSet.isPublic && updatedSet.shareCode == null) {
-                        val charPool : List<Char> = ('A'..'Z') + ('0'..'9')
-                        val code = (1..6).map { kotlin.random.Random.nextInt(0, charPool.size).let { charPool[it] } }.joinToString("")
-                        updatedSet.copy(shareCode = code)
-                    } else updatedSet
-
-                    viewModel.updateStudySet(finalSet)
+                    viewModel.updateStudySet(updatedSet)
                     navController.popBackStack()
                 },
                 onBack = { navController.popBackStack() }
             )
         }
+
         composable("library") {
             LibraryScreen(
                 studySets = studySets,
@@ -243,11 +235,20 @@ fun AppNavHost(
                     navController.navigate("quiz_session")
                 },
                 onImportDeck = { code ->
-                    viewModel.importDeckByCode(
-                        code = code,
-                        onSuccess = { },
-                        onError = { }
-                    )
+                    if (code.length == 6) {
+                        viewModel.joinBattleByCode(code,
+                            onSuccess = { battleId ->
+                                navController.navigate("battle_session/$battleId")
+                            },
+                            onError = {
+                                viewModel.importDeckByCode(code, {
+                                    Toast.makeText(context, "Đã nhập bộ thẻ thành công!", Toast.LENGTH_SHORT).show()
+                                }, {
+                                    Toast.makeText(context, "Mã không hợp lệ", Toast.LENGTH_SHORT).show()
+                                })
+                            }
+                        )
+                    }
                 },
                 onCreateFolder = { name, emoji -> viewModel.createFolder(name, emoji) },
                 onFolderClick = { folder ->
@@ -256,9 +257,9 @@ fun AppNavHost(
                 }
             )
         }
+
         composable("folder_detail") {
             selectedFolder?.let { folder ->
-                // Keep folder in sync with latest data from Firebase
                 val liveFolder = folders.find { it.id == folder.id } ?: folder
                 FolderDetailScreen(
                     folder = liveFolder,
@@ -276,10 +277,9 @@ fun AppNavHost(
                         navController.popBackStack()
                     }
                 )
-            } ?: run {
-                Text("Folder not found", modifier = Modifier.padding(16.dp))
             }
         }
+
         composable("explore") {
             LaunchedEffect(Unit) {
                 viewModel.loadPublicDecks()
@@ -288,25 +288,20 @@ fun AppNavHost(
                 publicDecks = publicStudySets,
                 onSearch = { query -> viewModel.searchPublicDecks(query) },
                 onImportDeck = { code ->
-                    viewModel.importDeckByCode(
-                        code = code,
-                        onSuccess = {
-                            navController.navigate("library") {
-                                popUpTo("explore") { inclusive = false }
-                            }
-                        },
-                        onError = { /* Show error toast/snackbar */ }
-                    )
+                    viewModel.importDeckByCode(code, {
+                        navController.navigate("library")
+                    }, {
+                        Toast.makeText(context, "Không tìm thấy bộ thẻ", Toast.LENGTH_SHORT).show()
+                    })
                 },
-                onRateDeck = { setId, rating ->
-                    viewModel.ratePublicStudySet(setId, rating)
-                },
+                onRateDeck = { setId, rating -> viewModel.ratePublicStudySet(setId, rating) },
                 onDeckClick = { set ->
                     viewModel.selectSet(set)
                     navController.navigate("deck_detail")
                 }
             )
         }
+
         composable("deck_detail") {
             selectedSet?.let { studySet ->
                 LaunchedEffect(studySet.id) {
@@ -323,65 +318,123 @@ fun AppNavHost(
                     onBack = { navController.popBackStack() },
                     onStudyFlashcards = { navController.navigate("study_session") },
                     onQuiz = { navController.navigate("quiz_session") },
-                    onMatch = { /* TODO Phase 2 */ },
+                    onMatch = {
+                        viewModel.createBattle(studySet,
+                            onSuccess = { battleId ->
+                                navController.navigate("battle_session/$battleId")
+                            },
+                            onError = { error ->
+                                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    },
                     onEditDeck = { navController.navigate("edit_deck/${studySet.id}") },
                     onDeleteDeck = {
                         viewModel.deleteStudySet(studySet.id)
                         navController.popBackStack()
                     }
                 )
-            } ?: run {
-                Text("Deck not found", modifier = Modifier.padding(16.dp))
             }
         }
+
         composable("study_session") {
             selectedSet?.let { studySet ->
                 StudySessionScreen(
                     studySet = studySet,
                     onBack = { navController.popBackStack() },
-                    // 👈 LẤY của bạn tôi: thêm languageCode parameter
-                    onSpeak = { text: String, lang: String ->
+                    onSpeak = { text, lang ->
                         tts?.language = Locale.forLanguageTag(lang)
                         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
                     },
                     onUpdateCard = { card, quality ->
                         viewModel.updateCardQuality(card, quality)
-                        viewModel.recordStudySession(
-                            cardsStudied = 1,
-                            correct = if (quality > 2) 1 else 0,
-                            wrong = if (quality <= 2) 1 else 0
-                        )
+                        viewModel.recordStudySession(1, if (quality > 2) 1 else 0, if (quality <= 2) 1 else 0)
                     }
                 )
-            } ?: run {
-                Text("Deck not found", modifier = Modifier.padding(16.dp))
             }
         }
+
         composable("quiz_session") {
             selectedSet?.let { studySet ->
-                QuizScreen(
-                    studySet = studySet,
-                    onBack = { navController.popBackStack() }
-                )
-            } ?: run {
-                Text("Deck not found", modifier = Modifier.padding(16.dp))
+                QuizScreen(studySet = studySet, onBack = { navController.popBackStack() })
             }
         }
+
+        composable("battle_session/{battleId}") { backStackEntry ->
+            val battleId = backStackEntry.arguments?.getString("battleId") ?: ""
+            val battleRoom by viewModel.currentBattle.collectAsState()
+            val context = LocalContext.current
+
+            LaunchedEffect(battleId) {
+                try {
+                    viewModel.joinBattle(battleId)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
+                    navController.popBackStack()
+                }
+            }
+
+            BattleScreen(
+                battleRoom = battleRoom,
+                onStartBattle = {
+                    try {
+                        viewModel.startBattle(battleId)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Không thể bắt đầu trận", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onAnswerSelected = { isCorrect ->
+                    try {
+                        val room = battleRoom ?: return@BattleScreen
+                        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return@BattleScreen
+                        val currentPlayer = room.players[currentUserId] ?: return@BattleScreen
+                        val newScore = if (isCorrect) currentPlayer.score + 1 else currentPlayer.score
+                        viewModel.updateBattleProgress(battleId, newScore, currentPlayer.progress + 1)
+                    } catch (e: Exception) {
+                        // Bỏ qua lỗi
+                    }
+                },
+                onBack = { navController.popBackStack() },
+                onLeaveRoom = {
+                    viewModel.leaveAndDeleteRoom(battleId) {
+                        navController.popBackStack()
+                    }
+                },
+                onRematch = {
+                    viewModel.rematch(
+                        onSuccess = { newBattleId ->
+                            navController.popBackStack()
+                            navController.navigate("battle_session/$newBattleId")
+                        },
+                        onError = {
+                            Toast.makeText(context, "Không thể thi lại", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                },
+                onBattleFinished = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
         composable("stats") {
-            val userStats by viewModel.userStats.collectAsState()
             StatisticsScreen(userStats = userStats, onBack = { navController.popBackStack() })
         }
+
         composable("notifications") {
             val notifications by viewModel.notifications.collectAsState()
-            com.example.flashcards.view.NotificationInboxScreen(
+            NotificationInboxScreen(
                 notifications = notifications,
                 onBack = { navController.popBackStack() },
                 onNotificationClick = { notif ->
                     viewModel.markNotificationAsRead(notif.id)
-                    // Optionally navigate to the deck
+                    if (notif.type == "BATTLE_INVITE") {
+                        navController.navigate("battle_session/${notif.content}")
+                    }
                 }
             )
         }
+
         composable("profile") {
             val user = FirebaseAuth.getInstance().currentUser
             ProfileScreen(
@@ -398,25 +451,34 @@ fun AppNavHost(
                 onNavigateToStats = { navController.navigate("stats") }
             )
         }
+
         composable("personal_info") {
-            com.example.flashcards.view.PersonalInfoScreen(onBack = { navController.popBackStack() })
+            PersonalInfoScreen(onBack = { navController.popBackStack() })
         }
+
         composable("security") {
-            com.example.flashcards.view.SecurityScreen(onBack = { navController.popBackStack() })
+            SecurityScreen(onBack = { navController.popBackStack() })
         }
+
         composable("notification_settings") {
-            com.example.flashcards.view.NotificationSettingsScreen(onBack = { navController.popBackStack() })
+            NotificationSettingsScreen(onBack = { navController.popBackStack() })
         }
+
         composable("learning_prefs") {
-            com.example.flashcards.view.LearningPreferencesScreen(onBack = { navController.popBackStack() })
+            LearningPreferencesScreen(onBack = { navController.popBackStack() })
         }
+
         composable("edit_deck/{deckId}") { backStackEntry ->
             val deckId = backStackEntry.arguments?.getString("deckId")
             val studySetToEdit = studySets.find { it.id == deckId }
             if (studySetToEdit != null) {
                 DeckEditorScreen(
                     studySet = studySetToEdit,
-                    onSave = { updatedSet -> viewModel.updateStudySet(updatedSet) },
+                    isCreateMode = false,
+                    onSave = { updatedSet ->
+                        viewModel.updateStudySet(updatedSet)
+                        navController.popBackStack()
+                    },
                     onBack = { navController.popBackStack() }
                 )
             }
