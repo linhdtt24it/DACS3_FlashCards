@@ -23,6 +23,7 @@ class UserRepository {
     fun getNotifications(): Flow<List<SocialNotification>> = callbackFlow {
         if (currentUserId.isEmpty()) {
             trySend(emptyList())
+            awaitClose { }
             return@callbackFlow
         }
         val listener = notificationsCollection
@@ -69,6 +70,7 @@ class UserRepository {
     fun getUserStats(): Flow<UserStats> = callbackFlow {
         if (currentUserId.isEmpty()) {
             trySend(UserStats())
+            awaitClose { }
             return@callbackFlow
         }
         val listener = statsDoc.addSnapshotListener { snapshot, error ->

@@ -284,7 +284,6 @@ fun AppNavHost(
                 StudySessionScreen(
                     studySet = studySet,
                     onBack = { navController.popBackStack() },
-                    // 👈 LẤY của bạn tôi: thêm languageCode parameter
                     onSpeak = { text: String, lang: String ->
                         tts?.language = Locale.forLanguageTag(lang)
                         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
