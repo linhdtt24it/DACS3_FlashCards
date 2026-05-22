@@ -1063,6 +1063,49 @@ fun FlashcardEditItem(
                 label = { Text("Explanation (Optional)") },
                 modifier = Modifier.fillMaxWidth()
             )
+            if (showSuggestedImages) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "IMAGE SUGGESTIONS FOR: \"${card.question.ifBlank { "..." }}\"", 
+                    style = MaterialTheme.typography.labelMedium, 
+                    color = FlowPrimary, 
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (isImagesLoading) {
+                    Box(modifier = Modifier.fillMaxWidth().height(85.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = FlowPrimary, modifier = Modifier.size(24.dp))
+                    }
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(85.dp)
+                    ) {
+                        items(suggestedImages) { url ->
+                            val isSelected = card.imageUrl == url
+                            Card(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clickable { onCardChange(card.copy(imageUrl = url)) }
+                                    .border(
+                                        width = if (isSelected) 3.dp else 1.dp,
+                                        color = if (isSelected) FlowPrimary else FlowCardStroke,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                AsyncImage(
+                                    model = url,
+                                    contentDescription = "Suggested Image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
