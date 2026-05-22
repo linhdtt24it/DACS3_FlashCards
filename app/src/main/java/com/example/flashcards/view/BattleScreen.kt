@@ -38,16 +38,16 @@ fun BattleScreen(
     val context = LocalContext.current
     var showExitDialog by remember { mutableStateOf(false) }
 
-    // Xử lý khi battleRoom = null
+    // Handle when battleRoom is null
     if (battleRoom == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator()
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Đang tải phòng đấu...")
+                Text("Loading battle room...")
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = onBack) {
-                    Text("Quay lại")
+                    Text("Go back")
                 }
             }
         }
@@ -56,7 +56,7 @@ fun BattleScreen(
 
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-    // Nếu chưa đăng nhập thì quay về
+    // If not logged in, go back
     if (currentUserId.isEmpty()) {
         LaunchedEffect(Unit) {
             onBack()
@@ -68,7 +68,7 @@ fun BattleScreen(
     val opponentPlayer = battleRoom.players.values.find { it.uid != currentUserId }
     val isHost = battleRoom.players.keys.firstOrNull() == currentUserId
 
-    // Xử lý khi trận đấu kết thúc
+    // Handle when battle is finished
     LaunchedEffect(battleRoom.status) {
         if (battleRoom.status == "FINISHED") {
             delay(3000)
@@ -90,13 +90,13 @@ fun BattleScreen(
                 title = { Text("Battle 1vs1", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { handleBackPressed() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Go back")
                     }
                 },
                 actions = {
                     if (battleRoom.status == "WAITING") {
                         IconButton(onClick = { showExitDialog = true }) {
-                            Icon(Icons.Default.Logout, contentDescription = "Rời phòng")
+                            Icon(Icons.Default.Logout, contentDescription = "Leave")
                         }
                     }
                 },
@@ -133,7 +133,7 @@ fun BattleScreen(
                             onAnswerSelected = onAnswerSelected
                         )
                     } else {
-                        Text("Không tìm thấy thông tin người chơi")
+                        Text("Player information not found")
                     }
                 }
                 "FINISHED" -> BattleResults(
@@ -146,7 +146,7 @@ fun BattleScreen(
         }
     }
 
-    // Dialog xác nhận rời phòng
+    // Exit confirmation dialog
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
@@ -154,12 +154,12 @@ fun BattleScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFF9800))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Rời phòng?")
+                    Text("Leave?")
                 }
             },
             text = {
                 Text(
-                    "Nếu bạn rời khỏi phòng này, phòng sẽ bị xóa ngay lập tức.",
+                    "If you leave this room, it will be deleted immediately.",
                     color = Color.Gray
                 )
             },
@@ -171,12 +171,12 @@ fun BattleScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
                 ) {
-                    Text("Rời phòng")
+                    Text("Leave")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showExitDialog = false }) {
-                    Text("Ở lại")
+                    Text("Cancel")
                 }
             },
             shape = RoundedCornerShape(16.dp),
@@ -194,7 +194,7 @@ fun WaitingLobby(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Default.Group, null, modifier = Modifier.size(80.dp), tint = FlowPrimary.copy(alpha = 0.5f))
-        Text("Sảnh chờ đấu 1vs1", style = MaterialTheme.typography.titleMedium)
+        Text("1vs1 Battle Lobby", style = MaterialTheme.typography.titleMedium)
 
         Surface(
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -202,7 +202,7 @@ fun WaitingLobby(
             modifier = Modifier.padding(16.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("MÃ PIN PHÒNG", style = MaterialTheme.typography.labelSmall)
+                Text("ROOM PIN", style = MaterialTheme.typography.labelSmall)
                 Text(
                     battleRoom.id.takeLast(6).uppercase(),
                     fontSize = 32.sp,
@@ -212,7 +212,7 @@ fun WaitingLobby(
             }
         }
 
-        Text("Gửi mã này cho đối thủ để tham gia", style = MaterialTheme.typography.bodySmall)
+        Text("Send this code to your opponent to join", style = MaterialTheme.typography.bodySmall)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -223,10 +223,10 @@ fun WaitingLobby(
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("BẮT ĐẦU TRẬN ĐẤU")
+                Text("START MATCH")
             }
         } else {
-            Text("Đang chờ chủ phòng bắt đầu...", color = Color.Gray)
+            Text("Waiting for host to start...", color = Color.Gray)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -239,7 +239,7 @@ fun WaitingLobby(
         ) {
             Icon(Icons.Default.ExitToApp, null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Rời phòng")
+            Text("Leave")
         }
     }
 }
@@ -255,7 +255,7 @@ fun BattleQuiz(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator()
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Đã xong! Chờ đối thủ...", fontWeight = FontWeight.Bold)
+            Text("Done! Waiting for opponent...", fontWeight = FontWeight.Bold)
         }
         return
     }
@@ -263,7 +263,7 @@ fun BattleQuiz(
     val question = battleRoom.questions.getOrNull(progress) ?: return
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Câu ${progress + 1}/${battleRoom.questions.size}", color = FlowPrimary, fontWeight = FontWeight.Bold)
+        Text("Question ${progress + 1}/${battleRoom.questions.size}", color = FlowPrimary, fontWeight = FontWeight.Bold)
         LinearProgressIndicator(
             progress = (progress + 1).toFloat() / battleRoom.questions.size,
             modifier = Modifier.fillMaxWidth().clip(CircleShape).height(10.dp),
@@ -306,9 +306,9 @@ fun BattleResults(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             when {
-                isWin -> "CHIẾN THẮNG! 🎉"
-                isDraw -> "HÒA! 🤝"
-                else -> "CỐ GẮNG LẦN SAU! ✌️"
+                isWin -> "VICTORY! 🎉"
+                isDraw -> "DRAW! 🤝"
+                else -> "TRY AGAIN NEXT TIME! ✌️"
             },
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Black,
@@ -321,8 +321,8 @@ fun BattleResults(
         Spacer(modifier = Modifier.height(32.dp))
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ResultItem("Bạn", me?.score ?: 0)
-            ResultItem("Đối thủ", opponent?.score ?: 0)
+            ResultItem("You", me?.score ?: 0)
+            ResultItem("Opponent", opponent?.score ?: 0)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -338,7 +338,7 @@ fun BattleResults(
             ) {
                 Icon(Icons.Default.Refresh, null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("THI LẠI")
+                Text("REMATCH")
             }
 
             Button(
@@ -349,7 +349,7 @@ fun BattleResults(
             ) {
                 Icon(Icons.Default.ExitToApp, null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("THOÁT")
+                Text("EXIT")
             }
         }
     }
@@ -389,8 +389,8 @@ fun PlayerInfo(player: BattlePlayer?, isMe: Boolean) {
         ) {
             Text(player?.name?.take(1)?.uppercase() ?: "?", color = Color.White, fontWeight = FontWeight.Bold)
         }
-        Text(if (isMe) "Bạn" else player?.name ?: "Đang chờ...", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        Text("Điểm: ${player?.score ?: 0}", color = FlowPrimary, fontWeight = FontWeight.Medium)
+        Text(if (isMe) "You" else player?.name ?: "Waiting...", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Text("Score: ${player?.score ?: 0}", color = FlowPrimary, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -399,6 +399,6 @@ fun ResultItem(label: String, score: Int) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelLarge)
         Text(score.toString(), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
-        Text("điểm")
+        Text("points")
     }
 }

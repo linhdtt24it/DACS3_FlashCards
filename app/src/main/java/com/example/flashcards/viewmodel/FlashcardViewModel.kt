@@ -45,6 +45,33 @@ class FlashcardViewModel(
     private val _availableBattles = MutableStateFlow<List<BattleRoom>>(emptyList())
     val availableBattles: StateFlow<List<BattleRoom>> = _availableBattles.asStateFlow()
 
+    // --- Spaced Repetition: cards due today across all sets ---
+    val dueCards: StateFlow<List<Flashcard>> = _studySets
+        .map { sets ->
+            val now = System.currentTimeMillis()
+            sets.flatMap { set -> set.cards.filter { it.nextReviewDate <= now } }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val dueCount: StateFlow<Int> = dueCards
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    // --- Stats overview ---
+    val totalDecks: StateFlow<Int> = _studySets
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    val totalCards: StateFlow<Int> = _studySets
+        .map { sets -> sets.sumOf { it.cards.size } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    /** Returns cards from [set] that are due today (nextReviewDate ≤ now) */
+    fun getDueCardsForSet(set: StudySet): List<Flashcard> {
+        val now = System.currentTimeMillis()
+        return set.cards.filter { it.nextReviewDate <= now }
+    }
+
     private var battleJob: Job? = null
     private var commentsJob: Job? = null
 
@@ -348,5 +375,19 @@ class FlashcardViewModel(
         val updated = card.update(q)
         val newCards = set.cards.map { if (it.id == card.id) updated else it }
         updateStudySet(set.copy(cards = newCards))
+    }
+
+    /** Update a single card's quality across all matching sets (used by SpacedRepetitionScreen) */
+    fun updateCardQualityGlobal(card: Flashcard, q: Int) {
+        viewModelScope.launch {
+            val updated = card.update(q)
+            val allSets = _studySets.value
+            allSets.forEach { set ->
+                if (set.cards.any { it.id == card.id }) {
+                    val newCards = set.cards.map { if (it.id == card.id) updated else it }
+                    repository.saveStudySet(set.copy(cards = newCards))
+                }
+            }
+        }
     }
 }

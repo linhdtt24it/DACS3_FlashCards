@@ -5,7 +5,7 @@ import com.example.flashcards.model.SocialNotification
 import com.example.flashcards.model.UserStats
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FieldValue  // ← THÊM IMPORT NÀY
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -103,6 +103,14 @@ class UserRepository {
                 val today = calendar.get(Calendar.DAY_OF_YEAR)
                 val currentYear = calendar.get(Calendar.YEAR)
 
+                // Format today's date as "yyyy-MM-dd" key for studyHistory
+                val todayKey = String.format(
+                    "%04d-%02d-%02d",
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH) + 1,
+                    calendar.get(Calendar.DAY_OF_MONTH)
+                )
+
                 val lastCalendar = Calendar.getInstance()
                 lastCalendar.timeInMillis = currentStats.lastStudyDate
                 val lastDay = lastCalendar.get(Calendar.DAY_OF_YEAR)
@@ -122,12 +130,18 @@ class UserRepository {
                     newCardsToday = cardsStudied
                 }
 
+                // Merge into studyHistory map: accumulate per-day counts
+                val updatedHistory = currentStats.studyHistory.toMutableMap()
+                updatedHistory[todayKey] = (updatedHistory[todayKey] ?: 0) + cardsStudied
+
                 val newStats = currentStats.copy(
                     streakDays = newStreak,
                     lastStudyDate = System.currentTimeMillis(),
                     cardsStudiedToday = newCardsToday,
+                    totalCardsStudied = currentStats.totalCardsStudied + cardsStudied,
                     correctAnswers = currentStats.correctAnswers + correct,
-                    wrongAnswers = currentStats.wrongAnswers + wrong
+                    wrongAnswers = currentStats.wrongAnswers + wrong,
+                    studyHistory = updatedHistory
                 )
                 transaction.set(statsDoc, newStats)
             }.await()
@@ -136,7 +150,6 @@ class UserRepository {
         }
     }
 
-    // ✅ THÊM HÀM NÀY
     suspend fun addAchievement(achievementName: String) {
         if (currentUserId.isEmpty()) return
         try {

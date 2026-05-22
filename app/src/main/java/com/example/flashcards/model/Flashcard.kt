@@ -61,7 +61,9 @@ data class UserStats(
     val totalCardsStudied: Int = 0,
     val correctAnswers: Int = 0,
     val wrongAnswers: Int = 0,
-    val achievements: List<String> = emptyList()
+    val achievements: List<String> = emptyList(),
+    // Map key = "yyyy-MM-dd", value = number of cards studied that day
+    val studyHistory: Map<String, Int> = emptyMap()
 )
 
 data class Folder(

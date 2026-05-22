@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,7 +21,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -45,7 +50,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.border
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import com.example.flashcards.ui.theme.LocalFlowColors
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 @Composable
@@ -183,14 +192,16 @@ fun BulkImportDialog(
 fun HomeScreen(
     userName: String,
     studySets: List<StudySet>,
-    userStats: UserStats,  // ← THÊM DÒNG NÀY
+    userStats: UserStats,
+    dueCount: Int = 0,
     unreadNotifCount: Int = 0,
     onAddDeck: (String, String) -> Unit,
     onEditDeck: (String) -> Unit,
     onDeleteDeck: (String) -> Unit,
     onSetSelected: (StudySet) -> Unit,
     onQuizDeck: (StudySet) -> Unit,
-    onNotificationsClick: () -> Unit = {}
+    onNotificationsClick: () -> Unit = {},
+    onReviewDue: () -> Unit = {}
 ) {
     val fc = LocalFlowColors.current
     val heroBrush = Brush.linearGradient(
@@ -249,6 +260,69 @@ fun HomeScreen(
                     Column {
                         Text("${userStats.streakDays} Day Streak", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text("You've studied ${userStats.cardsStudiedToday} cards today", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+
+        // --- DUE TODAY SECTION (Spaced Repetition) ---
+        if (dueCount > 0) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onReviewDue() },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(FlowPrimary.copy(alpha = 0.12f), FlowSuccess.copy(alpha = 0.08f))
+                                )
+                            )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(18.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape)
+                                    .background(FlowPrimary.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("🧠", fontSize = 26.sp)
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Review due!",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                                Text(
+                                    "$dueCount cards to review today",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = onReviewDue,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Text("Review now", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.sp)
+                            }
+
+                        }
                     }
                 }
             }
@@ -825,38 +899,352 @@ fun StudySessionScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatisticsScreen(userStats: com.example.flashcards.model.UserStats, onBack: () -> Unit) {
-    // 👈 GIỮ của bạn
+fun StatisticsScreen(
+    userStats: com.example.flashcards.model.UserStats,
+    totalDecks: Int = 0,
+    totalCards: Int = 0,
+    dueCount: Int = 0,
+    onBack: () -> Unit
+) {
+    val totalAnswers = userStats.correctAnswers + userStats.wrongAnswers
+    val accuracy = if (totalAnswers > 0) (userStats.correctAnswers * 100 / totalAnswers) else 0
+
+    // Chart toggle: "7" days or "30" days
+    var chartRange by remember { mutableIntStateOf(7) }
+
+    // Build chart data from studyHistory
+    val chartData: List<Pair<String, Int>> = remember(userStats.studyHistory, chartRange) {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val labelFmt = SimpleDateFormat(if (chartRange <= 7) "EEE" else "dd/MM", Locale.getDefault())
+        val cal = Calendar.getInstance()
+        (chartRange - 1 downTo 0).map { offset ->
+            val c = Calendar.getInstance().also { it.add(Calendar.DAY_OF_YEAR, -offset) }
+            val key = sdf.format(c.time)
+            val label = labelFmt.format(c.time)
+            label to (userStats.studyHistory[key] ?: 0)
+        }
+    }
+    val maxBarVal = chartData.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
+
+    // Heatmap: last 28 days
+    val heatmapData: List<Pair<String, Int>> = remember(userStats.studyHistory) {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        (27 downTo 0).map { offset ->
+            val c = Calendar.getInstance().also { it.add(Calendar.DAY_OF_YEAR, -offset) }
+            sdf.format(c.time) to (userStats.studyHistory[sdf.format(c.time)] ?: 0)
+        }
+    }
+    val maxHeat = heatmapData.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Learning Progress", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
+                title = {
+                    Text(
+                        "Progress statistics",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground) }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
-            Text("Your cognitive flow is at its peak. Keep the momentum going!", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(32.dp))
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(bottom = 80.dp, top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
 
-            val totalAnswers = userStats.correctAnswers + userStats.wrongAnswers
-            val accuracy = if (totalAnswers > 0) (userStats.correctAnswers * 100 / totalAnswers) else 0
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                StatCard("Current Streak", "${userStats.streakDays} days", Icons.Default.DateRange, Modifier.weight(1f), FlowPrimary)
-                StatCard("Accuracy", "$accuracy%", Icons.Default.CheckCircle, Modifier.weight(1f), FlowSuccess)
+            // ── Overview chips ──
+            item {
+                Text("Overview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OverviewChip("Sets", totalDecks.toString(), "📚", Modifier.weight(1f))
+                    OverviewChip("Flashcards", totalCards.toString(), "🃏", Modifier.weight(1f))
+                    OverviewChip("Review due", dueCount.toString(), "🔔", Modifier.weight(1f))
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                StatCard("Studied Today", "${userStats.cardsStudiedToday}", Icons.Default.Flag, Modifier.weight(1f), FlowPrimary)
-                StatCard("Total Answers", "$totalAnswers", Icons.Default.DoneAll, Modifier.weight(1f), MaterialTheme.colorScheme.onSurfaceVariant)
+// ── Streak & Accuracy row ──
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StatCard("Streak", "${userStats.streakDays} days", Icons.Default.LocalFireDepartment, Modifier.weight(1f), FlowWarning)
+                    StatCard("Accuracy", "$accuracy%", Icons.Default.CheckCircle, Modifier.weight(1f), FlowSuccess)
+                }
             }
+
+            // ── Accuracy ring ──
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        // Animated ring
+                        val animatedAccuracy by animateFloatAsState(
+                            targetValue = accuracy / 100f,
+                            animationSpec = tween(1200),
+                            label = "accuracy_ring"
+                        )
+                        Box(modifier = Modifier.size(90.dp), contentAlignment = Alignment.Center) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val strokeW = 12.dp.toPx()
+                                val inset = strokeW / 2f
+                                // Background track
+                                drawArc(
+                                    color = Color(0xFFE5E7EB),
+                                    startAngle = -90f,
+                                    sweepAngle = 360f,
+                                    useCenter = false,
+                                    topLeft = Offset(inset, inset),
+                                    size = Size(size.width - strokeW, size.height - strokeW),
+                                    style = Stroke(strokeW, cap = StrokeCap.Round)
+                                )
+                                // Foreground arc
+                                drawArc(
+                                    color = android.graphics.Color.parseColor("#22C55E").let { Color(it) },
+                                    startAngle = -90f,
+                                    sweepAngle = 360f * animatedAccuracy,
+                                    useCenter = false,
+                                    topLeft = Offset(inset, inset),
+                                    size = Size(size.width - strokeW, size.height - strokeW),
+                                    style = Stroke(strokeW, cap = StrokeCap.Round)
+                                )
+                            }
+                            Text(
+                                "$accuracy%",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = FlowSuccess
+                            )
+                        }
+                        Column {
+                            Text("Retention rate", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("✅ Correct: ${userStats.correctAnswers}", style = MaterialTheme.typography.bodySmall, color = FlowSuccess)
+                            Text("❌ Wrong: ${userStats.wrongAnswers}", style = MaterialTheme.typography.bodySmall, color = FlowWarning)
+                            Text("📊 Total: $totalAnswers times", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+
+            // ── Bar chart ──
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Cards studied",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf(7, 30).forEach { days ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (chartRange == days) FlowPrimary else MaterialTheme.colorScheme.surface,
+                                        modifier = Modifier.clickable { chartRange = days }
+                                    ) {
+                                        Text(
+                                            "${days}N",
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                            color = if (chartRange == days) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Bar chart drawn with Canvas
+                        val barColor = FlowPrimary
+                        val barColorAlpha = FlowPrimary.copy(alpha = 0.3f)
+                        val chartH = 120.dp
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(chartH)
+                        ) {
+                            val n = chartData.size
+                            val gap = size.width * 0.015f
+                            val barW = (size.width - gap * (n - 1)) / n
+                            chartData.forEachIndexed { i, (_, value) ->
+                                val barH = if (maxBarVal > 0) (value.toFloat() / maxBarVal) * size.height else 0f
+                                val x = i * (barW + gap)
+                                val y = size.height - barH
+                                // Empty bar
+                                drawRoundRect(
+                                    color = barColorAlpha,
+                                    topLeft = Offset(x, 0f),
+                                    size = Size(barW, size.height),
+                                    cornerRadius = CornerRadius(6.dp.toPx())
+                                )
+                                // Filled bar
+                                if (barH > 0f) {
+                                    drawRoundRect(
+                                        color = barColor,
+                                        topLeft = Offset(x, y),
+                                        size = Size(barW, barH),
+                                        cornerRadius = CornerRadius(6.dp.toPx())
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        // X-axis labels
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            val step = if (chartData.size <= 7) 1 else chartData.size / 6
+                            chartData.filterIndexed { i, _ -> i % step == 0 || i == chartData.size - 1 }
+                                .forEach { (label, _) ->
+                                    Text(
+                                        label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 9.sp
+                                    )
+                                }
+                        }
+                    }
+                }
+            }
+
+            // ── Heatmap calendar (28 days) ──
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            "Study history (28 days)",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        // 4 rows × 7 cols
+                        val weeks = heatmapData.chunked(7)
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            weeks.forEach { week ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    week.forEach { (_, count) ->
+                                        val intensity = if (maxHeat > 0) count.toFloat() / maxHeat else 0f
+                                        val cellColor = when {
+                                            intensity == 0f -> MaterialTheme.colorScheme.background
+                                            intensity < 0.25f -> FlowPrimary.copy(alpha = 0.2f)
+                                            intensity < 0.5f  -> FlowPrimary.copy(alpha = 0.45f)
+                                            intensity < 0.75f -> FlowPrimary.copy(alpha = 0.70f)
+                                            else              -> FlowPrimary
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .aspectRatio(1f)
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(cellColor)
+                                        )
+                                    }
+                                    // Pad last row if needed
+                                    repeat(7 - week.size) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        // Legend
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Low", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            listOf(0.0f, 0.25f, 0.5f, 0.75f, 1.0f).forEach { alpha ->
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 2.dp)
+                                        .size(12.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(
+                                            if (alpha == 0f) MaterialTheme.colorScheme.background
+                                            else FlowPrimary.copy(alpha = alpha)
+                                        )
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("High", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+
+            // ── Today stats ──
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StatCard("Studied today", "${userStats.cardsStudiedToday} cards", Icons.Default.Flag, Modifier.weight(1f), FlowPrimary)
+                    StatCard("Total studied", "${userStats.totalCardsStudied}", Icons.Default.DoneAll, Modifier.weight(1f), MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OverviewChip(label: String, value: String, emoji: String, modifier: Modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(emoji, fontSize = 22.sp)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         }
     }
 }

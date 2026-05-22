@@ -136,6 +136,10 @@ fun AppNavHost(
     val publicStudySets by viewModel.publicStudySets.collectAsState()
     val folders by viewModel.folders.collectAsState()
     val userStats by viewModel.userStats.collectAsState()
+    val dueCount by viewModel.dueCount.collectAsState()
+    val dueCards by viewModel.dueCards.collectAsState()
+    val totalDecks by viewModel.totalDecks.collectAsState()
+    val totalCards by viewModel.totalCards.collectAsState()
     var selectedFolder by remember { mutableStateOf<com.example.flashcards.model.Folder?>(null) }
     val context = LocalContext.current
 
@@ -173,6 +177,7 @@ fun AppNavHost(
                 userName = userName,
                 studySets = studySets,
                 userStats = userStats,
+                dueCount = dueCount,
                 unreadNotifCount = unreadNotifCount,
                 onAddDeck = { title, desc -> viewModel.addStudySet(title, desc) },
                 onEditDeck = { id -> navController.navigate("edit_deck/$id") },
@@ -185,7 +190,8 @@ fun AppNavHost(
                     viewModel.selectSet(set)
                     navController.navigate("quiz_session")
                 },
-                onNotificationsClick = { navController.navigate("notifications") }
+                onNotificationsClick = { navController.navigate("notifications") },
+                onReviewDue = { navController.navigate("spaced_review") }
             )
         }
 
@@ -417,8 +423,27 @@ fun AppNavHost(
             )
         }
 
+        composable("spaced_review") {
+            SpacedRepetitionScreen(
+                dueCards = dueCards,
+                onUpdateCard = { card, quality ->
+                    viewModel.updateCardQualityGlobal(card, quality)
+                },
+                onRecordSession = { cards, correct, wrong ->
+                    viewModel.recordStudySession(cards, correct, wrong)
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
         composable("stats") {
-            StatisticsScreen(userStats = userStats, onBack = { navController.popBackStack() })
+            StatisticsScreen(
+                userStats = userStats,
+                totalDecks = totalDecks,
+                totalCards = totalCards,
+                dueCount = dueCount,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable("notifications") {
