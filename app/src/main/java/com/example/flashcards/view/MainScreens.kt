@@ -1011,35 +1011,47 @@ fun FlashcardEditItem(
                                     isImagesLoading = true
                                     
                                     scope.launch(Dispatchers.IO) {
-                                        val originalText = card.question.trim()
-                                        var englishKeyword = originalText
-                                        
                                         try {
-                                            // Chạy ngầm dịch đa ngôn ngữ sang tiếng Anh bằng MyMemory
-                                            val translateUrl = "https://api.mymemory.translated.net/get?q=${java.net.URLEncoder.encode(originalText, "UTF-8")}&langpair=auto|en"
-                                            val connection = java.net.URL(translateUrl).openConnection() as java.net.HttpURLConnection
+                                            val keywordEncoded = java.net.URLEncoder.encode(card.question.trim(), "UTF-8")
+                                            // 🌟 FIX CHÍ MẠNG 1: Sửa đoạn đuôi thành keywordEncoded chuẩn xác
+                                            val serverUrl = "http://10.0.2.2:8080/api/suggest-images?keyword=$keywordEncoded"
+                                            
+                                            val connection = java.net.URL(serverUrl).openConnection() as java.net.HttpURLConnection
                                             connection.requestMethod = "GET"
                                             connection.connectTimeout = 5000
                                             connection.readTimeout = 5000
                                             
                                             val responseText = connection.inputStream.bufferedReader().use { it.readText() }
-                                            val match = "\"translatedText\":\"(.*?)\"".toRegex().find(responseText)
-                                            if (match != null) {
-                                                englishKeyword = match.groupValues[1]
+                                            
+                                            // 🌟 FIX CHÍ MẠNG 2: Dùng bộ bóc tách chuỗi URL sạch, chấp nhận mọi kiểu khoảng trắng của JSON
+                                            val imageUrlList = mutableListOf<String>()
+                                            val regex = "\"images\"\\s*:\\s*\\[(.*?)\\]".toRegex(kotlin.text.RegexOption.DOT_MATCHES_ALL)
+                                            val match = regex.find(responseText)
+                                            
+                                            match?.let {
+                                                val arrayContent = it.groupValues[1]
+                                                if (arrayContent.isNotBlank()) {
+                                                    // Tách các link và làm sạch dấu ngoặc kép, dấu xuyệt ngược
+                                                    val links = arrayContent.split(",")
+                                                    for (link in links) {
+                                                        val cleanLink = link.replace("\"", "").replace("\\", "").trim()
+                                                        if (cleanLink.startsWith("http")) {
+                                                            imageUrlList.add(cleanLink)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            
+                                            withContext(Dispatchers.Main) {
+                                                suggestedImages = imageUrlList
+                                                isImagesLoading = false
                                             }
                                         } catch (e: Exception) {
                                             e.printStackTrace()
-                                        }
-                                        
-                                        val cleanKeyword = englishKeyword.lowercase().replace(" ", ",")
-                                       
-                                        val generatedUrls = List(10) { i -> 
-                                            "https://images.unsplash.com/photo-${1500000000000 + (i * 123456)}?w=300&auto=format&fit=crop&q=60&sig=$i&q=$cleanKeyword"
-                                        }
-                                        
-                                        withContext(Dispatchers.Main) {
-                                            suggestedImages = generatedUrls
-                                            isImagesLoading = false
+                                            withContext(Dispatchers.Main) {
+                                                suggestedImages = emptyList()
+                                                isImagesLoading = false
+                                            }
                                         }
                                     }
                                 }
@@ -1192,8 +1204,8 @@ fun DeckEditorScreen(
             }
             item {
                 OutlinedTextField(
-                    value = title, // Lỗi: Đây nên là description
-                    onValueChange = { description = it }, // Đã sửa logic nhưng title vẫn gán sai value
+                    value = description,
+                    onValueChange = { description = it },
                     label = { Text("Description") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
