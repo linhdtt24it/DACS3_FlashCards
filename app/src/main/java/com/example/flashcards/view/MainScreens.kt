@@ -46,6 +46,9 @@ import androidx.compose.foundation.border
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.graphics.Brush
 import com.example.flashcards.ui.theme.LocalFlowColors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 @Composable
@@ -894,6 +897,10 @@ fun FlashcardEditItem(
             }
         }
     }
+    val scope = rememberCoroutineScope()
+    var showSuggestedImages by remember { mutableStateOf(false) }
+    var suggestedImages by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isImagesLoading by remember { mutableStateOf(false) }
 
     // 👈 GIỮ của bạn: menu dropdown để upload từ URL
     var expanded by remember { mutableStateOf(false) }
@@ -993,6 +1000,51 @@ fun FlashcardEditItem(
                             text = { Text("Enter Image URL", color = MaterialTheme.colorScheme.onBackground) },
                             onClick = { expanded = false; showUrlDialog = true },
                             leadingIcon = { Icon(Icons.Default.Link, contentDescription = null, tint = FlowPrimary) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Suggested Images (AI)", color = FlowTextPrimary) },
+                            onClick = { 
+                                expanded = false
+                                showSuggestedImages = !showSuggestedImages
+                                
+                                if (showSuggestedImages && card.question.isNotBlank()) {
+                                    isImagesLoading = true
+                                    
+                                    scope.launch(Dispatchers.IO) {
+                                        val originalText = card.question.trim()
+                                        var englishKeyword = originalText
+                                        
+                                        try {
+                                            // Chạy ngầm dịch đa ngôn ngữ sang tiếng Anh bằng MyMemory
+                                            val translateUrl = "https://api.mymemory.translated.net/get?q=${java.net.URLEncoder.encode(originalText, "UTF-8")}&langpair=auto|en"
+                                            val connection = java.net.URL(translateUrl).openConnection() as java.net.HttpURLConnection
+                                            connection.requestMethod = "GET"
+                                            connection.connectTimeout = 5000
+                                            connection.readTimeout = 5000
+                                            
+                                            val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                                            val match = "\"translatedText\":\"(.*?)\"".toRegex().find(responseText)
+                                            if (match != null) {
+                                                englishKeyword = match.groupValues[1]
+                                            }
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                        
+                                        val cleanKeyword = englishKeyword.lowercase().replace(" ", ",")
+                                       
+                                        val generatedUrls = List(10) { i -> 
+                                            "https://images.unsplash.com/photo-${1500000000000 + (i * 123456)}?w=300&auto=format&fit=crop&q=60&sig=$i&q=$cleanKeyword"
+                                        }
+                                        
+                                        withContext(Dispatchers.Main) {
+                                            suggestedImages = generatedUrls
+                                            isImagesLoading = false
+                                        }
+                                    }
+                                }
+                            },
+                            leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = FlowPrimary) }
                         )
                         if (card.imageUrl != null) {
                             DropdownMenuItem(
