@@ -725,9 +725,10 @@ fun StudySessionScreen(
     onSpeak: (String, String) -> Unit,  // 👈 GIỮ của bạn tôi (thêm languageCode)
     onUpdateCard: (Flashcard, Int) -> Unit
 ) {
+    val workList = remember(studySet.cards) { studySet.cards.toMutableStateList() }
     var currentIndex by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
-    val progress = if (studySet.cards.isNotEmpty()) (currentIndex.toFloat() / studySet.cards.size) else 0f
+    val progress = if (workList.isNotEmpty()) (currentIndex.toFloat() / workList.size) else 0f
 
     Scaffold(
         topBar = {
@@ -745,7 +746,7 @@ fun StudySessionScreen(
             )
         },
         bottomBar = {
-            if (currentIndex < studySet.cards.size) {
+            if (currentIndex < workList.size) {
                 Surface(
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.background
@@ -755,9 +756,9 @@ fun StudySessionScreen(
                             IconButton(onClick = { if (currentIndex > 0) { currentIndex--; isFlipped = false } }, enabled = currentIndex > 0) {
                                 Icon(Icons.Default.ArrowBack, contentDescription = "Previous", tint = if (currentIndex > 0) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Text("Card: ${currentIndex + 1}/${studySet.cards.size}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                            IconButton(onClick = { if (currentIndex < studySet.cards.size - 1) { currentIndex++; isFlipped = false } }, enabled = currentIndex < studySet.cards.size - 1) {
-                                Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = if (currentIndex < studySet.cards.size - 1) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Card: ${currentIndex + 1}/${workList.size}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                            IconButton(onClick = { if (currentIndex < workList.size - 1) { currentIndex++; isFlipped = false } }, enabled = currentIndex < workList.size - 1) {
+                                Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = if (currentIndex < workList.size - 1) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -772,8 +773,8 @@ fun StudySessionScreen(
             Text("${studySet.title} Mastery", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (currentIndex < studySet.cards.size) {
-                val card = studySet.cards[currentIndex]
+            if (currentIndex < workList.size) {
+                val card = workList[currentIndex]
 
                 val rotation by animateFloatAsState(
                     targetValue = if (isFlipped) 180f else 0f,
@@ -850,12 +851,12 @@ fun StudySessionScreen(
                             Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp)) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Button(
-                                        onClick = { onUpdateCard(card, 1); isFlipped = false; currentIndex++ },
+                                        onClick = { onUpdateCard(card, 1); workList.add(card); isFlipped = false; currentIndex++ },
                                         modifier = Modifier.weight(1f).height(52.dp),
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = FlowWarningLight)
                                     ) {
-                                        Text("Hard", color = FlowWarning, fontWeight = FontWeight.Bold)
+                                        Text("🔁 Again", color = FlowWarning, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     }
                                     Button(
                                         onClick = { onUpdateCard(card, 3); isFlipped = false; currentIndex++ },
@@ -863,7 +864,7 @@ fun StudySessionScreen(
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                                     ) {
-                                        Text("Good", color = FlowPrimary, fontWeight = FontWeight.Bold)
+                                        Text("👍 Good", color = FlowPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     }
                                     Button(
                                         onClick = { onUpdateCard(card, 5); isFlipped = false; currentIndex++ },
@@ -871,7 +872,7 @@ fun StudySessionScreen(
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = FlowSuccessLight)
                                     ) {
-                                        Text("Easy", color = FlowSuccess, fontWeight = FontWeight.Bold)
+                                        Text("⚡ Easy", color = FlowSuccess, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     }
                                 }
                             }
@@ -882,16 +883,21 @@ fun StudySessionScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
             } else {
-                Text("Session Complete!", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onBackground)
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(Icons.Default.Celebration, contentDescription = null, tint = FlowSuccess, modifier = Modifier.size(80.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Chúc mừng!", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Text("Bạn đã ôn xong danh sách thẻ.", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(32.dp))
                 Button(
                     onClick = onBack,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
                 ) {
-                    Text("Return to Library", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Hoàn thành", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
