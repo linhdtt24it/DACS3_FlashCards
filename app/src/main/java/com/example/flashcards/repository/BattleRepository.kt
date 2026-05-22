@@ -1,4 +1,4 @@
-package com.example.flashcards.repository
+﻿package com.example.flashcards.repository
 
 import android.util.Log
 import com.example.flashcards.model.*
@@ -56,7 +56,7 @@ class BattleRepository {
 
     // Tạo phòng đấu mới
     suspend fun createBattle(studySet: StudySet): String {
-        if (studySet.cards.size < 2) throw Exception("Cần ít nhất 2 thẻ để đấu!")
+        if (studySet.cards.size < 2) throw Exception("Need at least 2 cards to battle!")
 
         val questions = studySet.cards.shuffled().take(5).map { card ->
             val otherAnswers = studySet.cards

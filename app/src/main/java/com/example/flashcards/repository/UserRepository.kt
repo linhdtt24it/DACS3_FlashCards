@@ -130,17 +130,36 @@ class UserRepository {
                     newCardsToday = cardsStudied
                 }
 
+                // XP Calculation
+                val earnedXp = (cardsStudied * 1) + (correct * 2) + 10
+                val newXp = currentStats.xp + earnedXp
+
+                // Badge Logic
+                val newTotalCards = currentStats.totalCardsStudied + cardsStudied
+                val newAchievements = currentStats.achievements.toMutableList()
+                
+                if (newTotalCards > 0 && !newAchievements.contains("FIRST_BLOOD")) newAchievements.add("FIRST_BLOOD")
+                if (newTotalCards >= 100 && !newAchievements.contains("CENTURION")) newAchievements.add("CENTURION")
+                if (newStreak >= 3 && !newAchievements.contains("STREAK_3")) newAchievements.add("STREAK_3")
+                if (newStreak >= 7 && !newAchievements.contains("STREAK_7")) newAchievements.add("STREAK_7")
+
                 // Merge into studyHistory map: accumulate per-day counts
                 val updatedHistory = currentStats.studyHistory.toMutableMap()
                 updatedHistory[todayKey] = (updatedHistory[todayKey] ?: 0) + cardsStudied
 
+                val currentUserProfileName = auth.currentUser?.displayName ?: auth.currentUser?.email?.substringBefore("@") ?: "User"
+
                 val newStats = currentStats.copy(
+                    userId = currentUserId,
+                    userName = currentUserProfileName,
+                    xp = newXp,
                     streakDays = newStreak,
                     lastStudyDate = System.currentTimeMillis(),
                     cardsStudiedToday = newCardsToday,
-                    totalCardsStudied = currentStats.totalCardsStudied + cardsStudied,
+                    totalCardsStudied = newTotalCards,
                     correctAnswers = currentStats.correctAnswers + correct,
                     wrongAnswers = currentStats.wrongAnswers + wrong,
+                    achievements = newAchievements,
                     studyHistory = updatedHistory
                 )
                 transaction.set(statsDoc, newStats)
@@ -153,11 +172,33 @@ class UserRepository {
     suspend fun addAchievement(achievementName: String) {
         if (currentUserId.isEmpty()) return
         try {
-            val userRef = db.collection("users").document(currentUserId)
-            userRef.update("achievements", FieldValue.arrayUnion(achievementName)).await()
+            statsDoc.update("achievements", FieldValue.arrayUnion(achievementName)).await()
             Log.d("UserRepository", "Added achievement: $achievementName")
         } catch (e: Exception) {
             Log.e("UserRepository", "Error adding achievement", e)
         }
+    }
+
+    fun getLeaderboard(): Flow<List<UserStats>> = callbackFlow {
+        val listener = db.collectionGroup("stats")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.w("UserRepository", "Listen leaderboard failed.", error)
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    // Because stats is a collection group, it might match other collections named "stats".
+                    // But in our schema, we only use it for UserStats.
+                    val leaders = snapshot.toObjects(UserStats::class.java)
+                        .filter { it.userId.isNotEmpty() }
+                        .sortedByDescending { it.xp }
+                        .take(50)
+                    trySend(leaders)
+                } else {
+                    trySend(emptyList())
+                }
+            }
+        awaitClose { listener.remove() }
     }
 }

@@ -55,6 +55,9 @@ data class SocialNotification(
 
 data class UserStats(
     val userId: String = "",
+    val userName: String = "",
+    val userAvatarUrl: String = "",
+    val xp: Int = 0,
     val streakDays: Int = 0,
     val lastStudyDate: Long = 0,
     val cardsStudiedToday: Int = 0,

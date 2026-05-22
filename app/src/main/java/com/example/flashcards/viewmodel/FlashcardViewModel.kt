@@ -1,4 +1,4 @@
-package com.example.flashcards.viewmodel
+﻿package com.example.flashcards.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,7 +18,10 @@ class FlashcardViewModel(
 ) : ViewModel() {
 
     private val _studySets = MutableStateFlow<List<StudySet>>(emptyList())
-    val studySets: StateFlow<List<StudySet>> = _studySets.asStateFlow()
+    val studySets: StateFlow<List<StudySet>> = _studySets
+
+    private val _leaderboard = MutableStateFlow<List<UserStats>>(emptyList())
+    val leaderboard: StateFlow<List<UserStats>> = _leaderboard.asStateFlow()
 
     private val _selectedSet = MutableStateFlow<StudySet?>(null)
     val selectedSet: StateFlow<StudySet?> = _selectedSet.asStateFlow()
@@ -87,6 +90,7 @@ class FlashcardViewModel(
         loadUserStats()
         loadNotifications()
         loadFolders()
+        loadLeaderboard()
     }
 
     fun loadData() {
@@ -163,7 +167,7 @@ class FlashcardViewModel(
 
     fun createBattle(studySet: StudySet, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
         if (studySet.cards.size < 2) {
-            onError("Bộ thẻ cần ít nhất 2 thẻ để đấu!")
+            onError("Deck requires at least 2 cards for a battle!")
             return
         }
         viewModelScope.launch {
@@ -342,6 +346,14 @@ class FlashcardViewModel(
     private fun loadFolders() {
         viewModelScope.launch {
             folderRepository.getFolders().collect { _folders.value = it }
+        }
+    }
+
+    private fun loadLeaderboard() {
+        viewModelScope.launch {
+            userRepository.getLeaderboard().collectLatest {
+                _leaderboard.value = it
+            }
         }
     }
 

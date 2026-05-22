@@ -1,4 +1,4 @@
-package com.example.flashcards
+﻿package com.example.flashcards
 
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -191,7 +191,16 @@ fun AppNavHost(
                     navController.navigate("quiz_session")
                 },
                 onNotificationsClick = { navController.navigate("notifications") },
-                onReviewDue = { navController.navigate("spaced_review") }
+                onReviewDue = { navController.navigate("spaced_review") },
+                onLeaderboardClick = { navController.navigate("leaderboard") }
+            )
+        }
+
+        composable("leaderboard") {
+            val leaderboard by viewModel.leaderboard.collectAsState()
+            LeaderboardScreen(
+                leaderboard = leaderboard,
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -248,9 +257,9 @@ fun AppNavHost(
                             },
                             onError = {
                                 viewModel.importDeckByCode(code, {
-                                    Toast.makeText(context, "Đã nhập bộ thẻ thành công!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Deck imported successfully!", Toast.LENGTH_SHORT).show()
                                 }, {
-                                    Toast.makeText(context, "Mã không hợp lệ", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Invalid code", Toast.LENGTH_SHORT).show()
                                 })
                             }
                         )
@@ -297,7 +306,7 @@ fun AppNavHost(
                     viewModel.importDeckByCode(code, {
                         navController.navigate("library")
                     }, {
-                        Toast.makeText(context, "Không tìm thấy bộ thẻ", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Deck not found", Toast.LENGTH_SHORT).show()
                     })
                 },
                 onRateDeck = { setId, rating -> viewModel.ratePublicStudySet(setId, rating) },
@@ -375,7 +384,7 @@ fun AppNavHost(
                 try {
                     viewModel.joinBattle(battleId)
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 }
             }
@@ -386,7 +395,7 @@ fun AppNavHost(
                     try {
                         viewModel.startBattle(battleId)
                     } catch (e: Exception) {
-                        Toast.makeText(context, "Không thể bắt đầu trận", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Failed to start battle", Toast.LENGTH_SHORT).show()
                     }
                 },
                 onAnswerSelected = { isCorrect ->
@@ -413,7 +422,7 @@ fun AppNavHost(
                             navController.navigate("battle_session/$newBattleId")
                         },
                         onError = {
-                            Toast.makeText(context, "Không thể thi lại", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Failed to rematch", Toast.LENGTH_SHORT).show()
                         }
                     )
                 },
@@ -510,3 +519,4 @@ fun AppNavHost(
         }
     }
 }
+

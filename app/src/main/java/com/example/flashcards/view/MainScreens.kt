@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -201,7 +202,8 @@ fun HomeScreen(
     onSetSelected: (StudySet) -> Unit,
     onQuizDeck: (StudySet) -> Unit,
     onNotificationsClick: () -> Unit = {},
-    onReviewDue: () -> Unit = {}
+    onReviewDue: () -> Unit = {},
+    onLeaderboardClick: () -> Unit = {}
 ) {
     val fc = LocalFlowColors.current
     val heroBrush = Brush.linearGradient(
@@ -241,25 +243,42 @@ fun HomeScreen(
             }
         }
 
-        // --- STREAK SECTION ---
+        // --- STREAK SECTION & XP ---
         item {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().clickable { onLeaderboardClick() },
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
-                Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier.size(50.dp).clip(CircleShape).background(FlowWarning.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = FlowWarning, modifier = Modifier.size(32.dp))
+                Row(
+                    modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier.size(50.dp).clip(CircleShape).background(FlowWarning.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = FlowWarning, modifier = Modifier.size(32.dp))
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text("${userStats.streakDays} Day Streak", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text("You've studied ${userStats.cardsStudiedToday} cards today", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text("${userStats.streakDays} Day Streak", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("You've studied ${userStats.cardsStudiedToday} cards today", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = FlowPrimary.copy(alpha = 0.1f)
+                    ) {
+                        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Star, contentDescription = "XP", tint = FlowPrimary, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("${userStats.xp} XP", color = FlowPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                        }
                     }
                 }
             }
@@ -886,8 +905,8 @@ fun StudySessionScreen(
                 Spacer(modifier = Modifier.weight(1f))
                 Icon(Icons.Default.Celebration, contentDescription = null, tint = FlowSuccess, modifier = Modifier.size(80.dp))
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("Chúc mừng!", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                Text("Bạn đã ôn xong danh sách thẻ.", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Congratulations!", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Text("You have finished reviewing your cards.", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(32.dp))
                 Button(
                     onClick = onBack,
@@ -895,7 +914,7 @@ fun StudySessionScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
                 ) {
-                    Text("Hoàn thành", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Done", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
                 Spacer(modifier = Modifier.weight(1f))
             }
@@ -979,6 +998,43 @@ fun StatisticsScreen(
                     OverviewChip("Sets", totalDecks.toString(), "📚", Modifier.weight(1f))
                     OverviewChip("Flashcards", totalCards.toString(), "🃏", Modifier.weight(1f))
                     OverviewChip("Review due", dueCount.toString(), "🔔", Modifier.weight(1f))
+                }
+            }
+
+            // ── Badges ──
+            item {
+                Text("Badges", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Spacer(modifier = Modifier.height(10.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    val allBadges = listOf(
+                        Triple("FIRST_BLOOD", "First session", "🌱"),
+                        Triple("CENTURION", "Studied 100 cards", "💯"),
+                        Triple("STREAK_3", "3-day streak", "🔥"),
+                        Triple("STREAK_7", "7-day streak", "🚀")
+                    )
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        allBadges.forEach { badge ->
+                            val earned = userStats.achievements.contains(badge.first)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                                Box(
+                                    modifier = Modifier.size(50.dp).clip(CircleShape).background(if (earned) FlowWarning.copy(alpha = 0.2f) else Color.LightGray.copy(alpha = 0.3f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(badge.third, fontSize = 24.sp, modifier = Modifier.alpha(if (earned) 1f else 0.3f))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(badge.second, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, color = if (earned) MaterialTheme.colorScheme.onBackground else Color.Gray)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -1579,3 +1635,76 @@ fun DeckEditorScreen(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LeaderboardScreen(
+    leaderboard: List<com.example.flashcards.model.UserStats>,
+    onBack: () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("XP Leaderboard", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+            )
+        }
+    ) { padding ->
+        if (leaderboard.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Text("No data yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                itemsIndexed(leaderboard) { index, user ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "#${index + 1}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = if (index == 0) FlowWarning else if (index == 1) Color.Gray else if (index == 2) Color(0xFFCD7F32) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(40.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(FlowPrimary), contentAlignment = Alignment.Center) {
+                                Text(user.userName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(user.userName.ifBlank { "User ${user.userId.take(5)}" }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = FlowWarning, modifier = Modifier.size(14.dp))
+                                    Text(" ${user.streakDays} days", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = FlowPrimary.copy(alpha = 0.1f)
+                            ) {
+                                Text("${user.xp} XP", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), color = FlowPrimary, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
