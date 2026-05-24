@@ -1,6 +1,7 @@
 package com.example.flashcards.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,12 +54,12 @@ class AdminQuizViewModel : ViewModel() {
             val data = mapOf(
                 "level" to level,
                 "type" to "multiple_choice",
-                "question" to question,
-                "answerA" to a,
-                "answerB" to b,
-                "answerC" to c,
-                "answerD" to d,
-                "correctAnswer" to correct,
+                "question" to CryptoUtils.encrypt(question),
+                "answerA" to CryptoUtils.encrypt(a),
+                "answerB" to CryptoUtils.encrypt(b),
+                "answerC" to CryptoUtils.encrypt(c),
+                "answerD" to CryptoUtils.encrypt(d),
+                "correctAnswer" to CryptoUtils.encrypt(correct),
                 "createdAt" to Timestamp.now()
             )
             db.collection("system_quizzes").add(data).await()
@@ -77,8 +78,8 @@ class AdminQuizViewModel : ViewModel() {
             val data = mapOf(
                 "level" to level,
                 "type" to "text_input",
-                "question" to question,
-                "correctAnswer" to correct,
+                "question" to CryptoUtils.encrypt(question),
+                "correctAnswer" to CryptoUtils.encrypt(correct),
                 "createdAt" to Timestamp.now()
             )
             db.collection("system_quizzes").add(data).await()
@@ -101,12 +102,12 @@ class AdminQuizViewModel : ViewModel() {
                     batch.set(docRef, mapOf(
                         "level" to level,
                         "type" to "multiple_choice",
-                        "question" to parts[0],
-                        "answerA" to parts[1],
-                        "answerB" to parts[2],
-                        "answerC" to parts[3],
-                        "answerD" to parts[4],
-                        "correctAnswer" to parts[5],
+                        "question" to CryptoUtils.encrypt(parts[0]),
+                        "answerA" to CryptoUtils.encrypt(parts[1]),
+                        "answerB" to CryptoUtils.encrypt(parts[2]),
+                        "answerC" to CryptoUtils.encrypt(parts[3]),
+                        "answerD" to CryptoUtils.encrypt(parts[4]),
+                        "correctAnswer" to CryptoUtils.encrypt(parts[5]),
                         "createdAt" to Timestamp.now()
                     ))
                     count++
@@ -115,8 +116,8 @@ class AdminQuizViewModel : ViewModel() {
                     batch.set(docRef, mapOf(
                         "level" to level,
                         "type" to "text_input",
-                        "question" to parts[0],
-                        "correctAnswer" to parts[1],
+                        "question" to CryptoUtils.encrypt(parts[0]),
+                        "correctAnswer" to CryptoUtils.encrypt(parts[1]),
                         "createdAt" to Timestamp.now()
                     ))
                     count++
