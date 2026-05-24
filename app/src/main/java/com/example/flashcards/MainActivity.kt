@@ -100,7 +100,8 @@ fun MainApp(
             if (userRole != "admin" && currentRoute !in listOf(
                 "login_screen", "study_session", "quiz_session", "deck_detail", 
                 "create_deck", "battle_session", "admin_dashboard_screen", 
-                "manage_users", "manage_system_decks", "folder_detail"
+                "manage_users", "manage_system_decks", "folder_detail",
+                "manage_packages", "package_detail/{packageName}"
             )) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -371,6 +372,23 @@ fun AppNavHost(
                 LaunchedEffect(Unit) { navController.navigate("home_screen") }
             } else {
                 AdminManageUsersScreen(navController = navController)
+            }
+        }
+
+        composable("manage_packages") {
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminManagePackagesScreen(navController = navController)
+            }
+        }
+
+        composable("package_detail/{packageName}") { backStackEntry ->
+            val packageName = backStackEntry.arguments?.getString("packageName") ?: ""
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminPackageDetailScreen(navController = navController, packageName = packageName)
             }
         }
 
