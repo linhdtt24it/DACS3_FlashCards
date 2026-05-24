@@ -105,6 +105,7 @@ fun MainApp(
                 "manage_users", "manage_system_decks", "folder_detail",
                 "manage_packages", "package_detail/{packageName}",
                 "vocab_japanese", "japanese_card_editor/{categoryCode}/{categoryName}",
+                "vocab_english", "english_card_editor/{categoryCode}/{categoryName}",
                 "admin_card_list/{categoryCode}"
             )) {
                 NavigationBar(
@@ -411,6 +412,24 @@ fun AppNavHost(
                 LaunchedEffect(Unit) { navController.navigate("home_screen") }
             } else {
                 AdminJapaneseCardEditorScreen(navController = navController, categoryCode = code, categoryName = name)
+            }
+        }
+
+        composable("vocab_english") {
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminEnglishVocabMenuScreen(navController = navController)
+            }
+        }
+
+        composable("english_card_editor/{categoryCode}/{categoryName}") { backStackEntry ->
+            val code = backStackEntry.arguments?.getString("categoryCode") ?: ""
+            val name = backStackEntry.arguments?.getString("categoryName") ?: ""
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminEnglishCardEditorScreen(navController = navController, categoryCode = code, categoryName = name)
             }
         }
 
