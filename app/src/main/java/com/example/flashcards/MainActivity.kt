@@ -19,10 +19,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.flashcards.ui.theme.*
 import com.example.flashcards.view.*
 import com.google.firebase.auth.FirebaseAuth
@@ -101,7 +103,9 @@ fun MainApp(
                 "login_screen", "study_session", "quiz_session", "deck_detail", 
                 "create_deck", "battle_session", "admin_dashboard_screen", 
                 "manage_users", "manage_system_decks", "folder_detail",
-                "manage_packages", "package_detail/{packageName}"
+                "manage_packages", "package_detail/{packageName}",
+                "vocab_japanese", "japanese_card_editor/{categoryCode}/{categoryName}",
+                "admin_card_list/{categoryCode}"
             )) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -389,6 +393,36 @@ fun AppNavHost(
                 LaunchedEffect(Unit) { navController.navigate("home_screen") }
             } else {
                 AdminPackageDetailScreen(navController = navController, packageName = packageName)
+            }
+        }
+
+        composable("vocab_japanese") {
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminJapaneseVocabMenuScreen(navController = navController)
+            }
+        }
+
+        composable("japanese_card_editor/{categoryCode}/{categoryName}") { backStackEntry ->
+            val code = backStackEntry.arguments?.getString("categoryCode") ?: ""
+            val name = backStackEntry.arguments?.getString("categoryName") ?: ""
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminJapaneseCardEditorScreen(navController = navController, categoryCode = code, categoryName = name)
+            }
+        }
+
+        composable(
+            route = "admin_card_list/{categoryCode}",
+            arguments = listOf(navArgument("categoryCode") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val categoryCode = backStackEntry.arguments?.getString("categoryCode") ?: ""
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminCardListScreen(navController = navController, categoryCode = categoryCode)
             }
         }
 
