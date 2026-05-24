@@ -3,6 +3,7 @@ package com.example.flashcards.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.repository.AuthRepository
+import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +41,9 @@ class AuthViewModel(
                     .document(uid)
                     .get()
                     .await()
-                _currentUserRole.value = document.getString("role") ?: "user"
+                val encryptedRole = document.getString("role")
+                // Giải mã quyền hạn để ứng dụng nhận diện (admin/user)
+                _currentUserRole.value = CryptoUtils.decrypt(encryptedRole).ifBlank { "user" }
             } catch (e: Exception) {
                 _currentUserRole.value = "user"
             }
@@ -78,13 +81,14 @@ class AuthViewModel(
             if (result.isSuccess) {
                 val uid = FirebaseAuth.getInstance().currentUser?.uid
                 if (uid != null) {
-                    // Create user document in Firestore with default role
+                    // MÃ HÓA thông tin người dùng trước khi lưu lên Firestore
                     FirebaseFirestore.getInstance().collection("users").document(uid).set(
                         mapOf(
-                            "name" to name,
-                            "email" to email,
-                            "role" to "user",
-                            "premiumStatus" to false
+                            "name" to CryptoUtils.encrypt(name),
+                            "email" to CryptoUtils.encrypt(email),
+                            "role" to CryptoUtils.encrypt("user"),
+                            "premiumStatus" to false,
+                            "premiumPackages" to emptyMap<String, Boolean>()
                         )
                     ).await()
                     _currentUserRole.value = "user"

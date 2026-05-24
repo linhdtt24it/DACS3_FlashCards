@@ -6,8 +6,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.flashcards.utils.CryptoUtils
 import com.example.flashcards.viewmodel.AdminPackageViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,112 +28,134 @@ fun AdminPackageDetailScreen(
 ) {
     val users by viewModel.users.collectAsState()
 
+    // Lọc danh sách: Chỉ hiển thị tài khoản người dùng (role == "user")
+    // Sử dụng CryptoUtils.decrypt để kiểm tra quyền hạn thực tế
+    val filteredUsers = remember(users) {
+        users.filter { userData ->
+            val encryptedRole = userData["role"] as? String
+            CryptoUtils.decrypt(encryptedRole) == "user"
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cấu hình gói: $packageName", fontWeight = FontWeight.Bold) },
+                title = { 
+                    Column {
+                        Text("Quản lý VIP: $packageName", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("Danh sách học viên", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
-        },
-        bottomBar = {
-            BottomAppBar {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = { navController.navigate("manage_users") }, // Chuyển sang màn quản lý user chung
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.PersonAdd, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text("Thêm tài khoản mới", fontSize = 12.sp)
-                    }
-
-                    Button(
-                        onClick = { /* Logic xóa tài khoản nếu cần, hoặc điều hướng */ },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.PersonRemove, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text("Xóa tài khoản", fontSize = 12.sp)
-                    }
-                }
-            }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
-        ) {
-            items(users) { userData ->
-                val uid = userData["uid"] as? String ?: ""
-                val email = userData["email"] as? String ?: "No Email"
-                val role = userData["role"] as? String ?: "user"
-                
-                // Kiểm tra trạng thái gói từ Map premiumPackages
-                val premiumPackages = userData["premiumPackages"] as? Map<String, Boolean> ?: emptyMap()
-                val isActivated = premiumPackages[packageName] ?: false
+        if (filteredUsers.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Chưa có tài khoản người dùng nào.", color = Color.Gray)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
+                items(filteredUsers) { userData ->
+                    val uid = userData["uid"] as? String ?: ""
+                    
+                    // Giải mã thông tin hiển thị nếu cần
+                    val email = CryptoUtils.decrypt(userData["email"] as? String)
+                    val name = CryptoUtils.decrypt(userData["name"] as? String).ifBlank { "Học viên" }
+                    
+                    // Kiểm tra trạng thái gói VIP từ Map premiumPackages (Real-time sync qua addSnapshotListener)
+                    val premiumPackages = userData["premiumPackages"] as? Map<String, Boolean> ?: emptyMap()
+                    val isActivated = premiumPackages[packageName] ?: false
 
-                UserPackageRow(
-                    email = email,
-                    role = role,
-                    isActivated = isActivated,
-                    onToggle = { newValue ->
-                        if (uid.isNotEmpty()) {
-                            viewModel.togglePackageForUser(uid, packageName, newValue)
+                    UserPackageActionRow(
+                        name = name,
+                        email = email,
+                        isActivated = isActivated,
+                        onAction = {
+                            if (uid.isNotEmpty()) {
+                                // Gọi cập nhật trực tiếp lên Firestore
+                                viewModel.togglePackageForUser(uid, packageName, !isActivated)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun UserPackageRow(
+fun UserPackageActionRow(
+    name: String,
     email: String,
-    role: String,
     isActivated: Boolean,
-    onToggle: (Boolean) -> Unit
+    onAction: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActivated) Color(0xFFFFF5F5) else MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = email, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Text(
-                    text = if (role == "admin") "ADMIN" else "USER",
-                    fontSize = 12.sp,
-                    color = if (role == "admin") Color.Red else Color.Gray,
-                    fontWeight = FontWeight.Bold
+                    text = name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = email,
+                    fontSize = 13.sp,
+                    color = Color.Gray
                 )
             }
-            
-            Switch(
-                checked = isActivated,
-                onCheckedChange = onToggle,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
+
+            if (!isActivated) {
+                // Button Thêm vào gói - Màu Xanh lá
+                Button(
+                    onClick = onAction,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Text("[Thêm vào gói VIP]", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            } else {
+                // Button Kích khỏi gói - Màu Đỏ
+                Button(
+                    onClick = onAction,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Text("[Kích khỏi gói VIP]", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }

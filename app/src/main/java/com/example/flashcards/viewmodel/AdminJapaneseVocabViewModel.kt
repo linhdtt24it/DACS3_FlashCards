@@ -1,26 +1,17 @@
 package com.example.flashcards.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 data class JapaneseCategory(
     val id: String = "",
     val name: String = "",
     val code: String = ""
-)
-
-data class SystemVocabulary(
-    val id: String = "",
-    val category: String = "",
-    val front: String = "",
-    val back: String = "",
-    val createdAt: Timestamp? = null
 )
 
 class AdminJapaneseVocabViewModel : ViewModel() {
@@ -81,8 +72,8 @@ class AdminJapaneseVocabViewModel : ViewModel() {
         return try {
             val card = mapOf(
                 "category" to category,
-                "front" to front,
-                "back" to back,
+                "front" to CryptoUtils.encrypt(front),
+                "back" to CryptoUtils.encrypt(back),
                 "createdAt" to Timestamp.now()
             )
             db.collection("system_vocabulary").add(card).await()
@@ -104,8 +95,8 @@ class AdminJapaneseVocabViewModel : ViewModel() {
                     val docRef = db.collection("system_vocabulary").document()
                     batch.set(docRef, mapOf(
                         "category" to category,
-                        "front" to parts[0],
-                        "back" to parts[1],
+                        "front" to CryptoUtils.encrypt(parts[0]),
+                        "back" to CryptoUtils.encrypt(parts[1]),
                         "createdAt" to Timestamp.now()
                     ))
                     count++
