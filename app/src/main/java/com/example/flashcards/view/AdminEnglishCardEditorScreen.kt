@@ -69,6 +69,7 @@ fun AdminEnglishCardEditorScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // CẬP NHẬT: Nút Xem danh sách cho Tiếng Anh
                     TextButton(onClick = { 
                         navController.navigate("admin_card_list/$categoryCode") 
                     }) {

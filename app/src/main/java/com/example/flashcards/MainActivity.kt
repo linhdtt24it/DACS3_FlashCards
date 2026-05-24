@@ -106,7 +106,8 @@ fun MainApp(
                 "manage_packages", "package_detail/{packageName}",
                 "vocab_japanese", "japanese_card_editor/{categoryCode}/{categoryName}",
                 "vocab_english", "english_card_editor/{categoryCode}/{categoryName}",
-                "admin_card_list/{categoryCode}"
+                "admin_card_list/{categoryCode}",
+                "admin_quiz_menu", "admin_quiz_editor/{levelCode}/{levelName}"
             )) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -442,6 +443,24 @@ fun AppNavHost(
                 LaunchedEffect(Unit) { navController.navigate("home_screen") }
             } else {
                 AdminCardListScreen(navController = navController, categoryCode = categoryCode)
+            }
+        }
+
+        composable("admin_quiz_menu") {
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminQuizMenuScreen(navController = navController)
+            }
+        }
+
+        composable("admin_quiz_editor/{levelCode}/{levelName}") { backStackEntry ->
+            val code = backStackEntry.arguments?.getString("levelCode") ?: ""
+            val name = backStackEntry.arguments?.getString("levelName") ?: ""
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminQuizEditorScreen(navController = navController, levelCode = code, levelName = name)
             }
         }
 

@@ -21,7 +21,6 @@ import com.google.firebase.auth.FirebaseAuth
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(navController: NavController) {
-    // Scaffold độc lập, không chứa Bottom Bar của người dùng
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -50,7 +49,6 @@ fun AdminDashboardScreen(navController: NavController) {
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Danh sách các mục quản lý
             AdminMenuItem(
                 icon = Icons.Default.People,
                 label = "Quản lý tài khoản",
@@ -90,12 +88,11 @@ fun AdminDashboardScreen(navController: NavController) {
             AdminMenuItem(
                 icon = Icons.Default.Quiz,
                 label = "Quản lý Câu hỏi",
-                onClick = { navController.navigate("manage_questions") }
+                onClick = { navController.navigate("admin_quiz_menu") }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Nút Đăng xuất ở cuối màn hình
             TextButton(
                 onClick = {
                     FirebaseAuth.getInstance().signOut()
