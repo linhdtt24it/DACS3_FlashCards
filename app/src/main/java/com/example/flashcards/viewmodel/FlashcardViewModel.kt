@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.model.*
 import com.example.flashcards.repository.*
+import com.example.flashcards.utils.GeminiService
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -14,7 +15,8 @@ class FlashcardViewModel(
     private val repository: StudySetRepository = StudySetRepository(),
     private val userRepository: UserRepository = UserRepository(),
     private val folderRepository: FolderRepository = FolderRepository(),
-    private val battleRepository: BattleRepository = BattleRepository()
+    private val battleRepository: BattleRepository = BattleRepository(),
+    private val geminiService: GeminiService = GeminiService()
 ) : ViewModel() {
 
     private val _studySets = MutableStateFlow<List<StudySet>>(emptyList())
@@ -70,6 +72,14 @@ class FlashcardViewModel(
                     _selectedSet.value = sets.find { it.id == current.id }
                 }
             }
+        }
+    }
+
+    // --- Gemini AI ---
+    fun generateAIExamples(term: String, definition: String, languageCode: String, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            val result = geminiService.generateExamples(term, definition, languageCode)
+            onResult(result)
         }
     }
 
@@ -269,13 +279,15 @@ class FlashcardViewModel(
     // --- Study Set Management ---
     fun selectSet(set: StudySet) { _selectedSet.value = set }
 
-    fun addStudySet(title: String, description: String) {
+    fun addStudySet(title: String, description: String, isPublic: Boolean = false, cards: List<Flashcard> = emptyList()) {
         viewModelScope.launch {
             val user = FirebaseAuth.getInstance().currentUser
             val newSet = StudySet(
                 id = UUID.randomUUID().toString(),
                 title = title,
                 description = description,
+                isPublic = isPublic,
+                cards = cards,
                 creatorId = user?.uid ?: "",
                 creatorName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
             )

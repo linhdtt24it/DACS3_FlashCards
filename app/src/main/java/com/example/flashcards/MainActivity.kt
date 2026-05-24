@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,6 +27,7 @@ import com.example.flashcards.view.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.flashcards.viewmodel.FlashcardViewModel
+import com.example.flashcards.viewmodel.AuthViewModel
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -60,15 +62,48 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// Hàm kiểm tra quyền và ép ép điều hướng màn hình riêng biệt
+fun navigateByRole(uid: String, navController: NavController) {
+    val db = FirebaseFirestore.getInstance()
+    
+    db.collection("users").document(uid).get()
+        .addOnSuccessListener { document ->
+            if (document != null && document.exists()) {
+                val role = document.getString("role") ?: "user"
+                
+                if (role == "admin") {
+                    // 🌟 NẾU LÀ ADMIN: Đẩy thẳng vào màn hình Dashboard Quản lý, xóa sạch lịch sử màn đăng nhập
+                    navController.navigate("admin_dashboard_screen") {
+                        popUpTo("login_screen") { inclusive = true }
+                    }
+                } else {
+                    // NẾU LÀ USER THƯỜNG: Vào không gian học tập lật thẻ, làm quiz trắc nghiệm bình thường
+                    navController.navigate("home_screen") {
+                        popUpTo("login_screen") { inclusive = true }
+                    }
+                }
+            }
+        }
+}
+
 @Composable
-fun MainApp(tts: TextToSpeech?, viewModel: FlashcardViewModel = viewModel()) {
+fun MainApp(
+    tts: TextToSpeech?, 
+    viewModel: FlashcardViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val userRole by authViewModel.currentUserRole.collectAsState()
 
     Scaffold(
         bottomBar = {
-            if (currentRoute !in listOf("auth", "study_session", "quiz_session", "deck_detail", "create_deck", "battle_session")) {
+            if (userRole != "admin" && currentRoute !in listOf(
+                "login_screen", "study_session", "quiz_session", "deck_detail", 
+                "create_deck", "battle_session", "admin_dashboard_screen", 
+                "manage_users", "manage_system_decks", "folder_detail"
+            )) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -83,8 +118,8 @@ fun MainApp(tts: TextToSpeech?, viewModel: FlashcardViewModel = viewModel()) {
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.Home, contentDescription = null) },
                         label = { Text("Home", fontSize = 10.sp) },
-                        selected = currentRoute == "home",
-                        onClick = { navController.navigate("home") },
+                        selected = currentRoute == "home_screen",
+                        onClick = { navController.navigate("home_screen") },
                         colors = navItemColors
                     )
                     NavigationBarItem(
@@ -120,7 +155,7 @@ fun MainApp(tts: TextToSpeech?, viewModel: FlashcardViewModel = viewModel()) {
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            AppNavHost(navController = navController, viewModel = viewModel, tts = tts)
+            AppNavHost(navController = navController, viewModel = viewModel, authViewModel = authViewModel, tts = tts)
         }
     }
 }
@@ -129,6 +164,7 @@ fun MainApp(tts: TextToSpeech?, viewModel: FlashcardViewModel = viewModel()) {
 fun AppNavHost(
     navController: NavHostController,
     viewModel: FlashcardViewModel,
+    authViewModel: AuthViewModel,
     tts: TextToSpeech?
 ) {
     val studySets by viewModel.studySets.collectAsState()
@@ -136,289 +172,174 @@ fun AppNavHost(
     val publicStudySets by viewModel.publicStudySets.collectAsState()
     val folders by viewModel.folders.collectAsState()
     val userStats by viewModel.userStats.collectAsState()
+    val userRole by authViewModel.currentUserRole.collectAsState()
+    
     var selectedFolder by remember { mutableStateOf<com.example.flashcards.model.Folder?>(null) }
     val context = LocalContext.current
+    val user = FirebaseAuth.getInstance().currentUser
+    val currentUserId = user?.uid ?: ""
+    val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
+    val userEmail = user?.email ?: ""
 
-    val startDestination = if (FirebaseAuth.getInstance().currentUser != null) "home" else "auth"
+    val startDestination = if (currentUserId.isNotEmpty()) {
+        if (userRole == "admin") "admin_dashboard_screen" else "home_screen"
+    } else "login_screen"
 
     LaunchedEffect(Unit) {
-        if (FirebaseAuth.getInstance().currentUser != null) {
+        if (currentUserId.isNotEmpty()) {
             viewModel.onUserSignedIn()
         }
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
-        composable("auth") {
+        composable("login_screen") {
             AuthScreen(
                 onLoginSuccess = {
-                    viewModel.loadData()
-                    viewModel.onUserSignedIn()
-                    navController.navigate("home") { popUpTo("auth") { inclusive = true } }
+                    val uid = FirebaseAuth.getInstance().currentUser?.uid
+                    if (uid != null) {
+                        viewModel.loadData()
+                        viewModel.onUserSignedIn()
+                        navigateByRole(uid, navController)
+                    }
                 },
                 onRegisterSuccess = {
                     viewModel.loadData()
                     viewModel.onUserSignedIn()
-                    navController.navigate("home") { popUpTo("auth") { inclusive = true } }
+                    val uid = FirebaseAuth.getInstance().currentUser?.uid
+                    if (uid != null) {
+                        navigateByRole(uid, navController)
+                    }
                 }
             )
         }
 
-        composable("home") {
-            val user = FirebaseAuth.getInstance().currentUser
-            val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
-            val notifications by viewModel.notifications.collectAsState()
-            val unreadNotifCount = notifications.count { !it.isRead }
+        composable("home_screen") {
+            if (userRole == "admin") {
+                LaunchedEffect(Unit) {
+                    navController.navigate("admin_dashboard_screen") {
+                        popUpTo("home_screen") { inclusive = true }
+                    }
+                }
+            } else {
+                val notifications by viewModel.notifications.collectAsState()
+                val unreadNotifCount = notifications.count { !it.isRead }
 
-            HomeScreen(
-                userName = userName,
-                studySets = studySets,
-                userStats = userStats,
-                unreadNotifCount = unreadNotifCount,
-                onAddDeck = { title, desc -> viewModel.addStudySet(title, desc) },
-                onEditDeck = { id -> navController.navigate("edit_deck/$id") },
-                onDeleteDeck = { id -> viewModel.deleteStudySet(id) },
-                onSetSelected = { set ->
-                    viewModel.selectSet(set)
-                    navController.navigate("deck_detail")
-                },
-                onQuizDeck = { set ->
-                    viewModel.selectSet(set)
-                    navController.navigate("quiz_session")
-                },
-                onNotificationsClick = { navController.navigate("notifications") }
-            )
-        }
-
-        composable("create_deck") {
-            val user = FirebaseAuth.getInstance().currentUser
-            val creatorId = user?.uid ?: ""
-            val creatorName = user?.displayName ?: user?.email?.substringBefore("@") ?: "Unknown User"
-
-            val emptySet = remember {
-                com.example.flashcards.model.StudySet(
-                    id = java.util.UUID.randomUUID().toString(),
-                    title = "",
-                    description = "",
-                    cards = emptyList(),
-                    isPublic = false,
-                    shareCode = null,
-                    creatorId = creatorId,
-                    creatorName = creatorName,
-                    languageCode = "en"
+                HomeScreen(
+                    userName = userName,
+                    studySets = studySets,
+                    userStats = userStats,
+                    unreadNotifCount = unreadNotifCount,
+                    onAddDeck = { title, desc -> viewModel.addStudySet(title, desc) },
+                    onEditDeck = { id -> navController.navigate("edit_deck/$id") },
+                    onDeleteDeck = { id -> viewModel.deleteStudySet(id) },
+                    onSetSelected = { set ->
+                        viewModel.selectSet(set)
+                        navController.navigate("deck_detail")
+                    },
+                    onQuizDeck = { set ->
+                        viewModel.selectSet(set)
+                        navController.navigate("quiz_session")
+                    },
+                    onNotificationsClick = { navController.navigate("notifications") }
                 )
             }
-
-            DeckEditorScreen(
-                studySet = emptySet,
-                isCreateMode = true,
-                onSave = { updatedSet ->
-                    viewModel.updateStudySet(updatedSet)
-                    navController.popBackStack()
-                },
-                onBack = { navController.popBackStack() }
-            )
         }
 
         composable("library") {
-            LibraryScreen(
-                studySets = studySets,
-                folders = folders,
-                onAddDeck = { title, desc -> viewModel.addStudySet(title, desc) },
-                onEditDeck = { id -> navController.navigate("edit_deck/$id") },
-                onDeleteDeck = { id -> viewModel.deleteStudySet(id) },
-                onSetSelected = { set ->
-                    viewModel.selectSet(set)
-                    navController.navigate("deck_detail")
-                },
-                onQuizDeck = { set ->
-                    viewModel.selectSet(set)
-                    navController.navigate("quiz_session")
-                },
-                onImportDeck = { code ->
-                    if (code.length == 6) {
-                        viewModel.joinBattleByCode(code,
-                            onSuccess = { battleId ->
-                                navController.navigate("battle_session/$battleId")
-                            },
-                            onError = {
-                                viewModel.importDeckByCode(code, {
-                                    Toast.makeText(context, "Đã nhập bộ thẻ thành công!", Toast.LENGTH_SHORT).show()
-                                }, {
-                                    Toast.makeText(context, "Mã không hợp lệ", Toast.LENGTH_SHORT).show()
-                                })
-                            }
-                        )
+            if (userRole == "admin") {
+                LaunchedEffect(Unit) {
+                    navController.navigate("admin_dashboard_screen") {
+                        popUpTo("library") { inclusive = true }
                     }
-                },
-                onCreateFolder = { name, emoji -> viewModel.createFolder(name, emoji) },
-                onFolderClick = { folder ->
-                    selectedFolder = folder
-                    navController.navigate("folder_detail")
                 }
-            )
+            } else {
+                LibraryScreen(
+                    studySets = studySets,
+                    folders = folders,
+                    onAddDeck = { title, desc -> viewModel.addStudySet(title, desc) },
+                    onEditDeck = { id -> navController.navigate("edit_deck/$id") },
+                    onDeleteDeck = { id -> viewModel.deleteStudySet(id) },
+                    onSetSelected = { set ->
+                        viewModel.selectSet(set)
+                        navController.navigate("deck_detail")
+                    },
+                    onQuizDeck = { set ->
+                        viewModel.selectSet(set)
+                        navController.navigate("quiz_session")
+                    },
+                    onImportDeck = { code ->
+                        viewModel.importDeckByCode(code,
+                            onSuccess = { Toast.makeText(context, "Success!", Toast.LENGTH_SHORT).show() },
+                            onError = { Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show() }
+                        )
+                    },
+                    onCreateFolder = { name, emoji -> viewModel.createFolder(name, emoji) },
+                    onFolderClick = { folder ->
+                        selectedFolder = folder
+                        navController.navigate("folder_detail")
+                    }
+                )
+            }
         }
 
         composable("folder_detail") {
             selectedFolder?.let { folder ->
-                val liveFolder = folders.find { it.id == folder.id } ?: folder
                 FolderDetailScreen(
-                    folder = liveFolder,
+                    folder = folder,
                     allSets = studySets,
                     onBack = { navController.popBackStack() },
                     onSetSelected = { set ->
                         viewModel.selectSet(set)
                         navController.navigate("deck_detail")
                     },
-                    onAddSet = { setId -> viewModel.addSetToFolder(liveFolder.id, setId) },
-                    onRemoveSet = { setId -> viewModel.removeSetFromFolder(liveFolder.id, setId) },
-                    onRenameFolder = { name, emoji -> viewModel.renameFolder(liveFolder.id, name, emoji) },
-                    onDeleteFolder = {
-                        viewModel.deleteFolder(liveFolder.id)
-                        navController.popBackStack()
-                    }
+                    onAddSet = { setId -> viewModel.addSetToFolder(folder.id, setId) },
+                    onRemoveSet = { setId -> viewModel.removeSetFromFolder(folder.id, setId) },
+                    onRenameFolder = { n, e -> viewModel.renameFolder(folder.id, n, e) },
+                    onDeleteFolder = { viewModel.deleteFolder(folder.id); navController.popBackStack() }
                 )
             }
         }
 
         composable("explore") {
-            LaunchedEffect(Unit) {
-                viewModel.loadPublicDecks()
-            }
-            ExploreScreen(
-                publicDecks = publicStudySets,
-                onSearch = { query -> viewModel.searchPublicDecks(query) },
-                onImportDeck = { code ->
-                    viewModel.importDeckByCode(code, {
-                        navController.navigate("library")
-                    }, {
-                        Toast.makeText(context, "Không tìm thấy bộ thẻ", Toast.LENGTH_SHORT).show()
-                    })
-                },
-                onRateDeck = { setId, rating -> viewModel.ratePublicStudySet(setId, rating) },
-                onDeckClick = { set ->
-                    viewModel.selectSet(set)
-                    navController.navigate("deck_detail")
+            if (userRole == "admin") {
+                LaunchedEffect(Unit) {
+                    navController.navigate("admin_dashboard_screen") {
+                        popUpTo("explore") { inclusive = true }
+                    }
                 }
-            )
-        }
-
-        composable("deck_detail") {
-            selectedSet?.let { studySet ->
-                LaunchedEffect(studySet.id) {
-                    viewModel.loadComments(studySet.id)
-                }
-                val comments by viewModel.currentComments.collectAsState()
-
-                DeckDetailScreen(
-                    studySet = studySet,
-                    userName = FirebaseAuth.getInstance().currentUser?.displayName ?: FirebaseAuth.getInstance().currentUser?.email?.substringBefore("@") ?: "User",
-                    currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: "",
-                    comments = comments,
-                    onAddComment = { content -> viewModel.addComment(studySet.id, content) },
-                    onBack = { navController.popBackStack() },
-                    onStudyFlashcards = { navController.navigate("study_session") },
-                    onQuiz = { navController.navigate("quiz_session") },
-                    onMatch = {
-                        viewModel.createBattle(studySet,
-                            onSuccess = { battleId ->
-                                navController.navigate("battle_session/$battleId")
-                            },
-                            onError = { error ->
-                                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                            }
+            } else {
+                ExploreScreen(
+                    publicDecks = publicStudySets,
+                    onSearch = { viewModel.searchPublicDecks(it) },
+                    onImportDeck = { code ->
+                        viewModel.importDeckByCode(code,
+                            onSuccess = { Toast.makeText(context, "Success", Toast.LENGTH_SHORT).show() },
+                            onError = { Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show() }
                         )
                     },
-                    onEditDeck = { navController.navigate("edit_deck/${studySet.id}") },
-                    onDeleteDeck = {
-                        viewModel.deleteStudySet(studySet.id)
-                        navController.popBackStack()
+                    onRateDeck = { id, rating -> viewModel.ratePublicStudySet(id, rating) },
+                    onDeckClick = { set ->
+                        viewModel.selectSet(set)
+                        navController.navigate("deck_detail")
                     }
                 )
             }
         }
 
-        composable("study_session") {
-            selectedSet?.let { studySet ->
-                StudySessionScreen(
-                    studySet = studySet,
-                    onBack = { navController.popBackStack() },
-                    onSpeak = { text, lang ->
-                        tts?.language = Locale.forLanguageTag(lang)
-                        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
-                    },
-                    onUpdateCard = { card, quality ->
-                        viewModel.updateCardQuality(card, quality)
-                        viewModel.recordStudySession(1, if (quality > 2) 1 else 0, if (quality <= 2) 1 else 0)
-                    }
-                )
-            }
-        }
-
-        composable("quiz_session") {
-            selectedSet?.let { studySet ->
-                QuizScreen(studySet = studySet, onBack = { navController.popBackStack() })
-            }
-        }
-
-        composable("battle_session/{battleId}") { backStackEntry ->
-            val battleId = backStackEntry.arguments?.getString("battleId") ?: ""
-            val battleRoom by viewModel.currentBattle.collectAsState()
-            val context = LocalContext.current
-
-            LaunchedEffect(battleId) {
-                try {
-                    viewModel.joinBattle(battleId)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-                    navController.popBackStack()
-                }
-            }
-
-            BattleScreen(
-                battleRoom = battleRoom,
-                onStartBattle = {
-                    try {
-                        viewModel.startBattle(battleId)
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Không thể bắt đầu trận", Toast.LENGTH_SHORT).show()
-                    }
+        composable("profile") {
+            ProfileScreen(
+                userName = userName,
+                userEmail = userEmail,
+                onLogout = {
+                    authViewModel.signOut()
+                    navController.navigate("login_screen") { popUpTo(0) { inclusive = true } }
                 },
-                onAnswerSelected = { isCorrect ->
-                    try {
-                        val room = battleRoom ?: return@BattleScreen
-                        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return@BattleScreen
-                        val currentPlayer = room.players[currentUserId] ?: return@BattleScreen
-                        val newScore = if (isCorrect) currentPlayer.score + 1 else currentPlayer.score
-                        viewModel.updateBattleProgress(battleId, newScore, currentPlayer.progress + 1)
-                    } catch (e: Exception) {
-                        // Bỏ qua lỗi
-                    }
-                },
-                onBack = { navController.popBackStack() },
-                onLeaveRoom = {
-                    viewModel.leaveAndDeleteRoom(battleId) {
-                        navController.popBackStack()
-                    }
-                },
-                onRematch = {
-                    viewModel.rematch(
-                        onSuccess = { newBattleId ->
-                            navController.popBackStack()
-                            navController.navigate("battle_session/$newBattleId")
-                        },
-                        onError = {
-                            Toast.makeText(context, "Không thể thi lại", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-                },
-                onBattleFinished = {
-                    navController.popBackStack()
-                }
+                onNavigateToPersonalInfo = {},
+                onNavigateToSecurity = {},
+                onNavigateToNotifications = {},
+                onNavigateToLearningPrefs = {},
+                onNavigateToStats = {}
             )
-        }
-
-        composable("stats") {
-            StatisticsScreen(userStats = userStats, onBack = { navController.popBackStack() })
         }
 
         composable("notifications") {
@@ -428,60 +349,144 @@ fun AppNavHost(
                 onBack = { navController.popBackStack() },
                 onNotificationClick = { notif ->
                     viewModel.markNotificationAsRead(notif.id)
-                    if (notif.type == "BATTLE_INVITE") {
-                        navController.navigate("battle_session/${notif.content}")
+                    if (notif.deckId.isNotEmpty()) {
+                        val set = studySets.find { it.id == notif.deckId }
+                        if (set != null) {
+                            viewModel.selectSet(set)
+                            navController.navigate("deck_detail")
+                        }
                     }
                 }
             )
         }
 
-        composable("profile") {
-            val user = FirebaseAuth.getInstance().currentUser
-            ProfileScreen(
-                userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User",
-                userEmail = user?.email ?: "No email",
-                onLogout = {
-                    FirebaseAuth.getInstance().signOut()
-                    navController.navigate("auth") { popUpTo(0) }
-                },
-                onNavigateToPersonalInfo = { navController.navigate("personal_info") },
-                onNavigateToSecurity = { navController.navigate("security") },
-                onNavigateToNotifications = { navController.navigate("notification_settings") },
-                onNavigateToLearningPrefs = { navController.navigate("learning_prefs") },
-                onNavigateToStats = { navController.navigate("stats") }
-            )
+        composable("admin_dashboard_screen") {
+            if (userRole == "admin") {
+                AdminDashboardScreen(navController = navController)
+            } else {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            }
         }
 
-        composable("personal_info") {
-            PersonalInfoScreen(onBack = { navController.popBackStack() })
+        composable("manage_users") {
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminManageUsersScreen(navController = navController)
+            }
         }
 
-        composable("security") {
-            SecurityScreen(onBack = { navController.popBackStack() })
+        composable("manage_system_decks") {
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminManageSystemDecksScreen(navController = navController)
+            }
         }
 
-        composable("notification_settings") {
-            NotificationSettingsScreen(onBack = { navController.popBackStack() })
-        }
-
-        composable("learning_prefs") {
-            LearningPreferencesScreen(onBack = { navController.popBackStack() })
-        }
-
-        composable("edit_deck/{deckId}") { backStackEntry ->
-            val deckId = backStackEntry.arguments?.getString("deckId")
-            val studySetToEdit = studySets.find { it.id == deckId }
-            if (studySetToEdit != null) {
-                DeckEditorScreen(
-                    studySet = studySetToEdit,
-                    isCreateMode = false,
-                    onSave = { updatedSet ->
-                        viewModel.updateStudySet(updatedSet)
+        composable("create_deck") {
+            if (userRole == "admin") {
+                LaunchedEffect(Unit) {
+                    navController.navigate("admin_dashboard_screen") {
+                        popUpTo("create_deck") { inclusive = true }
+                    }
+                }
+            } else {
+                CreateDeckScreen(
+                    onSave = { title, desc, isPublic ->
+                        viewModel.addStudySet(title, desc, isPublic)
                         navController.popBackStack()
                     },
                     onBack = { navController.popBackStack() }
                 )
             }
+        }
+
+        composable("edit_deck/{setId}") { backStackEntry ->
+            val setId = backStackEntry.arguments?.getString("setId") ?: ""
+            val studySet = studySets.find { it.id == setId }
+            if (studySet != null) {
+                DeckEditorScreen(
+                    studySet = studySet,
+                    onSave = { updatedSet -> viewModel.updateStudySet(updatedSet) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
+
+        composable("deck_detail") {
+            selectedSet?.let { set ->
+                val comments by viewModel.currentComments.collectAsState()
+                DeckDetailScreen(
+                    studySet = set,
+                    userName = userName,
+                    currentUserId = currentUserId,
+                    comments = comments,
+                    onAddComment = { content -> viewModel.addComment(set.id, content) },
+                    onBack = { navController.popBackStack() },
+                    onStudyFlashcards = { navController.navigate("study_session") },
+                    onQuiz = { navController.navigate("quiz_session") },
+                    onMatch = {
+                        viewModel.createBattle(set, 
+                            onSuccess = { battleId -> navController.navigate("battle_session/$battleId") },
+                            onError = { error -> Toast.makeText(context, error, Toast.LENGTH_SHORT).show() }
+                        )
+                    },
+                    onEditDeck = { navController.navigate("edit_deck/${set.id}") },
+                    onDeleteDeck = { viewModel.deleteStudySet(set.id); navController.popBackStack() }
+                )
+            }
+        }
+
+        composable("study_session") {
+            selectedSet?.let { set ->
+                StudySessionScreen(
+                    studySet = set,
+                    onBack = { navController.popBackStack() },
+                    onSpeak = { text, lang ->
+                        tts?.language = Locale.forLanguageTag(lang)
+                        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+                    },
+                    onUpdateCard = { card, q -> viewModel.updateCardQuality(card, q) }
+                )
+            }
+        }
+
+        composable("quiz_session") {
+            selectedSet?.let { set ->
+                QuizScreen(
+                    studySet = set,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
+
+        composable("battle_session/{battleId}") { backStackEntry ->
+            val battleId = backStackEntry.arguments?.getString("battleId") ?: ""
+            val battleRoom by viewModel.currentBattle.collectAsState()
+
+            BattleScreen(
+                battleRoom = battleRoom,
+                onStartBattle = { viewModel.startBattle(battleId) },
+                onAnswerSelected = { isCorrect -> 
+                    val currentPlayer = battleRoom?.players?.get(currentUserId)
+                    val newScore = (currentPlayer?.score ?: 0) + (if (isCorrect) 1 else 0)
+                    val newProgress = (currentPlayer?.progress ?: 0) + 1
+                    viewModel.updateBattleProgress(battleId, newScore, newProgress)
+                },
+                onBack = { navController.popBackStack() },
+                onLeaveRoom = {
+                    viewModel.leaveAndDeleteRoom(battleId) {
+                        navController.navigate("home_screen") { popUpTo("home_screen") { inclusive = true } }
+                    }
+                },
+                onRematch = {
+                    viewModel.rematch(
+                        onSuccess = { newId -> navController.navigate("battle_session/$newId") },
+                        onError = { Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show() }
+                    )
+                }
+            )
         }
     }
 }

@@ -3,10 +3,13 @@ package com.example.flashcards.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.repository.AuthRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class AuthViewModel(
     private val repository: AuthRepository = AuthRepository()
@@ -14,6 +17,35 @@ class AuthViewModel(
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
+    private val _currentUserRole = MutableStateFlow<String?>(null)
+    val currentUserRole: StateFlow<String?> = _currentUserRole.asStateFlow()
+
+    init {
+        checkCurrentUser()
+    }
+
+    private fun checkCurrentUser() {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            fetchUserRole(user.uid)
+        }
+    }
+
+    private fun fetchUserRole(uid: String) {
+        viewModelScope.launch {
+            try {
+                val document = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(uid)
+                    .get()
+                    .await()
+                _currentUserRole.value = document.getString("role") ?: "user"
+            } catch (e: Exception) {
+                _currentUserRole.value = "user"
+            }
+        }
+    }
 
     fun login(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
@@ -24,6 +56,10 @@ class AuthViewModel(
             _authState.value = AuthState.Loading
             val result = repository.login(email, password)
             if (result.isSuccess) {
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                if (uid != null) {
+                    fetchUserRole(uid)
+                }
                 _authState.value = AuthState.Success
             } else {
                 _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Login failed")
@@ -40,11 +76,30 @@ class AuthViewModel(
             _authState.value = AuthState.Loading
             val result = repository.register(name, email, password)
             if (result.isSuccess) {
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                if (uid != null) {
+                    // Create user document in Firestore with default role
+                    FirebaseFirestore.getInstance().collection("users").document(uid).set(
+                        mapOf(
+                            "name" to name,
+                            "email" to email,
+                            "role" to "user",
+                            "premiumStatus" to false
+                        )
+                    ).await()
+                    _currentUserRole.value = "user"
+                }
                 _authState.value = AuthState.Success
             } else {
                 _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Registration failed")
             }
         }
+    }
+
+    fun signOut() {
+        repository.logout()
+        _currentUserRole.value = null
+        _authState.value = AuthState.Idle
     }
 
     fun resetState() {
