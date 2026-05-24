@@ -20,52 +20,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.google.firebase.firestore.FirebaseFirestore
-
-// 1. Kiến trúc dữ liệu: Data class hứng dữ liệu từ Firestore
-data class AdminUserItem(
-    val id: String = "",
-    val email: String = "",
-    val role: String = "user"
-)
+import com.example.flashcards.viewmodel.AdminManageUsersViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminManageUsersScreen(navController: NavController) {
-    val db = FirebaseFirestore.getInstance()
+fun AdminManageUsersScreen(
+    navController: NavController,
+    viewModel: AdminManageUsersViewModel = viewModel()
+) {
     val context = LocalContext.current
+    val userList by viewModel.userList.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val scope = rememberCoroutineScope()
     
-    // Trạng thái danh sách và tải dữ liệu
-    var userList by remember { mutableStateOf<List<AdminUserItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    
-    // Trạng thái chọn User để xóa
     var selectedUserId by remember { mutableStateOf<String?>(null) }
-    
-    // Trạng thái hiển thị Dialog
     var showAddDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
-
-    // Logic lắng nghe Real-time từ Firestore
-    LaunchedEffect(Unit) {
-        db.collection("users").addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                isLoading = false
-                return@addSnapshotListener
-            }
-            if (snapshot != null) {
-                userList = snapshot.documents.map { doc ->
-                    AdminUserItem(
-                        id = doc.id,
-                        email = doc.getString("email") ?: "",
-                        role = doc.getString("role") ?: "user"
-                    )
-                }
-                isLoading = false
-            }
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -79,7 +52,6 @@ fun AdminManageUsersScreen(navController: NavController) {
             )
         },
         bottomBar = {
-            // 3. Hàng chức năng dưới đáy
             BottomAppBar(
                 actions = {
                     Row(
@@ -87,7 +59,6 @@ fun AdminManageUsersScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Nút Thêm tài khoản
                         Button(
                             onClick = { showAddDialog = true },
                             shape = RoundedCornerShape(8.dp)
@@ -97,11 +68,10 @@ fun AdminManageUsersScreen(navController: NavController) {
                             Text("Thêm tài khoản")
                         }
 
-                        // Nút Xóa tài khoản (Chỉ sáng khi đã chọn user)
                         Button(
                             onClick = { showDeleteConfirmDialog = true },
                             enabled = selectedUserId != null,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
@@ -113,17 +83,13 @@ fun AdminManageUsersScreen(navController: NavController) {
             )
         }
     ) { paddingValues ->
-        if (isLoading) {
+        if (isLoading && userList.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
-            // 2. Giao diện danh sách (LazyColumn)
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
@@ -142,16 +108,25 @@ fun AdminManageUsersScreen(navController: NavController) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = user.email,
-                                fontSize = 18.sp,
+                                fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (user.role == "admin") "Quyền: ADMIN" else "Quyền: USER",
-                                fontSize = 14.sp,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else Color.Gray
-                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            
+                            // Yêu cầu 2: Hiển thị nhãn loại tài khoản theo Role
+                            Surface(
+                                color = if (user.role == "admin") Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = if (user.role == "admin") "ADMIN" else "USER",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = if (user.role == "admin") Color(0xFFC62828) else Color(0xFF2E7D32)
+                                )
+                            }
                         }
                     }
                 }
@@ -159,72 +134,80 @@ fun AdminManageUsersScreen(navController: NavController) {
         }
     }
 
-    // --- DIALOGS ---
-
-    // Dialog Thêm User
+    // Dialog Thêm User: Tạo trên Auth trước -> Lấy UID làm Doc ID Firestore (Yêu cầu 3)
     if (showAddDialog) {
-        var newEmail by remember { mutableStateOf("") }
-        var newPassword by remember { mutableStateOf("") }
+        var email by remember { mutableStateOf("") }
+        var password by remember { mutableStateOf("") }
+        var isProcessing by remember { mutableStateOf(false) }
 
         AlertDialog(
-            onDismissRequest = { showAddDialog = false },
-            title = { Text("Thêm tài khoản mới") },
+            onDismissRequest = { if (!isProcessing) showAddDialog = false },
+            title = { Text("Tạo tài khoản mới") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
-                        value = newEmail,
-                        onValueChange = { newEmail = it },
-                        label = { Text("Email") },
-                        modifier = Modifier.fillMaxWidth()
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email đăng ký") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isProcessing
                     )
                     OutlinedTextField(
-                        value = newPassword,
-                        onValueChange = { newPassword = it },
+                        value = password,
+                        onValueChange = { password = it },
                         label = { Text("Mật khẩu") },
                         visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isProcessing
                     )
+                    if (isProcessing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    if (newEmail.isNotEmpty()) {
-                        val newUser = mapOf("email" to newEmail, "role" to "user")
-                        db.collection("users").add(newUser)
-                            .addOnSuccessListener {
-                                Toast.makeText(context, "Đã thêm tài khoản!", Toast.LENGTH_SHORT).show()
-                                showAddDialog = false
+                TextButton(
+                    enabled = !isProcessing,
+                    onClick = {
+                        if (email.isNotBlank() && password.length >= 6) {
+                            isProcessing = true
+                            scope.launch {
+                                val result = viewModel.addUser(email, password, context)
+                                if (result.isSuccess) {
+                                    Toast.makeText(context, "Thành công!", Toast.LENGTH_SHORT).show()
+                                    showAddDialog = false
+                                } else {
+                                    Toast.makeText(context, "Lỗi: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                                }
+                                isProcessing = false
                             }
-                            .addOnFailureListener {
-                                Toast.makeText(context, "Lỗi khi thêm!", Toast.LENGTH_SHORT).show()
-                            }
+                        } else {
+                            Toast.makeText(context, "Mật khẩu tối thiểu 6 ký tự", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                }) { Text("Xác nhận") }
+                ) { Text("Xác nhận") }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) { Text("Hủy") }
+                TextButton(onClick = { showAddDialog = false }, enabled = !isProcessing) { Text("Hủy") }
             }
         )
     }
 
-    // Dialog Xác nhận Xóa
+    // Dialog Xóa User theo UID (Yêu cầu 4)
     if (showDeleteConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
             title = { Text("Xác nhận xóa") },
-            text = { Text("Bạn có chắc chắn muốn xóa tài khoản này không?") },
+            text = { Text("Xóa dữ liệu Firestore của tài khoản này? Hành động không thể hoàn tác.") },
             confirmButton = {
                 TextButton(onClick = {
-                    selectedUserId?.let { id ->
-                        db.collection("users").document(id).delete()
-                            .addOnSuccessListener {
-                                Toast.makeText(context, "Đã xóa tài khoản!", Toast.LENGTH_SHORT).show()
+                    selectedUserId?.let { uid ->
+                        scope.launch {
+                            val result = viewModel.deleteUser(uid)
+                            if (result.isSuccess) {
+                                Toast.makeText(context, "Đã xóa thành công!", Toast.LENGTH_SHORT).show()
                                 selectedUserId = null
                                 showDeleteConfirmDialog = false
                             }
-                            .addOnFailureListener {
-                                Toast.makeText(context, "Lỗi khi xóa!", Toast.LENGTH_SHORT).show()
-                            }
+                        }
                     }
                 }) { Text("Xác nhận", color = Color.Red) }
             },
