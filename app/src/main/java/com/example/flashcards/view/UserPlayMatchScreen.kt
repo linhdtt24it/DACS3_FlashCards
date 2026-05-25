@@ -88,6 +88,7 @@ fun UserPlayMatchScreen(
     var selectedSecondIndex by remember { mutableStateOf<Int?>(null) }
     var score by remember { mutableIntStateOf(0) }
     var gameCompleted by remember { mutableStateOf(false) }
+    var showWishDialog by remember { mutableStateOf(true) }
 
     val displayLevelName = when (levelId) {
         "QUIZ_JA_N5" -> "Cấp độ N5"
@@ -284,6 +285,7 @@ fun UserPlayMatchScreen(
                             initializeGame(rawVocabList) { gridItems = it }
                             score = 0
                             gameCompleted = false
+                            showWishDialog = true
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -308,6 +310,12 @@ fun UserPlayMatchScreen(
                 }
             }
         }
+    }
+
+    if (gameCompleted && showWishDialog) {
+        RandomWishDialog(
+            onDismiss = { showWishDialog = false }
+        )
     }
 }
 

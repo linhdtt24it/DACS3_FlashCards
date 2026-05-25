@@ -93,7 +93,8 @@ fun MainApp(
                 "admin_quiz_menu", 
                 "admin_quiz_language/{quizType}", 
                 "admin_quiz_level/{quizType}/{language}", 
-                "admin_quiz_final_editor/{quizType}/{language}/{levelCode}/{levelName}"
+                "admin_quiz_final_editor/{quizType}/{language}/{levelCode}/{levelName}",
+                "admin_wishes"
             )) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -679,6 +680,12 @@ fun AppNavHost(
                 navController = navController,
                 categoryId = categoryId,
                 playMode = playMode
+            )
+        }
+
+        composable("admin_wishes") {
+            AdminWishesScreen(
+                navController = navController
             )
         }
 

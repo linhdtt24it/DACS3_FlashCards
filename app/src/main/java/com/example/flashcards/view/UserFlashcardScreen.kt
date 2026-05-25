@@ -115,6 +115,7 @@ fun UserFlashcardScreen(
 
     var currentIndex by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
+    var showWishDialog by remember { mutableStateOf(false) }
 
     val progress = if (vocabCards.isNotEmpty()) (currentIndex.toFloat() / vocabCards.size) else 0f
     val displayLevelName = when (levelId) {
@@ -175,15 +176,28 @@ fun UserFlashcardScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold
                             )
-                            IconButton(
-                                onClick = { if (currentIndex < vocabCards.size - 1) { currentIndex++; isFlipped = false } },
-                                enabled = currentIndex < vocabCards.size - 1
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = "Next",
-                                    tint = if (currentIndex < vocabCards.size - 1) MaterialTheme.colorScheme.onBackground else Color.Gray
-                                )
+                            if (currentIndex == vocabCards.size - 1) {
+                                TextButton(
+                                    onClick = { showWishDialog = true }
+                                ) {
+                                    Text(
+                                        text = "Hoàn thành",
+                                        color = FlowPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                }
+                            } else {
+                                IconButton(
+                                    onClick = { currentIndex++; isFlipped = false },
+                                    enabled = currentIndex < vocabCards.size - 1
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = "Next",
+                                        tint = MaterialTheme.colorScheme.onBackground
+                                    )
+                                }
                             }
                         }
                     }
@@ -314,6 +328,15 @@ fun UserFlashcardScreen(
                 }
             }
         }
+    }
+
+    if (showWishDialog) {
+        RandomWishDialog(
+            onDismiss = {
+                showWishDialog = false
+                navController.popBackStack()
+            }
+        )
     }
 }
 

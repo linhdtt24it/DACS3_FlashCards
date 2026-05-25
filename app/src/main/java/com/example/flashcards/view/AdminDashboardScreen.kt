@@ -96,6 +96,12 @@ fun AdminDashboardScreen(
                 onClick = { navigateSafe(navController, "admin_quiz_menu") }
             )
 
+            AdminMenuItem(
+                icon = Icons.Default.Campaign,
+                label = "Quản lý Lời chúc",
+                onClick = { navigateSafe(navController, "admin_wishes") }
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             TextButton(

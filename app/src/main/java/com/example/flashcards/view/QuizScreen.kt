@@ -1,4 +1,4 @@
-﻿package com.example.flashcards.view
+package com.example.flashcards.view
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -40,6 +40,7 @@ fun QuizScreen(
     var currentIndex by remember { mutableIntStateOf(0) }
     var score by remember { mutableIntStateOf(0) }
     var selectedOption by remember { mutableStateOf<String?>(null) }
+    var showWishDialog by remember { mutableStateOf(true) }
 
     // Generate options for the current question
     val options = remember(currentIndex) {
@@ -220,5 +221,11 @@ fun QuizScreen(
                 }
             }
         }
+    }
+
+    if (isFinished && showWishDialog) {
+        RandomWishDialog(
+            onDismiss = { showWishDialog = false }
+        )
     }
 }

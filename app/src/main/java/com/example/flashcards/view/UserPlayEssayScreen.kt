@@ -88,6 +88,7 @@ fun UserPlayEssayScreen(
     var score by remember { mutableIntStateOf(0) }
     var userAnswer by remember { mutableStateOf("") }
     var isAnswerChecked by remember { mutableStateOf(false) }
+    var showWishDialog by remember { mutableStateOf(true) }
 
     val isFinished = currentIndex >= questions.size
     val progress = if (questions.isNotEmpty()) (currentIndex.toFloat() / questions.size) else 0f
@@ -375,6 +376,12 @@ fun UserPlayEssayScreen(
                 }
             }
         }
+    }
+
+    if (isFinished && showWishDialog) {
+        RandomWishDialog(
+            onDismiss = { showWishDialog = false }
+        )
     }
 }
 
