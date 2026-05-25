@@ -90,7 +90,10 @@ fun MainApp(
                 "vocab_japanese", "japanese_card_editor/{categoryCode}/{categoryName}",
                 "vocab_english", "english_card_editor/{categoryCode}/{categoryName}",
                 "admin_card_list/{categoryCode}",
-                "admin_quiz_menu", "admin_quiz_editor/{levelCode}/{levelName}"
+                "admin_quiz_menu", 
+                "admin_quiz_language/{quizType}", 
+                "admin_quiz_level/{quizType}/{language}", 
+                "admin_quiz_final_editor/{quizType}/{language}/{levelCode}/{levelName}"
             )) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -505,17 +508,44 @@ fun AppNavHost(
             if (userRole != "admin" && userRole != null) {
                 LaunchedEffect(Unit) { navController.navigate("home_screen") }
             } else {
-                AdminQuizMenuScreen(navController = navController)
+                AdminQuizTypeScreen(navController = navController)
             }
         }
 
-        composable("admin_quiz_editor/{levelCode}/{levelName}") { backStackEntry ->
+        composable("admin_quiz_language/{quizType}") { backStackEntry ->
+            val quizType = backStackEntry.arguments?.getString("quizType") ?: ""
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminQuizLanguageScreen(navController = navController, quizType = quizType)
+            }
+        }
+
+        composable("admin_quiz_level/{quizType}/{language}") { backStackEntry ->
+            val quizType = backStackEntry.arguments?.getString("quizType") ?: ""
+            val language = backStackEntry.arguments?.getString("language") ?: ""
+            if (userRole != "admin" && userRole != null) {
+                LaunchedEffect(Unit) { navController.navigate("home_screen") }
+            } else {
+                AdminQuizLevelScreen(navController = navController, quizType = quizType, language = language)
+            }
+        }
+
+        composable("admin_quiz_final_editor/{quizType}/{language}/{levelCode}/{levelName}") { backStackEntry ->
+            val quizType = backStackEntry.arguments?.getString("quizType") ?: ""
+            val language = backStackEntry.arguments?.getString("language") ?: ""
             val code = backStackEntry.arguments?.getString("levelCode") ?: ""
             val name = backStackEntry.arguments?.getString("levelName") ?: ""
             if (userRole != "admin" && userRole != null) {
                 LaunchedEffect(Unit) { navController.navigate("home_screen") }
             } else {
-                AdminQuizEditorScreen(navController = navController, levelCode = code, levelName = name)
+                AdminQuizFinalEditorScreen(
+                    navController = navController,
+                    quizType = quizType,
+                    language = language,
+                    levelCode = code,
+                    levelName = name
+                )
             }
         }
 
