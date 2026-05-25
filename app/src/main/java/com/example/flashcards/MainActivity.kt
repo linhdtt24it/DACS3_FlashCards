@@ -289,14 +289,7 @@ fun AppNavHost(
                         when (feature) {
                             "flashcard" -> navController.navigate("library")
                             "quiz" -> navController.navigate("user_quiz_selection")
-                            "write" -> {
-                                if (studySets.isNotEmpty()) {
-                                    viewModel.selectSet(studySets.first())
-                                    navController.navigate("deck_detail")
-                                } else {
-                                    Toast.makeText(context, "Vui lòng tạo bộ thẻ trước để học tự luận!", Toast.LENGTH_SHORT).show()
-                                }
-                            }
+                            "write" -> navController.navigate("user_essay_selection")
                             "match" -> {
                                 if (studySets.isNotEmpty()) {
                                     viewModel.selectSet(studySets.first())
@@ -638,6 +631,23 @@ fun AppNavHost(
             UserQuizSelectionScreen(
                 navController = navController,
                 authViewModel = authViewModel
+            )
+        }
+
+        composable("user_essay_selection") {
+            UserEssaySelectionScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable("user_play_essay/{categoryId}/{playMode}") { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getString("categoryId") ?: ""
+            val playMode = backStackEntry.arguments?.getString("playMode") ?: "1"
+            UserPlayEssayScreen(
+                navController = navController,
+                categoryId = categoryId,
+                playMode = playMode
             )
         }
 
