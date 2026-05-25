@@ -1,16 +1,19 @@
 package com.example.flashcards.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 data class QuizCategory(
-    val name: String,
-    val code: String
+    val categoryId: String = "",
+    val categoryName: String = ""
 )
 
 data class SystemQuiz(
@@ -29,17 +32,70 @@ data class SystemQuiz(
 class AdminQuizViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
 
-    val categories = listOf(
-        QuizCategory("Cấp độ N5", "QUIZ_JA_N5"),
-        QuizCategory("Cấp độ N4", "QUIZ_JA_N4"),
-        QuizCategory("Cấp độ N3", "QUIZ_JA_N3"),
-        QuizCategory("Cấp độ N2", "QUIZ_JA_N2"),
-        QuizCategory("Cấp độ N1", "QUIZ_JA_N1"),
-        QuizCategory("Gói TOEIC 450+", "QUIZ_EN_TOEIC_450"),
-        QuizCategory("Gói TOEIC 650+", "QUIZ_EN_TOEIC_650"),
-        QuizCategory("Gói TOEIC 800+", "QUIZ_EN_TOEIC_800"),
-        QuizCategory("Gói IELTS", "QUIZ_EN_IELTS")
-    )
+    private val _categories = MutableStateFlow<List<QuizCategory>>(emptyList())
+    val categories: StateFlow<List<QuizCategory>> = _categories
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    init {
+        listenToCategories()
+    }
+
+    private fun listenToCategories() {
+        _isLoading.value = true
+        db.collection("quiz_categories")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("AdminQuizViewModel", "Listen failed.", error)
+                    _isLoading.value = false
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val list = snapshot.documents.mapNotNull { doc ->
+                        try {
+                            // Rào chắn Null Safety khi đọc Firestore
+                            val id = doc.getString("categoryId") ?: ""
+                            val name = doc.getString("categoryName") ?: "Danh mục lỗi"
+                            if (id.isEmpty()) null else QuizCategory(id, name)
+                        } catch (e: Exception) {
+                            Log.e("AdminQuizViewModel", "Error parsing category", e)
+                            null
+                        }
+                    }
+                    _categories.value = list
+                }
+                _isLoading.value = false
+            }
+    }
+
+    fun initializeSampleCategories() {
+        viewModelScope.launch {
+            try {
+                val sampleData = listOf(
+                    QuizCategory("QUIZ_JA_N5", "Cấp độ N5"),
+                    QuizCategory("QUIZ_JA_N4", "Cấp độ N4"),
+                    QuizCategory("QUIZ_JA_N3", "Cấp độ N3"),
+                    QuizCategory("QUIZ_JA_N2", "Cấp độ N2"),
+                    QuizCategory("QUIZ_JA_N1", "Cấp độ N1"),
+                    QuizCategory("QUIZ_EN_TOEIC_450", "Gói TOEIC 450+"),
+                    QuizCategory("QUIZ_EN_TOEIC_650", "Gói TOEIC 650+"),
+                    QuizCategory("QUIZ_EN_TOEIC_800", "Gói TOEIC 800+"),
+                    QuizCategory("QUIZ_EN_IELTS", "Gói IELTS")
+                )
+
+                val batch = db.batch()
+                sampleData.forEach { category ->
+                    val docRef = db.collection("quiz_categories").document(category.categoryId)
+                    batch.set(docRef, category)
+                }
+                batch.commit().await()
+            } catch (e: Exception) {
+                Log.e("AdminQuizViewModel", "Error initializing sample data", e)
+            }
+        }
+    }
 
     suspend fun addMultipleChoiceQuiz(
         level: String,

@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.flashcards.viewmodel.AdminEnglishVocabViewModel
 import com.example.flashcards.viewmodel.EnglishCategory
+import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,13 +31,14 @@ fun AdminEnglishVocabMenuScreen(
     viewModel: AdminEnglishVocabViewModel = viewModel()
 ) {
     val groupedCategories by viewModel.groupedCategories.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     var selectedCategory by remember { mutableStateOf<EnglishCategory?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Từ vựng Tiếng Anh", fontWeight = FontWeight.Bold) },
+                title = { Text("Quản lý Tiếng Anh", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -56,8 +58,7 @@ fun AdminEnglishVocabMenuScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text("Thêm cấp bậc")
+                        Text(" Thêm")
                     }
 
                     Button(
@@ -70,68 +71,88 @@ fun AdminEnglishVocabMenuScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
-                        Spacer(Modifier.width(4.dp))
-                        Text("Xóa cấp bậc", color = Color.White)
+                        Text(" Xóa", color = Color.White)
                     }
                 }
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
-        ) {
-            groupedCategories.forEach { group ->
-                item {
-                    Text(
-                        text = group.name,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
-                    )
-                }
-                items(group.items) { category ->
-                    val isSelected = selectedCategory?.id == category.id
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clickable { 
-                                if (isSelected) {
-                                    navController.navigate("english_card_editor/${category.code}/${category.name}")
-                                } else {
-                                    selectedCategory = category
-                                }
-                            },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    groupedCategories.forEach { group ->
+                        item {
                             Text(
-                                text = category.name,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.weight(1f)
+                                text = group.name,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
                             )
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
+                        }
+                        items(group.items) { category ->
+                            val isSelected = selectedCategory?.id == category.id
+                            val safeCode = category.code.ifEmpty { "empty" }
+                            // RÀO CHẮN: Mã hóa URL để tránh crash route
+                            val safeName = URLEncoder.encode(category.name.ifEmpty { "English" }, "UTF-8")
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable { 
+                                        if (isSelected) {
+                                            if (safeCode.isNotEmpty()) {
+                                                navController.navigate("english_card_editor/$safeCode/$safeName")
+                                            }
+                                        } else {
+                                            selectedCategory = category
+                                        }
+                                    },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = category.name,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
+                                    )
+                                }
+                            }
+                        }
+                        item { Spacer(modifier = Modifier.height(16.dp)) }
+                    }
+
+                    if (groupedCategories.isEmpty()) {
+                        item {
+                            Text(
+                                "Chưa có danh mục. Nhấn nút thêm để khởi tạo.",
+                                modifier = Modifier.padding(16.dp),
+                                color = Color.Gray
                             )
                         }
                     }
                 }
-                item { Spacer(modifier = Modifier.height(16.dp)) }
             }
         }
     }
@@ -154,7 +175,6 @@ fun AdminEnglishVocabMenuScreen(
             title = { Text("Thêm cấp bậc mới") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Chọn nhóm lớn:", fontWeight = FontWeight.Bold)
                     groups.forEach { (id, name) ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -170,17 +190,8 @@ fun AdminEnglishVocabMenuScreen(
                             Text(name)
                         }
                     }
-                    
-                    OutlinedTextField(
-                        value = newCategoryName, 
-                        onValueChange = { newCategoryName = it }, 
-                        label = { Text("Tên cấp bậc (Ví dụ: IELTS Band 4.5)") }
-                    )
-                    OutlinedTextField(
-                        value = newCategoryCode, 
-                        onValueChange = { newCategoryCode = it }, 
-                        label = { Text("Mã định danh (Ví dụ: EN_IELTS_45)") }
-                    )
+                    OutlinedTextField(value = newCategoryName, onValueChange = { newCategoryName = it }, label = { Text("Tên cấp bậc") })
+                    OutlinedTextField(value = newCategoryCode, onValueChange = { newCategoryCode = it }, label = { Text("Mã (ví dụ: en_n5)") })
                 }
             },
             confirmButton = {
@@ -190,9 +201,6 @@ fun AdminEnglishVocabMenuScreen(
                         showAddDialog = false
                     }
                 }) { Text("Thêm") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) { Text("Hủy") }
             }
         )
     }

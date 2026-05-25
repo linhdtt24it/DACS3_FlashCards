@@ -1,5 +1,6 @@
 package com.example.flashcards.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.Timestamp
@@ -20,26 +21,40 @@ class AdminJapaneseVocabViewModel : ViewModel() {
     private val _categories = MutableStateFlow<List<JapaneseCategory>>(emptyList())
     val categories: StateFlow<List<JapaneseCategory>> = _categories
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     init {
         listenCategories()
     }
 
     private fun listenCategories() {
-        db.collection("japanese_categories").addSnapshotListener { snapshot, _ ->
+        _isLoading.value = true
+        db.collection("japanese_categories").addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Log.e("AdminJapaneseVocab", "Listen failed.", error)
+                _isLoading.value = false
+                return@addSnapshotListener
+            }
+
             if (snapshot != null) {
-                val list = snapshot.documents.map { doc ->
-                    JapaneseCategory(
-                        id = doc.id,
-                        name = doc.getString("name") ?: "",
-                        code = doc.getString("code") ?: ""
-                    )
+                val list = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        val name = doc.getString("name") ?: "Danh mục không tên"
+                        val code = doc.getString("code") ?: ""
+                        if (code.isEmpty()) null else JapaneseCategory(id = doc.id, name = name, code = code)
+                    } catch (e: Exception) {
+                        null
+                    }
                 }
+                
                 if (list.isEmpty()) {
                     initializeDefaultCategories()
                 } else {
                     _categories.value = list
                 }
             }
+            _isLoading.value = false
         }
     }
 

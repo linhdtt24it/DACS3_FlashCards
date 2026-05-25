@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.flashcards.viewmodel.AdminPackageViewModel
 import com.example.flashcards.viewmodel.PackageItem
+import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,38 +45,34 @@ fun AdminManagePackagesScreen(
             )
         },
         bottomBar = {
-            BottomAppBar(
-                actions = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+            BottomAppBar {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = { showAddDialog = true },
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Button(
-                            onClick = { showAddDialog = true },
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(Modifier.width(4.dp))
-                            Text("Thêm gói học mới")
-                        }
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Text(" Thêm gói")
+                    }
 
-                        Button(
-                            onClick = { 
-                                selectedPackageId?.let { viewModel.deletePackage(it) }
-                                selectedPackageId = null
-                            },
-                            enabled = selectedPackageId != null,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
-                            Spacer(Modifier.width(4.dp))
-                            Text("Xóa gói học", color = Color.White)
-                        }
+                    Button(
+                        onClick = { 
+                            selectedPackageId?.let { id -> viewModel.deletePackage(id) }
+                            selectedPackageId = null
+                        },
+                        enabled = selectedPackageId != null,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
+                        Text(" Xóa", color = Color.White)
                     }
                 }
-            )
+            }
         }
     ) { paddingValues ->
         LazyColumn(
@@ -92,9 +89,10 @@ fun AdminManagePackagesScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { 
-                            // Nếu đã chọn rồi thì điều hướng sang chi tiết
                             if (isSelected) {
-                                navController.navigate("package_detail/${pkg.name}")
+                                // SỬA LỖI: Mã hóa tên gói để tránh văng app khi có khoảng trắng
+                                val encodedName = URLEncoder.encode(pkg.name, "UTF-8")
+                                navController.navigate("package_detail/$encodedName")
                             } else {
                                 selectedPackageId = pkg.id 
                             }
@@ -116,7 +114,7 @@ fun AdminManagePackagesScreen(
                             modifier = Modifier.weight(1f)
                         )
                         if (isSelected) {
-                            Text("Nhấn lần nữa để cấu hình", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                            Text("Nhấn lần nữa để mở", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }

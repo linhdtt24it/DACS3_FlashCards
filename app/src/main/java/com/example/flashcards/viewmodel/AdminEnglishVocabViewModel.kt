@@ -1,5 +1,6 @@
 package com.example.flashcards.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.Timestamp
@@ -28,24 +29,45 @@ class AdminEnglishVocabViewModel : ViewModel() {
     private val _groupedCategories = MutableStateFlow<List<EnglishGroup>>(emptyList())
     val groupedCategories: StateFlow<List<EnglishGroup>> = _groupedCategories
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     init {
         listenCategories()
     }
 
     private fun listenCategories() {
+        _isLoading.value = true
         db.collection("english_categories")
             .orderBy("groupId")
-            .addSnapshotListener { snapshot, _ ->
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("AdminEnglishVocab", "Listen failed.", error)
+                    _isLoading.value = false
+                    return@addSnapshotListener
+                }
+
                 if (snapshot != null) {
-                    val list = snapshot.documents.map { doc ->
-                        EnglishCategory(
-                            id = doc.id,
-                            groupId = doc.getString("groupId") ?: "",
-                            groupName = doc.getString("groupName") ?: "",
-                            name = doc.getString("name") ?: "",
-                            code = doc.getString("code") ?: ""
-                        )
+                    val list = snapshot.documents.mapNotNull { doc ->
+                        try {
+                            val gid = doc.getString("groupId") ?: ""
+                            val gname = doc.getString("groupName") ?: "Chưa phân loại"
+                            val name = doc.getString("name") ?: "Danh mục không tên"
+                            val code = doc.getString("code") ?: ""
+                            
+                            if (code.isEmpty()) null 
+                            else EnglishCategory(
+                                id = doc.id,
+                                groupId = gid,
+                                groupName = gname,
+                                name = name,
+                                code = code
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
                     }
+                    
                     if (list.isEmpty()) {
                         initializeDefaultCategories()
                     } else {
@@ -58,6 +80,7 @@ class AdminEnglishVocabViewModel : ViewModel() {
                         }
                     }
                 }
+                _isLoading.value = false
             }
     }
 

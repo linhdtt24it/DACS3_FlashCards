@@ -22,7 +22,7 @@ object CryptoUtils {
             Base64.encodeToString(encryptedBytes, Base64.DEFAULT).trim()
         } catch (e: Exception) {
             e.printStackTrace()
-            plainText
+            plainText ?: ""
         }
     }
 
@@ -36,7 +36,7 @@ object CryptoUtils {
             String(decryptedBytes, Charsets.UTF_8)
         } catch (e: Exception) {
             // If decryption fails, it might be unencrypted data, return as is
-            cipherText
+            cipherText ?: ""
         }
     }
 }

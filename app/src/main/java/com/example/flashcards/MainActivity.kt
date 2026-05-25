@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,6 +33,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.flashcards.viewmodel.FlashcardViewModel
 import com.example.flashcards.viewmodel.AuthViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -65,27 +69,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun navigateByRole(uid: String, navController: NavController) {
-    val db = FirebaseFirestore.getInstance()
-    
-    db.collection("users").document(uid).get()
-        .addOnSuccessListener { document ->
-            if (document != null && document.exists()) {
-                val role = document.getString("role") ?: "user"
-                
-                if (role == "admin") {
-                    navController.navigate("admin_dashboard_screen") {
-                        popUpTo("login_screen") { inclusive = true }
-                    }
-                } else {
-                    navController.navigate("home_screen") {
-                        popUpTo("login_screen") { inclusive = true }
-                    }
-                }
-            }
-        }
-}
-
 @Composable
 fun MainApp(
     tts: TextToSpeech?, 
@@ -100,7 +83,7 @@ fun MainApp(
     Scaffold(
         bottomBar = {
             if (userRole != "admin" && currentRoute !in listOf(
-                "login_screen", "study_session", "quiz_session", "deck_detail", 
+                "login_screen", "auth_loading", "study_session", "quiz_session", "deck_detail", 
                 "create_deck", "battle_session", "admin_dashboard_screen", 
                 "manage_users", "manage_system_decks", "folder_detail",
                 "manage_packages", "package_detail/{packageName}",
@@ -166,6 +149,56 @@ fun MainApp(
 }
 
 @Composable
+fun AuthLoadingScreen(navController: NavController, authViewModel: AuthViewModel) {
+    val isAuthChecked by authViewModel.isAuthChecked.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(isAuthChecked) {
+        if (isAuthChecked) {
+            val role = authViewModel.currentUserRole.value
+            if (role == "admin") {
+                navController.navigate("admin_dashboard_screen") {
+                    popUpTo("auth_loading") { inclusive = true }
+                }
+            } else {
+                navController.navigate("home_screen") {
+                    popUpTo("auth_loading") { inclusive = true }
+                }
+            }
+        } else {
+            delay(4000)
+            if (!isAuthChecked) {
+                with(authViewModel) {
+                    val user = FirebaseAuth.getInstance().currentUser
+                    if (user != null) {
+                        // Thử lấy dữ liệu từ Cache nếu mạng lag
+                        fetchUserDataFromServer(user.uid, useCacheIfFailed = true)
+                    } else {
+                        // Nếu không có user, đá về Login
+                        navController.navigate("login_screen") {
+                            popUpTo("auth_loading") { inclusive = true }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.8f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Đang kiểm tra quyền truy cập...", color = Color.White)
+        }
+    }
+}
+
+@Composable
 fun AppNavHost(
     navController: NavHostController,
     viewModel: FlashcardViewModel,
@@ -186,33 +219,34 @@ fun AppNavHost(
     val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
     val userEmail = user?.email ?: ""
 
-    val startDestination = if (currentUserId.isNotEmpty()) {
-        if (userRole == "admin") "admin_dashboard_screen" else "home_screen"
-    } else "login_screen"
+    // Bắt đầu bằng màn hình AuthLoadingScreen để kiểm soát luồng rẽ nhánh an toàn
+    val startDestination = if (currentUserId.isNotEmpty()) "auth_loading" else "login_screen"
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(currentUserId) {
         if (currentUserId.isNotEmpty()) {
             viewModel.onUserSignedIn()
         }
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
+        composable("auth_loading") {
+            AuthLoadingScreen(navController, authViewModel)
+        }
+
         composable("login_screen") {
             AuthScreen(
                 onLoginSuccess = {
-                    val uid = FirebaseAuth.getInstance().currentUser?.uid
-                    if (uid != null) {
-                        viewModel.loadData()
-                        viewModel.onUserSignedIn()
-                        navigateByRole(uid, navController)
+                    viewModel.loadData()
+                    viewModel.onUserSignedIn()
+                    navController.navigate("auth_loading") {
+                        popUpTo("login_screen") { inclusive = true }
                     }
                 },
                 onRegisterSuccess = {
                     viewModel.loadData()
                     viewModel.onUserSignedIn()
-                    val uid = FirebaseAuth.getInstance().currentUser?.uid
-                    if (uid != null) {
-                        navigateByRole(uid, navController)
+                    navController.navigate("auth_loading") {
+                        popUpTo("login_screen") { inclusive = true }
                     }
                 }
             )
@@ -337,6 +371,7 @@ fun AppNavHost(
                 userEmail = userEmail,
                 onLogout = {
                     authViewModel.signOut()
+                    viewModel.clearData()
                     navController.navigate("login_screen") { popUpTo(0) { inclusive = true } }
                 },
                 onNavigateToPersonalInfo = {},
@@ -366,11 +401,7 @@ fun AppNavHost(
         }
 
         composable("admin_dashboard_screen") {
-            if (userRole == "admin") {
-                AdminDashboardScreen(navController = navController)
-            } else {
-                LaunchedEffect(Unit) { navController.navigate("home_screen") }
-            }
+            AdminDashboardScreen(navController = navController, authViewModel = authViewModel)
         }
 
         composable("manage_users") {

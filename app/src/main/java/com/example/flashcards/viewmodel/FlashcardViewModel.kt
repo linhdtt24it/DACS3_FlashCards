@@ -49,6 +49,7 @@ class FlashcardViewModel(
 
     private var battleJob: Job? = null
     private var commentsJob: Job? = null
+    private var dbJob: Job? = null
 
     init {
         loadData()
@@ -65,14 +66,36 @@ class FlashcardViewModel(
     }
 
     fun loadData() {
-        viewModelScope.launch {
-            repository.getStudySets().collectLatest { sets ->
-                _studySets.value = sets
-                _selectedSet.value?.let { current ->
-                    _selectedSet.value = sets.find { it.id == current.id }
-                }
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            clearData()
+            return
+        }
+
+        dbJob?.cancel()
+        dbJob = viewModelScope.launch {
+            try {
+                repository.getStudySets()
+                    .catch { e ->
+                        android.util.Log.e("FlashcardViewModel", "Lỗi lấy dữ liệu StudySets từ Firestore: ", e)
+                    }
+                    .collectLatest { sets ->
+                        _studySets.value = sets
+                        _selectedSet.value?.let { current ->
+                            _selectedSet.value = sets.find { it.id == current.id }
+                        }
+                    }
+            } catch (e: Exception) {
+                android.util.Log.e("FlashcardViewModel", "Ngoại lệ trong coroutine loadData: ", e)
             }
         }
+    }
+
+    fun clearData() {
+        dbJob?.cancel()
+        dbJob = null
+        _studySets.value = emptyList()
+        _selectedSet.value = null
     }
 
     // --- Gemini AI ---

@@ -38,8 +38,8 @@ fun AuthScreen(
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
-            viewModel.resetState()
             if (selectedTabIndex == 0) onLoginSuccess() else onRegisterSuccess()
+            viewModel.resetState()
         }
     }
 

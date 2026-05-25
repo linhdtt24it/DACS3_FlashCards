@@ -8,8 +8,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +29,10 @@ fun AdminQuizMenuScreen(
     navController: NavController,
     viewModel: AdminQuizViewModel = viewModel()
 ) {
+    // 2. Bổ sung giao diện Chờ tải dữ liệu (Loading State)
+    val categories by viewModel.categories.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -34,43 +41,79 @@ fun AdminQuizMenuScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    // 3. Nút hỗ trợ khởi tạo dữ liệu mẫu
+                    IconButton(onClick = { viewModel.initializeSampleCategories() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Khởi tạo dữ liệu")
+                    }
                 }
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
         ) {
-            items(viewModel.categories) { category ->
-                Card(
+            if (isLoading) {
+                // Hiển thị loading ở chính giữa
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else {
+                LazyColumn(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            navController.navigate("admin_quiz_editor/${category.code}/${category.name}")
-                        },
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = category.name,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = Color.Gray
-                        )
+                    items(categories) { category ->
+                        // 1. Rào chắn Null Safety: Nếu ID hoặc Name trống thì hiển thị mặc định
+                        val catId = category.categoryId.ifEmpty { "" }
+                        val catName = category.categoryName.ifEmpty { "Danh mục lỗi" }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    // 4. Xử lý an toàn cho nút bấm điều hướng
+                                    if (catId.isNotEmpty()) {
+                                        navController.navigate("admin_quiz_editor/$catId/$catName")
+                                    }
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = catName,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = Color.Gray
+                                )
+                            }
+                        }
+                    }
+
+                    if (categories.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillParentMaxSize()
+                                    .padding(bottom = 100.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Chưa có danh mục nào. Hãy nhấn nút Refresh để khởi tạo.")
+                            }
+                        }
                     }
                 }
             }

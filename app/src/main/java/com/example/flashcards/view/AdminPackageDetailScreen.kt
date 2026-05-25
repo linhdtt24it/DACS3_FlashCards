@@ -1,8 +1,10 @@
 package com.example.flashcards.view
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,9 +29,8 @@ fun AdminPackageDetailScreen(
     viewModel: AdminPackageViewModel = viewModel()
 ) {
     val users by viewModel.users.collectAsState()
+    val allPackages by viewModel.packages.collectAsState()
 
-    // Lọc danh sách: Chỉ hiển thị tài khoản người dùng (role == "user")
-    // Sử dụng CryptoUtils.decrypt để kiểm tra quyền hạn thực tế
     val filteredUsers = remember(users) {
         users.filter { userData ->
             val encryptedRole = userData["role"] as? String
@@ -42,8 +43,8 @@ fun AdminPackageDetailScreen(
             TopAppBar(
                 title = { 
                     Column {
-                        Text("Quản lý VIP: $packageName", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text("Danh sách học viên", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Kích hoạt VIP", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("Phân quyền học viên", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                     }
                 },
                 navigationIcon = {
@@ -55,42 +56,29 @@ fun AdminPackageDetailScreen(
         }
     ) { paddingValues ->
         if (filteredUsers.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
                 Text("Chưa có tài khoản người dùng nào.", color = Color.Gray)
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
                 items(filteredUsers) { userData ->
                     val uid = userData["uid"] as? String ?: ""
-                    
-                    // Giải mã thông tin hiển thị nếu cần
-                    val email = CryptoUtils.decrypt(userData["email"] as? String)
-                    val name = CryptoUtils.decrypt(userData["name"] as? String).ifBlank { "Học viên" }
-                    
-                    // Kiểm tra trạng thái gói VIP từ Map premiumPackages (Real-time sync qua addSnapshotListener)
-                    val premiumPackages = userData["premiumPackages"] as? Map<String, Boolean> ?: emptyMap()
-                    val isActivated = premiumPackages[packageName] ?: false
+                    val email = CryptoUtils.decrypt(userData["email"] as? String) ?: "no-email"
+                    val name = CryptoUtils.decrypt(userData["name"] as? String)?.ifBlank { "Học viên" } ?: "Học viên"
+                    val subscribedPackages = userData["subscribedPackages"] as? List<String> ?: listOf("FREE")
 
-                    UserPackageActionRow(
+                    UserMultiPackageCard(
                         name = name,
                         email = email,
-                        isActivated = isActivated,
-                        onAction = {
+                        subscribedPackages = subscribedPackages,
+                        allAvailablePackages = allPackages,
+                        onTogglePackage = { pkgKey, shouldAdd ->
                             if (uid.isNotEmpty()) {
-                                // Gọi cập nhật trực tiếp lên Firestore
-                                viewModel.togglePackageForUser(uid, packageName, !isActivated)
+                                viewModel.togglePackageForUser(uid, pkgKey, shouldAdd)
                             }
                         }
                     )
@@ -101,59 +89,56 @@ fun AdminPackageDetailScreen(
 }
 
 @Composable
-fun UserPackageActionRow(
+fun UserMultiPackageCard(
     name: String,
     email: String,
-    isActivated: Boolean,
-    onAction: () -> Unit
+    subscribedPackages: List<String>,
+    allAvailablePackages: List<com.example.flashcards.viewmodel.PackageItem>,
+    onTogglePackage: (String, Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActivated) Color(0xFFFFF5F5) else MaterialTheme.colorScheme.surface
-        )
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = email,
-                    fontSize = 13.sp,
-                    color = Color.Gray
-                )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(name, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Text(email, color = Color.Gray, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text("Gói sở hữu:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            // SỬA LỖI: Thay FlowRow bằng Row + Scroll để tránh crash NoSuchMethodError
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                subscribedPackages.forEach { pkgKey ->
+                    AssistChip(
+                        onClick = { },
+                        label = { Text(pkgKey, fontSize = 10.sp) },
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                }
             }
 
-            if (!isActivated) {
-                // Button Thêm vào gói - Màu Xanh lá
-                Button(
-                    onClick = onAction,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            Spacer(modifier = Modifier.height(8.dp))
+            allAvailablePackages.filter { it.key != "FREE" }.forEach { pkg ->
+                val isSubscribed = subscribedPackages.contains(pkg.key)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("[Thêm vào gói VIP]", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            } else {
-                // Button Kích khỏi gói - Màu Đỏ
-                Button(
-                    onClick = onAction,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    Text("[Kích khỏi gói VIP]", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(pkg.name, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                    Button(
+                        onClick = { onTogglePackage(pkg.key, !isSubscribed) },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (isSubscribed) Color.Red else Color(0xFF4CAF50)),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp),
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Text(if (isSubscribed) "Gỡ gói" else "Kích hoạt", fontSize = 11.sp)
+                    }
                 }
             }
         }
