@@ -49,6 +49,8 @@ import com.example.flashcards.ui.theme.LocalFlowColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.lazy.rememberLazyListState
+import com.google.firebase.auth.FirebaseAuth
 
 
 @Composable
@@ -186,14 +188,16 @@ fun BulkImportDialog(
 fun HomeScreen(
     userName: String,
     studySets: List<StudySet>,
-    userStats: UserStats,  // ← THÊM DÒNG NÀY
+    userStats: UserStats,
     unreadNotifCount: Int = 0,
+    subscribedPackages: List<String> = listOf("FREE"),
     onAddDeck: (String, String) -> Unit,
     onEditDeck: (String) -> Unit,
     onDeleteDeck: (String) -> Unit,
     onSetSelected: (StudySet) -> Unit,
     onQuizDeck: (StudySet) -> Unit,
-    onNotificationsClick: () -> Unit = {}
+    onNotificationsClick: () -> Unit = {},
+    onFeatureClick: (String) -> Unit = {}
 ) {
     val fc = LocalFlowColors.current
     val heroBrush = Brush.linearGradient(
@@ -201,154 +205,639 @@ fun HomeScreen(
         start = androidx.compose.ui.geometry.Offset(0f, 0f),
         end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
     )
+
+    var showAddDialog by remember { mutableStateOf(false) }
+    var selectedVipPackage by remember { mutableStateOf<String?>(null) } // Lưu gói VIP cần kích hoạt để hiện Dialog thông báo
+
+    if (showAddDialog) {
+        AddDeckDialog(onDismiss = { showAddDialog = false }, onSave = onAddDeck)
+    }
+
+    if (selectedVipPackage != null) {
+        PremiumUpgradeDialog(
+            packageName = selectedVipPackage!!,
+            onDismiss = { selectedVipPackage = null }
+        )
+    }
+
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 16.dp, vertical = 24.dp),
-        contentPadding = PaddingValues(bottom = 80.dp),
+        state = listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 24.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+        // --- 1. HEADER SECTION ---
         item {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = "", onValueChange = {},
-                    placeholder = { Text("Search", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.Transparent, focusedBorderColor = Color.Transparent, unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedContainerColor = MaterialTheme.colorScheme.surface)
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    val firstName = userName.split(" ").firstOrNull()?.ifEmpty { "User" } ?: "User"
+                    Text(
+                        text = "Hi, $firstName 👋",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "Ready to achieve flow in learning?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 Box(modifier = Modifier.size(48.dp)) {
                     IconButton(onClick = onNotificationsClick, modifier = Modifier.fillMaxSize()) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = MaterialTheme.colorScheme.onBackground)
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                     if (unreadNotifCount > 0) {
                         Box(
-                            modifier = Modifier.align(Alignment.TopEnd).size(12.dp).clip(CircleShape).background(FlowWarning),
-                            contentAlignment = Alignment.Center
-                        ) {}
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(FlowWarning)
+                        )
                     }
                 }
-                Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(FlowPrimary), contentAlignment = Alignment.Center) {
-                    Text(userName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(FlowPrimary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        userName.take(1).uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
                 }
             }
         }
 
-        // --- STREAK SECTION ---
+        // --- 2. STREAK CARD ---
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(2.dp)
+                elevation = CardDefaults.cardElevation(2.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
             ) {
-                Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
-                        modifier = Modifier.size(50.dp).clip(CircleShape).background(FlowWarning.copy(alpha = 0.2f)),
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(FlowWarning.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = FlowWarning, modifier = Modifier.size(32.dp))
+                        Icon(
+                            Icons.Default.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = FlowWarning,
+                            modifier = Modifier.size(36.dp)
+                        )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("${userStats.streakDays} Day Streak", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("You've studied ${userStats.cardsStudiedToday} cards today", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "${userStats.streakDays} Ngày Streak",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "Hôm nay bạn đã học ${userStats.cardsStudiedToday} thẻ. Cố lên nhé!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
         }
 
-        if (studySets.isNotEmpty()) {
-            item {
-                Text("Continue studying", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                Spacer(modifier = Modifier.height(16.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    items(studySets.take(3)) { set ->
-                        Card(
-                            modifier = Modifier.width(300.dp).clickable { onSetSelected(set) },
-                            shape = RoundedCornerShape(24.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                        ) {
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                // Gradient strip at top
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .background(heroBrush)
-                                )
-                                Column(modifier = Modifier.padding(24.dp)) {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer
-                                        ) {
-                                            Text(
-                                                "${set.cards.size} terms",
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = FlowPrimary,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        Icon(if (set.isPublic) Icons.Default.Public else Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-                                    }
-                                    Spacer(modifier = Modifier.height(14.dp))
-                                    Text(set.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, maxLines = 2)
-                                    Spacer(modifier = Modifier.height(28.dp))
-                                    Button(
-                                        onClick = { onSetSelected(set) },
-                                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                                        shape = RoundedCornerShape(24.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                                        contentPadding = PaddingValues(0.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize().background(heroBrush, RoundedCornerShape(24.dp)),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text("Continue", fontWeight = FontWeight.Bold, color = Color.White)
-                                        }
-                                    }
-                                }
-                            }
+        // --- 3. 2x2 FEATURE GRID ---
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Phương thức học",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FeatureCard(
+                        title = "Flashcard",
+                        description = "Học thẻ ghi nhớ",
+                        icon = Icons.Default.Style,
+                        gradientColors = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onFeatureClick("flashcard") }
+                    )
+                    FeatureCard(
+                        title = "Trắc nghiệm",
+                        description = "Quiz trắc nghiệm",
+                        icon = Icons.Default.Quiz,
+                        gradientColors = listOf(Color(0xFFF97316), Color(0xFFEA580C)),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onFeatureClick("quiz") }
+                    )
+                }
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FeatureCard(
+                        title = "Tự luận",
+                        description = "Tự viết câu trả lời",
+                        icon = Icons.Default.EditNote,
+                        gradientColors = listOf(Color(0xFF10B981), Color(0xFF059669)),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onFeatureClick("write") }
+                    )
+                    FeatureCard(
+                        title = "Game nối từ",
+                        description = "Trò chơi ghép từ",
+                        icon = Icons.Default.Extension,
+                        gradientColors = listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED)),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onFeatureClick("match") }
+                    )
+                }
+            }
+        }
+
+        // --- 4. HỌC GẦN ĐÂY ---
+        item {
+            Column {
+                Text(
+                    text = "Học gần đây",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                if (studySets.isEmpty()) {
+                    EmptyRowPlaceholder("Chưa có học phần nào gần đây.")
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(studySets.take(5)) { set ->
+                            CompactDeckCard(set, onClick = { onSetSelected(set) })
                         }
                     }
                 }
             }
         }
 
+        // --- 5. FLASHCARD TỰ TẠO ---
         item {
-            Text("Recent", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Flashcard tự tạo",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    IconButton(
+                        onClick = { showAddDialog = true },
+                        colors = IconButtonDefaults.iconButtonColors(contentColor = FlowPrimary)
+                    ) {
+                        Icon(Icons.Default.AddCircle, contentDescription = "Tạo mới", modifier = Modifier.size(28.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                val userCustomDecks = studySets.filter { it.creatorId == FirebaseAuth.getInstance().currentUser?.uid }
+                if (userCustomDecks.isEmpty()) {
+                    EmptyRowPlaceholder("Bấm [+] để tạo bộ thẻ cá nhân của riêng bạn!")
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(userCustomDecks) { set ->
+                            CompactDeckCard(set, onClick = { onSetSelected(set) })
+                        }
+                    }
+                }
+            }
         }
 
-        items(studySets) { set ->
-            Card(
-                modifier = Modifier.fillMaxWidth().clickable { onSetSelected(set) },
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        // --- 6. DANH MỤC NGÔN NGỮ CHÍNH ---
+        item {
+            Column {
+                Text(
+                    text = "Ngôn ngữ học",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Danh mục Tiếng Nhật (cuộn tới index 7)
+                    item {
+                        LanguageChip("🇯🇵 Tiếng Nhật", Color(0xFFFEE2E2), Color(0xFF991B1B)) {
+                            coroutineScope.launch { listState.animateScrollToItem(7) }
+                        }
+                    }
+                    // Danh mục Tiếng Anh (cuộn tới index 8)
+                    item {
+                        LanguageChip("🇬🇧 Tiếng Anh", Color(0xFFE0F2FE), Color(0xFF075985)) {
+                            coroutineScope.launch { listState.animateScrollToItem(8) }
+                        }
+                    }
+                    // Danh mục Tiếng Trung (cuộn tới index 11)
+                    item {
+                        LanguageChip("🇨🇳 Tiếng Trung", Color(0xFFFEF3C7), Color(0xFF92400E)) {
+                            coroutineScope.launch { listState.animateScrollToItem(11) }
+                        }
+                    }
+                    // Danh mục Tiếng Pali (cuộn tới index 11)
+                    item {
+                        LanguageChip("☸️ Tiếng Pali", Color(0xFFF3E8FF), Color(0xFF6B21A8)) {
+                            coroutineScope.launch { listState.animateScrollToItem(11) }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- 7. MỤC TIẾNG NHẬT (Index 7) ---
+        item {
+            val levels = listOf(
+                LevelItem("Cấp độ N5", "FREE"),
+                LevelItem("Cấp độ N4", "VIP_JAPANESE"),
+                LevelItem("Cấp độ N3", "VIP_JAPANESE"),
+                LevelItem("Cấp độ N2", "VIP_JAPANESE"),
+                LevelItem("Cấp độ N1", "VIP_JAPANESE")
+            )
+            LanguageCourseRow(
+                title = "Tiếng Nhật Luyện Thi",
+                items = levels,
+                subscribedPackages = subscribedPackages,
+                onItemClick = { item ->
+                    // Hành động khi nhấn
+                },
+                onLockClick = { selectedVipPackage = "VIP_JAPANESE" }
+            )
+        }
+
+        // --- 8. MỤC TIẾNG ANH TỔNG HỢP (Index 8) ---
+        item {
+            val englishTopics = listOf(
+                LevelItem("Giao tiếp Cơ bản", "FREE"),
+                LevelItem("Thành ngữ English", "FREE"),
+                LevelItem("Cụm động từ cơ bản", "FREE")
+            )
+            LanguageCourseRow(
+                title = "Tiếng Anh Tổng Hợp",
+                items = englishTopics,
+                subscribedPackages = subscribedPackages,
+                onItemClick = {},
+                onLockClick = {}
+            )
+        }
+
+        // --- 9. MỤC CHỨNG CHỈ TOEIC (Index 9) ---
+        item {
+            val toeicLevels = listOf(
+                LevelItem("TOEIC 450+", "FREE"),
+                LevelItem("TOEIC 650+", "VIP_ENGLISH"),
+                LevelItem("TOEIC 800+", "VIP_ENGLISH")
+            )
+            LanguageCourseRow(
+                title = "Chứng chỉ TOEIC",
+                items = toeicLevels,
+                subscribedPackages = subscribedPackages,
+                onItemClick = {},
+                onLockClick = { selectedVipPackage = "VIP_ENGLISH" }
+            )
+        }
+
+        // --- 10. MỤC CHỨNG CHỈ IELTS (Index 10) ---
+        item {
+            val ieltsBands = listOf(
+                LevelItem("IELTS Band 5.5", "VIP_ENGLISH"),
+                LevelItem("IELTS Band 6.5", "VIP_ENGLISH"),
+                LevelItem("IELTS Band 7.5+", "VIP_ENGLISH")
+            )
+            LanguageCourseRow(
+                title = "Chứng chỉ IELTS",
+                items = ieltsBands,
+                subscribedPackages = subscribedPackages,
+                onItemClick = {},
+                onLockClick = { selectedVipPackage = "VIP_ENGLISH" }
+            )
+        }
+
+        // --- 11. MỤC TIẾNG TRUNG & TIẾNG PALI (Index 11) ---
+        item {
+            val otherLangs = listOf(
+                LevelItem("Trung Cơ Bản", "VIP_CHINESE"),
+                LevelItem("Pali Sơ Cấp", "VIP_PALI")
+            )
+            LanguageCourseRow(
+                title = "Tiếng Trung & Tiếng Pali",
+                items = otherLangs,
+                subscribedPackages = subscribedPackages,
+                onItemClick = {},
+                onLockClick = { pkg -> selectedVipPackage = pkg }
+            )
+        }
+    }
+}
+
+// --- SUB-COMPONENTS FOR HOMESCREEN ---
+
+data class LevelItem(
+    val name: String,
+    val requiredPackage: String
+)
+
+@Composable
+fun FeatureCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    gradientColors: List<Color>,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .aspectRatio(1.6f)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.linearGradient(gradientColors))
+                .padding(16.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.22f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                }
+                Column {
+                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(description, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LanguageChip(
+    text: String,
+    backgroundColor: Color,
+    textColor: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.clickable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        color = backgroundColor,
+        border = BorderStroke(1.dp, textColor.copy(alpha = 0.1f))
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = textColor,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun CompactDeckCard(set: StudySet, onClick: () -> Unit) {
+    val fc = LocalFlowColors.current
+    Card(
+        modifier = Modifier
+            .width(180.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(fc.gradientStart.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
             ) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(32.dp))
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = if (set.isPublic) Icons.Default.Public else Icons.Default.Lock,
-                                contentDescription = if (set.isPublic) "Public" else "Private",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
+                Icon(Icons.Default.MenuBook, contentDescription = null, tint = fc.gradientStart, modifier = Modifier.size(20.dp))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = set.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1
+            )
+            Text(
+                text = "${set.cards.size} thẻ ghi nhớ",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun LanguageCourseRow(
+    title: String,
+    items: List<LevelItem>,
+    subscribedPackages: List<String>,
+    onItemClick: (LevelItem) -> Unit,
+    onLockClick: (String) -> Unit
+) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(items) { item ->
+                val isUnlocked = item.requiredPackage == "FREE" || subscribedPackages.contains(item.requiredPackage)
+                
+                Card(
+                    modifier = Modifier
+                        .width(140.dp)
+                        .clickable {
+                            if (isUnlocked) onItemClick(item) else onLockClick(item.requiredPackage)
+                        },
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isUnlocked) Color(0xFF10B981).copy(alpha = 0.12f)
+                                        else Color.Black.copy(alpha = 0.05f)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isUnlocked) Icons.Default.School else Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = if (isUnlocked) Color(0xFF059669) else Color(0xFF64748B),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Text(
+                                text = item.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = if (isUnlocked) "Sẵn sàng" else "Khóa VIP",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isUnlocked) Color(0xFF059669) else Color(0xFFE11D48)
                             )
                         }
-                        Text("${set.cards.size} cards • author: ${if (set.creatorName.isNotBlank()) set.creatorName else "you"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                        // Lớp phủ mờ nếu bị khóa
+                        if (!isUnlocked) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .background(Color.Black.copy(alpha = 0.04f))
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+fun EmptyRowPlaceholder(text: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.04f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+fun PremiumUpgradeDialog(
+    packageName: String,
+    onDismiss: () -> Unit
+) {
+    val displayPackageName = when (packageName) {
+        "VIP_JAPANESE" -> "VIP Nhật Ngữ"
+        "VIP_ENGLISH" -> "VIP Anh Ngữ"
+        "VIP_CHINESE" -> "VIP Hoa Ngữ"
+        "VIP_PALI" -> "VIP Pali Học"
+        else -> "VIP Đặc Quyền"
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Stars, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(28.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Nâng cấp VIP", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onBackground)
+            }
+        },
+        text = {
+            Text(
+                text = "Nội dung này thuộc gói $displayPackageName. Vui lòng liên hệ Admin để nâng cấp và mở khóa đặc quyền học tập không giới hạn!",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Liên hệ Admin", fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Đóng", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(24.dp)
+    )
 }
 
 @Composable

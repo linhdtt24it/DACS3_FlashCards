@@ -262,12 +262,14 @@ fun AppNavHost(
             } else {
                 val notifications by viewModel.notifications.collectAsState()
                 val unreadNotifCount = notifications.count { !it.isRead }
+                val subscribedPackages by authViewModel.subscribedPackages.collectAsState()
 
                 HomeScreen(
                     userName = userName,
                     studySets = studySets,
                     userStats = userStats,
                     unreadNotifCount = unreadNotifCount,
+                    subscribedPackages = subscribedPackages,
                     onAddDeck = { title, desc -> viewModel.addStudySet(title, desc) },
                     onEditDeck = { id -> navController.navigate("edit_deck/$id") },
                     onDeleteDeck = { id -> viewModel.deleteStudySet(id) },
@@ -279,7 +281,29 @@ fun AppNavHost(
                         viewModel.selectSet(set)
                         navController.navigate("quiz_session")
                     },
-                    onNotificationsClick = { navController.navigate("notifications") }
+                    onNotificationsClick = { navController.navigate("notifications") },
+                    onFeatureClick = { feature ->
+                        when (feature) {
+                            "flashcard" -> navController.navigate("library")
+                            "quiz" -> navController.navigate("user_quiz_selection")
+                            "write" -> {
+                                if (studySets.isNotEmpty()) {
+                                    viewModel.selectSet(studySets.first())
+                                    navController.navigate("deck_detail")
+                                } else {
+                                    Toast.makeText(context, "Vui lòng tạo bộ thẻ trước để học tự luận!", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            "match" -> {
+                                if (studySets.isNotEmpty()) {
+                                    viewModel.selectSet(studySets.first())
+                                    navController.navigate("deck_detail")
+                                } else {
+                                    Toast.makeText(context, "Vui lòng tạo bộ thẻ trước để chơi game nối từ!", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
                 )
             }
         }
@@ -578,6 +602,24 @@ fun AppNavHost(
                     onBack = { navController.popBackStack() }
                 )
             }
+        }
+
+        composable("user_quiz_selection") {
+            UserQuizSelectionScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable("user_play_quiz/{quizId}") { backStackEntry ->
+            val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
+            val generatedSet = remember(quizId) {
+                com.example.flashcards.utils.QuizGenerator.generateQuizSet(quizId)
+            }
+            QuizScreen(
+                studySet = generatedSet,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable("battle_session/{battleId}") { backStackEntry ->
