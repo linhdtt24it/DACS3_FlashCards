@@ -36,27 +36,30 @@ fun AdminManagePackagesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý gói học", fontWeight = FontWeight.Bold) },
+                title = { Text("Quản lý gói học", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
-            BottomAppBar {
+            BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
                         onClick = { showAddDialog = true },
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
-                        Text(" Thêm gói")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Thêm gói")
                     }
 
                     Button(
@@ -65,22 +68,25 @@ fun AdminManagePackagesScreen(
                             selectedPackageId = null
                         },
                         enabled = selectedPackageId != null,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                        shape = RoundedCornerShape(8.dp)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
-                        Text(" Xóa", color = Color.White)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Xóa", color = Color.White)
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             items(packages) { pkg ->
@@ -88,33 +94,34 @@ fun AdminManagePackagesScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(min = 72.dp)
                         .clickable { 
                             if (isSelected) {
-                                // SỬA LỖI: Mã hóa tên gói để tránh văng app khi có khoảng trắng
                                 val encodedName = URLEncoder.encode(pkg.name, "UTF-8")
                                 navController.navigate("package_detail/$encodedName")
                             } else {
                                 selectedPackageId = pkg.id 
                             }
                         },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = pkg.name,
-                            fontSize = 18.sp,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
                         if (isSelected) {
-                            Text("Nhấn lần nữa để mở", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                            Text("Nhấn lần nữa để mở", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -126,7 +133,7 @@ fun AdminManagePackagesScreen(
         var newPackageName by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Thêm gói học") },
+            title = { Text("Thêm gói học mới", fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
                     value = newPackageName,
@@ -136,7 +143,7 @@ fun AdminManagePackagesScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     if (newPackageName.isNotBlank()) {
                         viewModel.addPackage(newPackageName)
                         showAddDialog = false

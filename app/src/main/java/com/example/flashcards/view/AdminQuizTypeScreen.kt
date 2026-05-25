@@ -163,7 +163,7 @@ fun AdminQuizTypeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Câu hỏi", fontWeight = FontWeight.Bold) },
+                title = { Text("Quản lý Câu hỏi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -176,21 +176,23 @@ fun AdminQuizTypeScreen(
                     }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Khởi tạo hệ thống")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
-            BottomAppBar {
+            BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
                         onClick = { showAddDialog = true },
-                        modifier = Modifier.weight(1f).padding(end = 8.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -199,7 +201,8 @@ fun AdminQuizTypeScreen(
                     Button(
                         onClick = { showDeleteDialog = true },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.weight(1f).padding(start = 8.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -207,7 +210,8 @@ fun AdminQuizTypeScreen(
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -228,26 +232,29 @@ fun AdminQuizTypeScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .heightIn(min = 72.dp)
                                 .clickable {
                                     navController.navigate("admin_quiz_language/${type.id}")
                                 },
                             shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
                             Row(
-                                modifier = Modifier.padding(20.dp),
+                                modifier = Modifier.fillMaxSize().padding(20.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = type.name,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = "Mã loại: ${type.id}",
-                                        fontSize = 12.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }

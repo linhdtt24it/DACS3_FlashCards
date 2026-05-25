@@ -217,29 +217,31 @@ fun AdminQuizLevelScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Chọn Cấp Độ Môn Học", fontWeight = FontWeight.Bold)
-                        Text("$displayQuizTypeName -> $displayLanguageName", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Chọn Cấp Độ Môn Học", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("$displayQuizTypeName -> $displayLanguageName", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
-            BottomAppBar {
+            BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
                         onClick = { showAddDialog = true },
-                        modifier = Modifier.weight(1f).padding(end = 8.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -252,7 +254,8 @@ fun AdminQuizLevelScreen(
                     Button(
                         onClick = { showDeleteDialog = true },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.weight(1f).padding(start = 8.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -264,7 +267,8 @@ fun AdminQuizLevelScreen(
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -294,7 +298,7 @@ fun AdminQuizLevelScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Đang chọn: $selectedEnglishParent",
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -313,27 +317,30 @@ fun AdminQuizLevelScreen(
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .heightIn(min = 72.dp)
                                         .clickable {
                                             selectedEnglishParent = parent
                                         },
                                     shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(20.dp),
+                                        modifier = Modifier.fillMaxSize().padding(20.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = "Chứng chỉ $parent",
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             val count = filteredLevels.count { it.parent == parent }
                                             Text(
                                                 text = "$count cấp độ điểm số",
-                                                fontSize = 12.sp,
+                                                style = MaterialTheme.typography.bodyMedium,
                                                 color = Color.Gray
                                             )
                                         }
@@ -370,34 +377,37 @@ fun AdminQuizLevelScreen(
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .heightIn(min = 72.dp)
                                         .clickable {
                                             navController.navigate("admin_quiz_final_editor/$quizType/$language/${lvl.id}/${lvl.name}")
                                         },
                                     shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(20.dp),
+                                        modifier = Modifier.fillMaxSize().padding(20.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = lvl.name,
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             if (lvl.description.isNotEmpty()) {
                                                 Spacer(modifier = Modifier.height(4.dp))
                                                 Text(
                                                     text = lvl.description,
-                                                    fontSize = 13.sp,
+                                                    style = MaterialTheme.typography.bodyMedium,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
                                             Spacer(modifier = Modifier.height(6.dp))
                                             Text(
                                                 text = "Mã: ${lvl.id} | VIP: ${lvl.requiredPackage}",
-                                                fontSize = 11.sp,
+                                                style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.primary,
                                                 fontWeight = FontWeight.SemiBold
                                             )

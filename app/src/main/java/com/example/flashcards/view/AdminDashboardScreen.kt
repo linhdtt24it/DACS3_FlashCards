@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.flashcards.viewmodel.AuthViewModel
-import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,19 +45,21 @@ fun AdminDashboardScreen(
                 title = {
                     Text(
                         text = "HỆ THỐNG QUẢN TRỊ ADMIN",
-                        fontSize = 22.sp,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -104,7 +105,7 @@ fun AdminDashboardScreen(
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
                 Text("ĐĂNG XUẤT", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
@@ -122,22 +123,40 @@ fun navigateSafe(navController: NavController, route: String) {
 
 @Composable
 fun AdminMenuItem(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Surface(
+    Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(64.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 72.dp),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-        tonalElevation = 2.dp
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 20.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(
+                imageVector = icon, 
+                contentDescription = null, 
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
             Spacer(modifier = Modifier.width(16.dp))
-            Text(text = label, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            Text(
+                text = label, 
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Spacer(modifier = Modifier.weight(1f))
-            Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+            Icon(
+                imageVector = Icons.Default.ChevronRight, 
+                contentDescription = null, 
+                tint = Color.Gray
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.flashcards.view
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,27 +39,30 @@ fun AdminEnglishVocabMenuScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Tiếng Anh", fontWeight = FontWeight.Bold) },
+                title = { Text("Quản lý Tiếng Anh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
-            BottomAppBar {
+            BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
                         onClick = { showAddDialog = true },
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
-                        Text(" Thêm")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Thêm")
                     }
 
                     Button(
@@ -67,15 +71,18 @@ fun AdminEnglishVocabMenuScreen(
                             selectedCategory = null
                         },
                         enabled = selectedCategory != null,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                        shape = RoundedCornerShape(8.dp)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
-                        Text(" Xóa", color = Color.White)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Xóa", color = Color.White)
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (isLoading) {
@@ -85,28 +92,28 @@ fun AdminEnglishVocabMenuScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(vertical = 16.dp)
                 ) {
                     groupedCategories.forEach { group ->
                         item {
                             Text(
                                 text = group.name,
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
+                                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp)
                             )
                         }
                         items(group.items) { category ->
                             val isSelected = selectedCategory?.id == category.id
                             val safeCode = category.code.ifEmpty { "empty" }
-                            // RÀO CHẮN: Mã hóa URL để tránh crash route
                             val safeName = URLEncoder.encode(category.name.ifEmpty { "English" }, "UTF-8")
 
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
+                                    .heightIn(min = 72.dp)
                                     .clickable { 
                                         if (isSelected) {
                                             if (safeCode.isNotEmpty()) {
@@ -116,20 +123,22 @@ fun AdminEnglishVocabMenuScreen(
                                             selectedCategory = category
                                         }
                                     },
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                                 ),
+                                border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(16.dp),
+                                    modifier = Modifier.fillMaxSize().padding(16.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
                                         text = category.name,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.weight(1f)
                                     )
                                     Icon(
@@ -140,16 +149,19 @@ fun AdminEnglishVocabMenuScreen(
                                 }
                             }
                         }
-                        item { Spacer(modifier = Modifier.height(16.dp)) }
                     }
 
                     if (groupedCategories.isEmpty()) {
                         item {
-                            Text(
-                                "Chưa có danh mục. Nhấn nút thêm để khởi tạo.",
-                                modifier = Modifier.padding(16.dp),
-                                color = Color.Gray
-                            )
+                            Box(
+                                modifier = Modifier.fillParentMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Chưa có danh mục. Nhấn nút thêm để khởi tạo.",
+                                    color = Color.Gray
+                                )
+                            }
                         }
                     }
                 }
@@ -172,9 +184,10 @@ fun AdminEnglishVocabMenuScreen(
 
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Thêm cấp bậc mới") },
+            title = { Text("Thêm cấp bậc mới", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Chọn nhóm chứng chỉ:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                     groups.forEach { (id, name) ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -187,20 +200,24 @@ fun AdminEnglishVocabMenuScreen(
                                 selectedGroupId = id
                                 selectedGroupName = name
                             })
-                            Text(name)
+                            Text(name, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
-                    OutlinedTextField(value = newCategoryName, onValueChange = { newCategoryName = it }, label = { Text("Tên cấp bậc") })
-                    OutlinedTextField(value = newCategoryCode, onValueChange = { newCategoryCode = it }, label = { Text("Mã (ví dụ: en_n5)") })
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(value = newCategoryName, onValueChange = { newCategoryName = it }, label = { Text("Tên cấp bậc (e.g. TOEIC 450+)") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = newCategoryCode, onValueChange = { newCategoryCode = it }, label = { Text("Mã (e.g. en_toeic_450)") }, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     if (newCategoryName.isNotBlank() && newCategoryCode.isNotBlank() && selectedGroupId.isNotBlank()) {
                         viewModel.addCategory(selectedGroupId, selectedGroupName, newCategoryName, newCategoryCode)
                         showAddDialog = false
                     }
                 }) { Text("Thêm") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) { Text("Hủy") }
             }
         )
     }

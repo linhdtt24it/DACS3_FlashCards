@@ -37,24 +37,30 @@ fun AdminJapaneseVocabMenuScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Tiếng Nhật", fontWeight = FontWeight.Bold) },
+                title = { Text("Quản lý Tiếng Nhật", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
-            BottomAppBar {
+            BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(onClick = { showAddDialog = true }, shape = RoundedCornerShape(8.dp)) {
+                    Button(
+                        onClick = { showAddDialog = true },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Icon(Icons.Default.Add, contentDescription = null)
-                        Text(" Thêm")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Thêm")
                     }
                     Button(
                         onClick = { 
@@ -62,15 +68,18 @@ fun AdminJapaneseVocabMenuScreen(
                             selectedCategoryId = null
                         },
                         enabled = selectedCategoryId != null,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                        shape = RoundedCornerShape(8.dp)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
-                        Text(" Xóa", color = Color.White)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Xóa", color = Color.White)
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (isLoading) {
@@ -78,7 +87,7 @@ fun AdminJapaneseVocabMenuScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(vertical = 16.dp)
                 ) {
                     items(categories) { category ->
@@ -86,9 +95,9 @@ fun AdminJapaneseVocabMenuScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .heightIn(min = 72.dp)
                                 .clickable { 
                                     if (isSelected) {
-                                        // RÀO CHẮN AN TOÀN: Mã hóa URL để tránh crash route
                                         val safeCode = category.code.ifEmpty { "n5" }
                                         val safeName = URLEncoder.encode(category.name.ifEmpty { "Japan" }, "UTF-8")
                                         navController.navigate("japanese_card_editor/$safeCode/$safeName")
@@ -96,15 +105,28 @@ fun AdminJapaneseVocabMenuScreen(
                                         selectedCategoryId = category.id
                                     }
                                 },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                             ),
                             elevation = CardDefaults.cardElevation(2.dp)
                         ) {
-                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(category.name, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
-                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = if (isSelected) Color.Blue else Color.Gray)
+                            Row(
+                                modifier = Modifier.fillMaxSize().padding(16.dp), 
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = category.name, 
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight, 
+                                    contentDescription = null, 
+                                    tint = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
+                                )
                             }
                         }
                     }
@@ -118,15 +140,18 @@ fun AdminJapaneseVocabMenuScreen(
         var code by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Thêm danh mục") },
+            title = { Text("Thêm danh mục tiếng Nhật", fontWeight = FontWeight.Bold) },
             text = {
-                Column {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Tên") })
-                    OutlinedTextField(value = code, onValueChange = { code = it }, label = { Text("Mã (ví dụ: n5)") })
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Tên danh mục (e.g. N5)") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = code, onValueChange = { code = it }, label = { Text("Mã danh mục (e.g. n5)") }, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
-                TextButton(onClick = { if(name.isNotBlank()) { viewModel.addCategory(name, code); showAddDialog = false } }) { Text("Thêm") }
+                Button(onClick = { if(name.isNotBlank()) { viewModel.addCategory(name, code); showAddDialog = false } }) { Text("Thêm") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) { Text("Hủy") }
             }
         )
     }

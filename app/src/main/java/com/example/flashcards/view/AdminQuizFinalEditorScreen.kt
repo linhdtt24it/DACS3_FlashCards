@@ -66,29 +66,32 @@ fun AdminQuizFinalEditorScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Biên soạn: $levelName", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        Text("Phân nhóm: $displayQuizTypeName | Mã: $levelCode", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Biên soạn: $levelName", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Phân nhóm: $displayQuizTypeName | Mã: $levelCode", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
-            BottomAppBar {
+            BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = { 
-                        navController.navigate("admin_card_list/$levelCode")
-                    }) {
+                    Button(
+                        onClick = { navController.navigate("admin_card_list/$levelCode") },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
                         Text("Xem danh sách")
@@ -108,7 +111,8 @@ fun AdminQuizFinalEditorScreen(
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f),
                         enabled = !isProcessing
                     ) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = Color.White)
@@ -117,7 +121,8 @@ fun AdminQuizFinalEditorScreen(
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -127,20 +132,22 @@ fun AdminQuizFinalEditorScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp)
                     .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                Spacer(modifier = Modifier.height(4.dp))
                 if (quizType == "multiple_choice") {
                     // --- GIAO DIỆN TRẮC NGHIỆM ---
-                    Text("Thêm câu hỏi trắc nghiệm mới", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+                    Text("Thêm câu hỏi trắc nghiệm mới", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     
                     OutlinedTextField(
                         value = mcQuestion,
                         onValueChange = { mcQuestion = it },
                         label = { Text("Nội dung câu hỏi (Dùng ___ cho chỗ trống)") },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !isProcessing
+                        enabled = !isProcessing,
+                        shape = RoundedCornerShape(16.dp)
                     )
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -168,7 +175,8 @@ fun AdminQuizFinalEditorScreen(
                                     },
                                     label = { Text("Đáp án $label") },
                                     modifier = Modifier.weight(1f),
-                                    enabled = !isProcessing
+                                    enabled = !isProcessing,
+                                    shape = RoundedCornerShape(16.dp)
                                 )
                             }
                         }
@@ -192,8 +200,8 @@ fun AdminQuizFinalEditorScreen(
                                 Toast.makeText(context, "Vui lòng nhập câu hỏi và ít nhất 2 đáp án!", Toast.LENGTH_SHORT).show()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
                         enabled = !isProcessing
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
@@ -203,16 +211,17 @@ fun AdminQuizFinalEditorScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     
-                    Text("Import hàng loạt (Trắc nghiệm)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text("Định dạng: Câu hỏi | A | B | C | D | Đáp án đúng (A/B/C/D)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Import hàng loạt (Trắc nghiệm)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("Định dạng: Câu hỏi | A | B | C | D | Đáp án đúng (A/B/C/D)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
                     OutlinedTextField(
                         value = mcBulkText,
                         onValueChange = { mcBulkText = it },
                         label = { Text("Dán dữ liệu phân tách dấu '|' tại đây...") },
                         modifier = Modifier.fillMaxWidth(),
-                        minLines = 5,
-                        enabled = !isProcessing
+                        minLines = 4,
+                        enabled = !isProcessing,
+                        shape = RoundedCornerShape(16.dp)
                     )
                     
                     Button(
@@ -231,8 +240,8 @@ fun AdminQuizFinalEditorScreen(
                                 }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                         enabled = !isProcessing
                     ) {
@@ -243,14 +252,15 @@ fun AdminQuizFinalEditorScreen(
 
                 } else {
                     // --- GIAO DIỆN TỰ LUẬN ---
-                    Text("Thêm câu hỏi tự luận mới", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+                    Text("Thêm câu hỏi tự luận mới", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     
                     OutlinedTextField(
                         value = textQuestion,
                         onValueChange = { textQuestion = it },
                         label = { Text("Nội dung/Từ vựng gợi ý hiển thị") },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !isProcessing
+                        enabled = !isProcessing,
+                        shape = RoundedCornerShape(16.dp)
                     )
 
                     OutlinedTextField(
@@ -258,7 +268,8 @@ fun AdminQuizFinalEditorScreen(
                         onValueChange = { textCorrectAnswer = it },
                         label = { Text("Đáp án chữ bắt buộc nhập đúng") },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !isProcessing
+                        enabled = !isProcessing,
+                        shape = RoundedCornerShape(16.dp)
                     )
 
                     Button(
@@ -279,8 +290,8 @@ fun AdminQuizFinalEditorScreen(
                                 Toast.makeText(context, "Vui lòng điền đầy đủ câu hỏi và đáp án!", Toast.LENGTH_SHORT).show()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
                         enabled = !isProcessing
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
@@ -290,16 +301,17 @@ fun AdminQuizFinalEditorScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     
-                    Text("Import hàng loạt (Tự luận)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text("Định dạng: Câu hỏi/Từ vựng | Đáp án đúng", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Import hàng loạt (Tự luận)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("Định dạng: Câu hỏi/Từ vựng | Đáp án đúng", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
                     OutlinedTextField(
                         value = textBulkText,
                         onValueChange = { textBulkText = it },
                         label = { Text("Dán dữ liệu phân tách dấu '|' tại đây...") },
                         modifier = Modifier.fillMaxWidth(),
-                        minLines = 5,
-                        enabled = !isProcessing
+                        minLines = 4,
+                        enabled = !isProcessing,
+                        shape = RoundedCornerShape(16.dp)
                     )
                     
                     Button(
@@ -318,8 +330,8 @@ fun AdminQuizFinalEditorScreen(
                                 }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                         enabled = !isProcessing
                     ) {
@@ -328,6 +340,7 @@ fun AdminQuizFinalEditorScreen(
                         Text("Xử lý Import Tự luận")
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             if (isProcessing) {
