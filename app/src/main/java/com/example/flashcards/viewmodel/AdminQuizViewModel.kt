@@ -92,7 +92,9 @@ class AdminQuizViewModel : ViewModel() {
                     val list = snapshot.documents.mapNotNull { doc ->
                         try {
                             val id = doc.getString("id") ?: doc.id
-                            val name = doc.getString("name") ?: ""
+                            val rawName = doc.getString("name") ?: ""
+                            // Decrypt dynamically for admin reader
+                            val name = CryptoUtils.decrypt(rawName)
                             if (id.isNotEmpty() && name.isNotEmpty()) QuizType(id, name) else null
                         } catch (e: Exception) {
                             null
@@ -114,7 +116,9 @@ class AdminQuizViewModel : ViewModel() {
                     val list = snapshot.documents.mapNotNull { doc ->
                         try {
                             val id = doc.getString("id") ?: doc.id
-                            val name = doc.getString("name") ?: ""
+                            val rawName = doc.getString("name") ?: ""
+                            // Decrypt dynamically for admin reader
+                            val name = CryptoUtils.decrypt(rawName)
                             if (id.isNotEmpty() && name.isNotEmpty()) QuizLanguage(id, name) else null
                         } catch (e: Exception) {
                             null
@@ -137,10 +141,16 @@ class AdminQuizViewModel : ViewModel() {
                         try {
                             val id = doc.getString("id") ?: doc.id
                             val language = doc.getString("language") ?: ""
-                            val name = doc.getString("name") ?: ""
-                            val parent = doc.getString("parent") ?: ""
+                            val rawName = doc.getString("name") ?: ""
+                            val rawParent = doc.getString("parent") ?: ""
                             val requiredPackage = doc.getString("requiredPackage") ?: "FREE"
-                            val description = doc.getString("description") ?: ""
+                            val rawDescription = doc.getString("description") ?: ""
+                            
+                            // Decrypt dynamically for admin reader
+                            val name = CryptoUtils.decrypt(rawName)
+                            val parent = CryptoUtils.decrypt(rawParent)
+                            val description = CryptoUtils.decrypt(rawDescription)
+
                             if (id.isNotEmpty() && name.isNotEmpty()) {
                                 QuizSubLevel(id, language, name, parent, requiredPackage, description)
                             } else null
@@ -164,7 +174,8 @@ class AdminQuizViewModel : ViewModel() {
                     val list = snapshot.documents.mapNotNull { doc ->
                         try {
                             val id = doc.getString("categoryId") ?: ""
-                            val name = doc.getString("categoryName") ?: "Danh mục lỗi"
+                            val rawName = doc.getString("categoryName") ?: "Danh mục lỗi"
+                            val name = CryptoUtils.decrypt(rawName)
                             if (id.isEmpty()) null else QuizCategory(id, name)
                         } catch (e: Exception) {
                             null
@@ -175,11 +186,15 @@ class AdminQuizViewModel : ViewModel() {
             }
     }
 
-    // --- CÁC THAO TÁC THÊM / XÓA FIRESTORE THỜI GIAN THỰC ---
+    // --- CÁC THAO TÁC THÊM / XÓA FIRESTORE THỜI GIAN THỰC ĐƯỢC MÃ HÓA ---
 
     suspend fun addQuizType(id: String, name: String): Result<Unit> = withContext(Dispatchers.IO) {
         return@withContext try {
-            db.collection("quiz_types").document(id).set(mapOf("id" to id, "name" to name)).await()
+            // Encrypt name before set
+            db.collection("quiz_types").document(id).set(mapOf(
+                "id" to id, 
+                "name" to CryptoUtils.encrypt(name)
+            )).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -197,7 +212,11 @@ class AdminQuizViewModel : ViewModel() {
 
     suspend fun addQuizLanguage(id: String, name: String): Result<Unit> = withContext(Dispatchers.IO) {
         return@withContext try {
-            db.collection("quiz_languages").document(id).set(mapOf("id" to id, "name" to name)).await()
+            // Encrypt name before set
+            db.collection("quiz_languages").document(id).set(mapOf(
+                "id" to id, 
+                "name" to CryptoUtils.encrypt(name)
+            )).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -222,13 +241,14 @@ class AdminQuizViewModel : ViewModel() {
         description: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
         return@withContext try {
+            // Encrypt name, parent, and description before set
             val data = mapOf(
                 "id" to id,
                 "language" to language,
-                "name" to name,
-                "parent" to parent,
+                "name" to CryptoUtils.encrypt(name),
+                "parent" to CryptoUtils.encrypt(parent),
                 "requiredPackage" to requiredPackage,
-                "description" to description
+                "description" to CryptoUtils.encrypt(description)
             )
             db.collection("quiz_sub_levels").document(id).set(data).await()
             Result.success(Unit)
@@ -246,7 +266,7 @@ class AdminQuizViewModel : ViewModel() {
         }
     }
 
-    // --- KHỞI TẠO HỆ THỐNG MẶC ĐỊNH ---
+    // --- KHỞI TẠO HỆ THỐNG MẶC ĐỊNH MÃ HÓA 100% ---
     fun initializeDefaultQuizSystem() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -254,8 +274,8 @@ class AdminQuizViewModel : ViewModel() {
 
                 // 1. Types
                 val defaultTypes = listOf(
-                    QuizType("multiple_choice", "Câu hỏi trắc nghiệm"),
-                    QuizType("text_input", "Câu hỏi tự luận")
+                    QuizType("multiple_choice", CryptoUtils.encrypt("Câu hỏi trắc nghiệm")),
+                    QuizType("text_input", CryptoUtils.encrypt("Câu hỏi tự luận"))
                 )
                 defaultTypes.forEach { type ->
                     val docRef = db.collection("quiz_types").document(type.id)
@@ -264,10 +284,10 @@ class AdminQuizViewModel : ViewModel() {
 
                 // 2. Languages
                 val defaultLanguages = listOf(
-                    QuizLanguage("japanese", "Tiếng Nhật"),
-                    QuizLanguage("english", "Tiếng Anh"),
-                    QuizLanguage("chinese", "Tiếng Trung"),
-                    QuizLanguage("pali", "Tiếng Pali")
+                    QuizLanguage("japanese", CryptoUtils.encrypt("Tiếng Nhật")),
+                    QuizLanguage("english", CryptoUtils.encrypt("Tiếng Anh")),
+                    QuizLanguage("chinese", CryptoUtils.encrypt("Tiếng Trung")),
+                    QuizLanguage("pali", CryptoUtils.encrypt("Tiếng Pali"))
                 )
                 defaultLanguages.forEach { lang ->
                     val docRef = db.collection("quiz_languages").document(lang.id)
@@ -277,33 +297,33 @@ class AdminQuizViewModel : ViewModel() {
                 // 3. Sub Levels
                 val defaultSubLevels = listOf(
                     // Japanese
-                    QuizSubLevel("QUIZ_JA_N5", "japanese", "Cấp độ N5", "", "FREE", "Học tiếng Nhật nhập môn N5"),
-                    QuizSubLevel("QUIZ_JA_N4", "japanese", "Cấp độ N4", "", "VIP_JAPANESE", "Ôn luyện từ vựng ngữ pháp N4"),
-                    QuizSubLevel("QUIZ_JA_N3", "japanese", "Cấp độ N3", "", "VIP_JAPANESE", "Cấp độ trung cấp N3 nâng cao"),
-                    QuizSubLevel("QUIZ_JA_N2", "japanese", "Cấp độ N2", "", "VIP_JAPANESE", "Đọc hiểu và từ vựng N2"),
-                    QuizSubLevel("QUIZ_JA_N1", "japanese", "Cấp độ N1", "", "VIP_JAPANESE", "Chinh phục đỉnh cao N1"),
+                    QuizSubLevel("QUIZ_JA_N5", "japanese", CryptoUtils.encrypt("Cấp độ N5"), "", "FREE", CryptoUtils.encrypt("Học tiếng Nhật nhập môn N5")),
+                    QuizSubLevel("QUIZ_JA_N4", "japanese", CryptoUtils.encrypt("Cấp độ N4"), "", "VIP_JAPANESE", CryptoUtils.encrypt("Ôn luyện từ vựng ngữ pháp N4")),
+                    QuizSubLevel("QUIZ_JA_N3", "japanese", CryptoUtils.encrypt("Cấp độ N3"), "", "VIP_JAPANESE", CryptoUtils.encrypt("Cấp độ trung cấp N3 nâng cao")),
+                    QuizSubLevel("QUIZ_JA_N2", "japanese", CryptoUtils.encrypt("Cấp độ N2"), "", "VIP_JAPANESE", CryptoUtils.encrypt("Đọc hiểu và từ vựng N2")),
+                    QuizSubLevel("QUIZ_JA_N1", "japanese", CryptoUtils.encrypt("Cấp độ N1"), "", "VIP_JAPANESE", CryptoUtils.encrypt("Chinh phục đỉnh cao N1")),
 
                     // English - TOEIC
-                    QuizSubLevel("QUIZ_TOEIC_450", "english", "TOEIC 450+", "TOEIC", "FREE", "Từ vựng & ngữ pháp cơ bản"),
-                    QuizSubLevel("QUIZ_TOEIC_650", "english", "TOEIC 650+", "TOEIC", "VIP_ENGLISH", "Chiến thuật nâng điểm 650+"),
-                    QuizSubLevel("QUIZ_TOEIC_800", "english", "TOEIC 800+", "TOEIC", "VIP_ENGLISH", "Chinh phục điểm số cao 800+"),
+                    QuizSubLevel("QUIZ_TOEIC_450", "english", CryptoUtils.encrypt("TOEIC 450+"), CryptoUtils.encrypt("TOEIC"), "FREE", CryptoUtils.encrypt("Từ vựng & ngữ pháp cơ bản")),
+                    QuizSubLevel("QUIZ_TOEIC_650", "english", CryptoUtils.encrypt("TOEIC 650+"), CryptoUtils.encrypt("TOEIC"), "VIP_ENGLISH", CryptoUtils.encrypt("Chiến thuật nâng điểm 650+")),
+                    QuizSubLevel("QUIZ_TOEIC_800", "english", CryptoUtils.encrypt("TOEIC 800+"), CryptoUtils.encrypt("TOEIC"), "VIP_ENGLISH", CryptoUtils.encrypt("Chinh phục điểm số cao 800+")),
 
                     // English - IELTS
-                    QuizSubLevel("QUIZ_IELTS_55", "english", "IELTS Band 5.5", "IELTS", "VIP_ENGLISH", "Từ vựng cốt lõi 5.5"),
-                    QuizSubLevel("QUIZ_IELTS_65", "english", "IELTS Band 6.5", "IELTS", "VIP_ENGLISH", "Từ vựng học thuật 6.5"),
-                    QuizSubLevel("QUIZ_IELTS_75", "english", "IELTS Band 7.5+", "IELTS", "VIP_ENGLISH", "Từ vựng đỉnh cao 7.5+"),
+                    QuizSubLevel("QUIZ_IELTS_55", "english", CryptoUtils.encrypt("IELTS Band 5.5"), CryptoUtils.encrypt("IELTS"), "VIP_ENGLISH", CryptoUtils.encrypt("Từ vựng cốt lõi 5.5")),
+                    QuizSubLevel("QUIZ_IELTS_65", "english", CryptoUtils.encrypt("IELTS Band 6.5"), CryptoUtils.encrypt("IELTS"), "VIP_ENGLISH", CryptoUtils.encrypt("Từ vựng học thuật 6.5")),
+                    QuizSubLevel("QUIZ_IELTS_75", "english", CryptoUtils.encrypt("IELTS Band 7.5+"), CryptoUtils.encrypt("IELTS"), "VIP_ENGLISH", CryptoUtils.encrypt("Từ vựng đỉnh cao 7.5+")),
 
                     // English - Cambridge
-                    QuizSubLevel("QUIZ_CAM_KET", "english", "Cambridge KET", "Cambridge", "VIP_ENGLISH", "Trình độ tiếng Anh sơ cấp A2"),
-                    QuizSubLevel("QUIZ_CAM_PET", "english", "Cambridge PET", "Cambridge", "VIP_ENGLISH", "Trình độ tiếng Anh trung cấp B1"),
+                    QuizSubLevel("QUIZ_CAM_KET", "english", CryptoUtils.encrypt("Cambridge KET"), CryptoUtils.encrypt("Cambridge"), "VIP_ENGLISH", CryptoUtils.encrypt("Trình độ tiếng Anh sơ cấp A2")),
+                    QuizSubLevel("QUIZ_CAM_PET", "english", CryptoUtils.encrypt("Cambridge PET"), CryptoUtils.encrypt("Cambridge"), "VIP_ENGLISH", CryptoUtils.encrypt("Trình độ tiếng Anh trung cấp B1")),
 
                     // Chinese
-                    QuizSubLevel("QUIZ_ZH_BASIC", "chinese", "Trung Cơ Bản", "", "VIP_CHINESE", "Học phát âm và từ vựng HSK 1-2"),
-                    QuizSubLevel("QUIZ_ZH_INTER", "chinese", "Trung Trung Cấp", "", "VIP_CHINESE", "Từ vựng học thuật HSK 3-4"),
+                    QuizSubLevel("QUIZ_ZH_BASIC", "chinese", CryptoUtils.encrypt("Trung Cơ Bản"), "", "VIP_CHINESE", CryptoUtils.encrypt("Học phát âm và từ vựng HSK 1-2")),
+                    QuizSubLevel("QUIZ_ZH_INTER", "chinese", CryptoUtils.encrypt("Trung Trung Cấp"), "", "VIP_CHINESE", CryptoUtils.encrypt("Từ vựng học thuật HSK 3-4")),
 
                     // Pali
-                    QuizSubLevel("QUIZ_PA_INTRO", "pali", "Pali Sơ Cấp", "", "VIP_PALI", "Từ vựng kinh điển Pali sơ cấp"),
-                    QuizSubLevel("QUIZ_PA_INTER", "pali", "Pali Trung Cấp", "", "VIP_PALI", "Cú pháp và ngữ nghĩa kinh điển")
+                    QuizSubLevel("QUIZ_PA_INTRO", "pali", CryptoUtils.encrypt("Pali Sơ Cấp"), "", "VIP_PALI", CryptoUtils.encrypt("Từ vựng kinh điển Pali sơ cấp")),
+                    QuizSubLevel("QUIZ_PA_INTER", "pali", CryptoUtils.encrypt("Pali Trung Cấp"), "", "VIP_PALI", CryptoUtils.encrypt("Cú pháp và ngữ nghĩa kinh điển"))
                 )
                 defaultSubLevels.forEach { sub ->
                     val docRef = db.collection("quiz_sub_levels").document(sub.id)
@@ -311,7 +331,7 @@ class AdminQuizViewModel : ViewModel() {
                 }
 
                 batch.commit().await()
-                Log.d("AdminQuizViewModel", "Khởi tạo thành công hệ thống dữ liệu mặc định.")
+                Log.d("AdminQuizViewModel", "Khởi tạo thành công hệ thống dữ liệu mặc định đã mã hóa.")
             } catch (e: Exception) {
                 Log.e("AdminQuizViewModel", "Lỗi khởi tạo mặc định toàn hệ thống: ", e)
             }
@@ -323,15 +343,15 @@ class AdminQuizViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val sampleData = listOf(
-                    QuizCategory("QUIZ_JA_N5", "Cấp độ N5"),
-                    QuizCategory("QUIZ_JA_N4", "Cấp độ N4"),
-                    QuizCategory("QUIZ_JA_N3", "Cấp độ N3"),
-                    QuizCategory("QUIZ_JA_N2", "Cấp độ N2"),
-                    QuizCategory("QUIZ_JA_N1", "Cấp độ N1"),
-                    QuizCategory("QUIZ_EN_TOEIC_450", "Gói TOEIC 450+"),
-                    QuizCategory("QUIZ_EN_TOEIC_650", "Gói TOEIC 650+"),
-                    QuizCategory("QUIZ_EN_TOEIC_800", "Gói TOEIC 800+"),
-                    QuizCategory("QUIZ_EN_IELTS", "Gói IELTS")
+                    QuizCategory("QUIZ_JA_N5", CryptoUtils.encrypt("Cấp độ N5")),
+                    QuizCategory("QUIZ_JA_N4", CryptoUtils.encrypt("Cấp độ N4")),
+                    QuizCategory("QUIZ_JA_N3", CryptoUtils.encrypt("Cấp độ N3")),
+                    QuizCategory("QUIZ_JA_N2", CryptoUtils.encrypt("Cấp độ N2")),
+                    QuizCategory("QUIZ_JA_N1", CryptoUtils.encrypt("Cấp độ N1")),
+                    QuizCategory("QUIZ_EN_TOEIC_450", CryptoUtils.encrypt("Gói TOEIC 450+")),
+                    QuizCategory("QUIZ_EN_TOEIC_650", CryptoUtils.encrypt("Gói TOEIC 650+")),
+                    QuizCategory("QUIZ_EN_TOEIC_800", CryptoUtils.encrypt("Gói TOEIC 800+")),
+                    QuizCategory("QUIZ_EN_IELTS", CryptoUtils.encrypt("Gói IELTS"))
                 )
 
                 val batch = db.batch()

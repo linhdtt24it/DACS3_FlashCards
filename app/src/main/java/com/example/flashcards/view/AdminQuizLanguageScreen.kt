@@ -171,7 +171,7 @@ fun AdminQuizLanguageScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Chọn Ngôn Ngữ (Tầng 2)", fontWeight = FontWeight.Bold)
+                        Text("Chọn Ngôn Ngữ", fontWeight = FontWeight.Bold)
                         Text("Phân hệ: $displayQuizTypeName", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                     }
                 },

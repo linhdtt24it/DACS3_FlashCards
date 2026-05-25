@@ -31,6 +31,7 @@ import com.example.flashcards.ui.theme.FlowPrimary
 import com.example.flashcards.ui.theme.FlowWarning
 import com.example.flashcards.viewmodel.AuthViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.flashcards.utils.CryptoUtils
 
 data class QuizCategoryItem(
     val id: String,
@@ -55,19 +56,21 @@ fun UserQuizSelectionScreen(
     var isLoadingFirestore by remember { mutableStateOf(true) }
 
     DisposableEffect(Unit) {
-        val listener = firestore.collection("quiz_categories")
+        val listener = firestore.collection("quiz_sub_levels")
             .addSnapshotListener { snapshot, error ->
                 isLoadingFirestore = false
                 if (error != null) {
                     Log.e("UserQuizSelectionScreen", "Lỗi đồng bộ danh mục từ Firestore: ", error)
                     return@addSnapshotListener
                 }
-                if (snapshot != null) {
+                if (snapshot != null && !snapshot.isEmpty) {
                     val list = snapshot.documents.mapNotNull { doc ->
                         try {
-                            val id = doc.getString("categoryId") ?: doc.id
-                            val name = doc.getString("categoryName") ?: doc.getString("name") ?: ""
-                            val description = doc.getString("description") ?: "Trắc nghiệm trực tuyến"
+                            val id = doc.getString("id") ?: doc.id
+                            val rawName = doc.getString("name") ?: ""
+                            val name = CryptoUtils.decrypt(rawName)
+                            val rawDesc = doc.getString("description") ?: ""
+                            val description = if (rawDesc.isNotEmpty()) CryptoUtils.decrypt(rawDesc) else "Trắc nghiệm trực tuyến"
                             val requiredPackage = doc.getString("requiredPackage") ?: when {
                                 id.contains("N5") || id.contains("450") -> "FREE"
                                 id.contains("JA") -> "VIP_JAPANESE"
@@ -85,6 +88,32 @@ fun UserQuizSelectionScreen(
                         }
                     }
                     firestoreCategories = list
+                } else {
+                    // Bộ sưu tập cũ quiz_categories dự phòng
+                    firestore.collection("quiz_categories")
+                        .get()
+                        .addOnSuccessListener { legacySnapshot ->
+                            if (legacySnapshot != null) {
+                                val list = legacySnapshot.documents.mapNotNull { doc ->
+                                    try {
+                                        val id = doc.getString("categoryId") ?: doc.id
+                                        val rawName = doc.getString("categoryName") ?: doc.getString("name") ?: ""
+                                        val name = CryptoUtils.decrypt(rawName)
+                                        val rawDesc = doc.getString("description") ?: ""
+                                        val description = if (rawDesc.isNotEmpty()) CryptoUtils.decrypt(rawDesc) else "Trắc nghiệm trực tuyến"
+                                        val requiredPackage = doc.getString("requiredPackage") ?: "FREE"
+                                        if (id.isNotEmpty() && name.isNotEmpty()) {
+                                            QuizCategoryItem(id, name, description, requiredPackage)
+                                        } else null
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                }
+                                if (list.isNotEmpty()) {
+                                    firestoreCategories = list
+                                }
+                            }
+                        }
                 }
             }
         onDispose {

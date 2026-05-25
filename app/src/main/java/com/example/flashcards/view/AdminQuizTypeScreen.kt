@@ -163,7 +163,7 @@ fun AdminQuizTypeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Câu hỏi (Tầng 1)", fontWeight = FontWeight.Bold) },
+                title = { Text("Quản lý Câu hỏi", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

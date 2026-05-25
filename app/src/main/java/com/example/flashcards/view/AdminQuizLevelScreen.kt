@@ -217,7 +217,7 @@ fun AdminQuizLevelScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Phân chia Cấp độ (Tầng 3)", fontWeight = FontWeight.Bold)
+                        Text("Chọn Cấp Độ Môn Học", fontWeight = FontWeight.Bold)
                         Text("$displayQuizTypeName -> $displayLanguageName", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                     }
                 },
