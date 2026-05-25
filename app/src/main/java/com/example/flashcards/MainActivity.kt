@@ -299,6 +299,9 @@ fun AppNavHost(
                                 }
                             }
                         }
+                    },
+                    onLevelClick = { language, levelId ->
+                        navController.navigate("level_dashboard/$language/$levelId")
                     }
                 )
             }
@@ -625,6 +628,34 @@ fun AppNavHost(
                     onBack = { navController.popBackStack() }
                 )
             }
+        }
+
+        composable("level_dashboard/{language}/{levelId}") { backStackEntry ->
+            val language = backStackEntry.arguments?.getString("language") ?: "JAPANESE"
+            val levelId = backStackEntry.arguments?.getString("levelId") ?: ""
+            LevelDashboardScreen(
+                navController = navController,
+                language = language,
+                levelId = levelId
+            )
+        }
+
+        composable("user_flashcard/{language}/{levelId}") { backStackEntry ->
+            val language = backStackEntry.arguments?.getString("language") ?: "JAPANESE"
+            val levelId = backStackEntry.arguments?.getString("levelId") ?: ""
+            UserFlashcardScreen(
+                navController = navController,
+                language = language,
+                levelId = levelId
+            )
+        }
+
+        composable("user_play_match/{levelId}") { backStackEntry ->
+            val levelId = backStackEntry.arguments?.getString("levelId") ?: ""
+            UserPlayMatchScreen(
+                navController = navController,
+                levelId = levelId
+            )
         }
 
         composable("user_quiz_selection") {

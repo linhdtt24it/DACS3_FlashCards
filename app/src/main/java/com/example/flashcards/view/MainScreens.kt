@@ -197,7 +197,8 @@ fun HomeScreen(
     onSetSelected: (StudySet) -> Unit,
     onQuizDeck: (StudySet) -> Unit,
     onNotificationsClick: () -> Unit = {},
-    onFeatureClick: (String) -> Unit = {}
+    onFeatureClick: (String) -> Unit = {},
+    onLevelClick: (String, String) -> Unit = { _, _ -> }
 ) {
     val fc = LocalFlowColors.current
     val heroBrush = Brush.linearGradient(
@@ -509,7 +510,15 @@ fun HomeScreen(
                 items = levels,
                 subscribedPackages = subscribedPackages,
                 onItemClick = { item ->
-                    // Hành động khi nhấn
+                    val levelId = when (item.name) {
+                        "Cấp độ N5" -> "QUIZ_JA_N5"
+                        "Cấp độ N4" -> "QUIZ_JA_N4"
+                        "Cấp độ N3" -> "QUIZ_JA_N3"
+                        "Cấp độ N2" -> "QUIZ_JA_N2"
+                        "Cấp độ N1" -> "QUIZ_JA_N1"
+                        else -> item.name
+                    }
+                    onLevelClick("JAPANESE", levelId)
                 },
                 onLockClick = { selectedVipPackage = "VIP_JAPANESE" }
             )
@@ -526,7 +535,9 @@ fun HomeScreen(
                 title = "Tiếng Anh Tổng Hợp",
                 items = englishTopics,
                 subscribedPackages = subscribedPackages,
-                onItemClick = {},
+                onItemClick = { item ->
+                    onLevelClick("ENGLISH", item.name)
+                },
                 onLockClick = {}
             )
         }
@@ -542,7 +553,15 @@ fun HomeScreen(
                 title = "Chứng chỉ TOEIC",
                 items = toeicLevels,
                 subscribedPackages = subscribedPackages,
-                onItemClick = {},
+                onItemClick = { item ->
+                    val levelId = when (item.name) {
+                        "TOEIC 450+" -> "QUIZ_TOEIC_450"
+                        "TOEIC 650+" -> "QUIZ_TOEIC_650"
+                        "TOEIC 800+" -> "QUIZ_TOEIC_800"
+                        else -> item.name
+                    }
+                    onLevelClick("ENGLISH", levelId)
+                },
                 onLockClick = { selectedVipPackage = "VIP_ENGLISH" }
             )
         }
@@ -558,7 +577,15 @@ fun HomeScreen(
                 title = "Chứng chỉ IELTS",
                 items = ieltsBands,
                 subscribedPackages = subscribedPackages,
-                onItemClick = {},
+                onItemClick = { item ->
+                    val levelId = when (item.name) {
+                        "IELTS Band 5.5" -> "QUIZ_IELTS_55"
+                        "IELTS Band 6.5" -> "QUIZ_IELTS_65"
+                        "IELTS Band 7.5+" -> "QUIZ_IELTS_75"
+                        else -> item.name
+                    }
+                    onLevelClick("ENGLISH", levelId)
+                },
                 onLockClick = { selectedVipPackage = "VIP_ENGLISH" }
             )
         }
@@ -573,7 +600,15 @@ fun HomeScreen(
                 title = "Tiếng Trung & Tiếng Pali",
                 items = otherLangs,
                 subscribedPackages = subscribedPackages,
-                onItemClick = {},
+                onItemClick = { item ->
+                    val lang = if (item.name.contains("Trung")) "CHINESE" else "PALI"
+                    val levelId = when (item.name) {
+                        "Trung Cơ Bản" -> "QUIZ_ZH_BASIC"
+                        "Pali Sơ Cấp" -> "QUIZ_PA_INTRO"
+                        else -> item.name
+                    }
+                    onLevelClick(lang, levelId)
+                },
                 onLockClick = { pkg -> selectedVipPackage = pkg }
             )
         }
