@@ -375,18 +375,20 @@ fun AdminQuizLevelScreen(
 
                             items(activeLevels) { lvl ->
                                 Card(
+                                    onClick = {
+                                        navController.navigate("admin_quiz_final_editor/$quizType/$language/${lvl.id}/${lvl.name}")
+                                    },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .heightIn(min = 72.dp)
-                                        .clickable {
-                                            navController.navigate("admin_quiz_final_editor/$quizType/$language/${lvl.id}/${lvl.name}")
-                                        },
+                                        .heightIn(min = 72.dp),
                                     shape = RoundedCornerShape(16.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.fillMaxSize().padding(20.dp),
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(horizontal = 16.dp, vertical = 12.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {

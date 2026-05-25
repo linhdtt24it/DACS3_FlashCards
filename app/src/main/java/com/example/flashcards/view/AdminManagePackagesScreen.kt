@@ -92,17 +92,17 @@ fun AdminManagePackagesScreen(
             items(packages) { pkg ->
                 val isSelected = selectedPackageId == pkg.id
                 Card(
+                    onClick = { 
+                        if (isSelected) {
+                            val encodedName = URLEncoder.encode(pkg.name, "UTF-8")
+                            navController.navigate("package_detail/$encodedName")
+                        } else {
+                            selectedPackageId = pkg.id 
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 72.dp)
-                        .clickable { 
-                            if (isSelected) {
-                                val encodedName = URLEncoder.encode(pkg.name, "UTF-8")
-                                navController.navigate("package_detail/$encodedName")
-                            } else {
-                                selectedPackageId = pkg.id 
-                            }
-                        },
+                        .height(72.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
@@ -110,7 +110,9 @@ fun AdminManagePackagesScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(

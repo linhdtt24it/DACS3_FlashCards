@@ -93,18 +93,18 @@ fun AdminJapaneseVocabMenuScreen(
                     items(categories) { category ->
                         val isSelected = selectedCategoryId == category.id
                         Card(
+                            onClick = { 
+                                if (isSelected) {
+                                    val safeCode = category.code.ifEmpty { "n5" }
+                                    val safeName = URLEncoder.encode(category.name.ifEmpty { "Japan" }, "UTF-8")
+                                    navController.navigate("japanese_card_editor/$safeCode/$safeName")
+                                } else {
+                                    selectedCategoryId = category.id
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 72.dp)
-                                .clickable { 
-                                    if (isSelected) {
-                                        val safeCode = category.code.ifEmpty { "n5" }
-                                        val safeName = URLEncoder.encode(category.name.ifEmpty { "Japan" }, "UTF-8")
-                                        navController.navigate("japanese_card_editor/$safeCode/$safeName")
-                                    } else {
-                                        selectedCategoryId = category.id
-                                    }
-                                },
+                                .height(72.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
@@ -112,7 +112,9 @@ fun AdminJapaneseVocabMenuScreen(
                             elevation = CardDefaults.cardElevation(2.dp)
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxSize().padding(16.dp), 
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp), 
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
