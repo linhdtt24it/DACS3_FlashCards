@@ -211,7 +211,7 @@ fun UserPlayEssayScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Trạng thái kiểm tra câu trả lời
-                val isCorrect = userAnswer.trim().lowercase() == expectedAnswer.trim().lowercase()
+                val isCorrect = checkAnswerCorrect(userAnswer, expectedAnswer)
 
                 // Thiết lập màu sắc viền dựa trên kết quả
                 val borderStrokeColor = when {
@@ -444,4 +444,49 @@ fun getFallbackEssayQuestions(categoryId: String): List<EssayQuestion> {
             )
         }
     }
+}
+
+fun checkAnswerCorrect(user: String, expected: String): Boolean {
+    val userClean = user.trim().lowercase()
+    val expectedClean = expected.trim().lowercase()
+    
+    // 1. Khớp chính xác hoàn toàn (không phân biệt hoa thường)
+    if (userClean == expectedClean) return true
+    
+    // 2. Khớp sau khi loại bỏ tất cả dấu diacritics (cho tiếng Anh, Pali, tiếng Trung Pinyin, tiếng Việt không dấu)
+    if (normalizeForComparison(user) == normalizeForComparison(expected)) return true
+    
+    // 3. Khớp một trong hai vế trước hoặc trong ngoặc đơn (ví dụ: "食べる (taberu)" -> khớp "食べる" hoặc "taberu")
+    if (expected.contains("(") && expected.contains(")")) {
+        val mainWord = expected.substringBefore("(").trim()
+        val secondaryWord = expected.substringAfter("(").substringBefore(")").trim()
+        
+        if (userClean == mainWord.lowercase() || 
+            normalizeForComparison(user) == normalizeForComparison(mainWord)) {
+            return true
+        }
+        
+        if (userClean == secondaryWord.lowercase() || 
+            normalizeForComparison(user) == normalizeForComparison(secondaryWord)) {
+            return true
+        }
+    }
+    
+    // 4. Khớp các phương án thay thế cách nhau bởi dấu gạch chéo "/" (ví dụ: "Xem / Nhìn" -> khớp "xem" hoặc "nhìn")
+    if (expected.contains("/")) {
+        val alternatives = expected.split("/").map { it.trim() }
+        for (alt in alternatives) {
+            if (userClean == alt.lowercase() || 
+                normalizeForComparison(user) == normalizeForComparison(alt)) {
+                return true
+            }
+        }
+    }
+    
+    return false
+}
+
+fun normalizeForComparison(str: String): String {
+    val temp = java.text.Normalizer.normalize(str.trim().lowercase(), java.text.Normalizer.Form.NFD)
+    return "\\p{InCombiningDiacriticalMarks}+".toRegex().replace(temp, "")
 }
