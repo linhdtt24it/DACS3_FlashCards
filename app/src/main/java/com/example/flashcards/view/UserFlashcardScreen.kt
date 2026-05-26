@@ -31,13 +31,16 @@ import androidx.navigation.NavController
 import com.example.flashcards.ui.theme.FlowPrimary
 import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.material.icons.filled.Star
 import java.util.Locale
 import java.util.UUID
 
 data class VocabCard(
     val id: String,
     val front: String, // original word, e.g. "食べる"
-    val back: String // meaning, e.g. "Ăn"
+    val back: String, // meaning, e.g. "Ăn"
+    val levelId: String = ""
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,42 +83,82 @@ fun UserFlashcardScreen(
 
     // 2. Tải câu hỏi/từ vựng từ Firestore theo cấp độ được lọc
     LaunchedEffect(levelId) {
-        val vocabCategory = getVocabCategoryFromLevelId(levelId)
-        firestore.collection("system_vocabulary")
-            .whereIn("category", listOf(vocabCategory, levelId))
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                isLoading = false
-                val list = querySnapshot.documents.mapNotNull { doc ->
-                    try {
-                        val id = doc.id
-                        val rawFront = doc.getString("front") ?: ""
-                        val rawBack = doc.getString("back") ?: ""
-                        val front = CryptoUtils.decrypt(rawFront)
-                        val back = CryptoUtils.decrypt(rawBack)
+        if (levelId == "STARRED") {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
+            firestore.collection("user_favorites")
+                .whereEqualTo("uid", uid)
+                .whereEqualTo("starred", true)
+                .get()
+                .addOnSuccessListener { querySnapshot ->
+                    isLoading = false
+                    val list = querySnapshot.documents.mapNotNull { doc ->
+                        val id = doc.getString("vocabId") ?: doc.id
+                        val front = doc.getString("front") ?: ""
+                        val back = doc.getString("back") ?: ""
+                        val originLevelId = doc.getString("levelId") ?: ""
                         if (front.isNotEmpty() && back.isNotEmpty()) {
-                            VocabCard(id, front, back)
+                            VocabCard(id, front, back, originLevelId)
                         } else null
-                    } catch (e: Exception) {
-                        null
+                    }
+                    vocabCards = list
+                }
+                .addOnFailureListener {
+                    isLoading = false
+                    vocabCards = emptyList()
+                }
+        } else {
+            val vocabCategory = getVocabCategoryFromLevelId(levelId)
+            firestore.collection("system_vocabulary")
+                .whereIn("category", listOf(vocabCategory, levelId))
+                .get()
+                .addOnSuccessListener { querySnapshot ->
+                    isLoading = false
+                    val list = querySnapshot.documents.mapNotNull { doc ->
+                        try {
+                            val id = doc.id
+                            val rawFront = doc.getString("front") ?: ""
+                            val rawBack = doc.getString("back") ?: ""
+                            val front = CryptoUtils.decrypt(rawFront)
+                            val back = CryptoUtils.decrypt(rawBack)
+                            if (front.isNotEmpty() && back.isNotEmpty()) {
+                                VocabCard(id, front, back, levelId)
+                            } else null
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                    if (list.isNotEmpty()) {
+                        vocabCards = list
+                    } else {
+                        // Fallback to default level vocabulary list
+                        vocabCards = getFallbackVocabList(levelId)
                     }
                 }
-                if (list.isNotEmpty()) {
-                    vocabCards = list
-                } else {
-                    // Fallback to default level vocabulary list
+                .addOnFailureListener {
+                    isLoading = false
                     vocabCards = getFallbackVocabList(levelId)
                 }
-            }
-            .addOnFailureListener {
-                isLoading = false
-                vocabCards = getFallbackVocabList(levelId)
-            }
+        }
     }
 
     var currentIndex by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
     var showWishDialog by remember { mutableStateOf(false) }
+
+    var starredCardIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous" }
+
+    LaunchedEffect(uid) {
+        firestore.collection("user_favorites")
+            .whereEqualTo("uid", uid)
+            .whereEqualTo("starred", true)
+            .addSnapshotListener { snapshot, error ->
+                if (snapshot != null) {
+                    val ids = snapshot.documents.mapNotNull { it.getString("vocabId") }.toSet()
+                    starredCardIds = ids
+                }
+            }
+    }
 
 
 
@@ -288,22 +331,70 @@ fun UserFlashcardScreen(
                                     )
                                 }
                                 
-                                // Volume up phát âm tiếng TTS
-                                IconButton(
-                                    onClick = {
-                                        val wordToSpeak = if (!isBackVisible) currentCard.front else currentCard.back
-                                        // Chỉ phát âm từ gốc
-                                        val cleanWord = wordToSpeak.substringBefore("(").trim()
-                                        tts?.speak(cleanWord, TextToSpeech.QUEUE_FLUSH, null, null)
-                                    },
-                                    enabled = isTtsReady
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.VolumeUp,
-                                        contentDescription = "Phát âm",
-                                        tint = FlowPrimary,
-                                        modifier = Modifier.size(28.dp)
-                                    )
+                                    // Nút Đánh dấu sao (Star)
+                                    val isStarred = starredCardIds.contains(currentCard.id)
+                                    IconButton(
+                                        onClick = {
+                                            val favDocRef = firestore.collection("user_favorites").document("${uid}_${currentCard.id}")
+                                            if (isStarred) {
+                                                favDocRef.update("starred", false)
+                                            } else {
+                                                val favData = hashMapOf(
+                                                    "uid" to uid,
+                                                    "vocabId" to currentCard.id,
+                                                    "front" to currentCard.front,
+                                                    "back" to currentCard.back,
+                                                    "levelId" to if (levelId == "STARRED") currentCard.levelId else levelId,
+                                                    "starred" to true,
+                                                    "updatedAt" to com.google.firebase.Timestamp.now()
+                                                )
+                                                favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = "Đánh dấu sao",
+                                            tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    // Volume up phát âm tiếng TTS
+                                    IconButton(
+                                        onClick = {
+                                            val wordToSpeak = if (!isBackVisible) currentCard.front else currentCard.back
+                                            // Chỉ phát âm từ gốc
+                                            val cleanWord = wordToSpeak.substringBefore("(").trim()
+                                            val speakLocale = when {
+                                                currentCard.levelId.contains("JA") -> Locale.JAPANESE
+                                                currentCard.levelId.contains("ZH") -> Locale.CHINESE
+                                                currentCard.levelId.contains("PA") -> Locale.US
+                                                else -> {
+                                                    when (language.uppercase()) {
+                                                        "JAPANESE" -> Locale.JAPANESE
+                                                        "CHINESE" -> Locale.CHINESE
+                                                        else -> Locale.US
+                                                    }
+                                                }
+                                            }
+                                            tts?.language = speakLocale
+                                            tts?.speak(cleanWord, TextToSpeech.QUEUE_FLUSH, null, null)
+                                        },
+                                        enabled = isTtsReady
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.VolumeUp,
+                                            contentDescription = "Phát âm",
+                                            tint = FlowPrimary,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
                                 }
                             }
 

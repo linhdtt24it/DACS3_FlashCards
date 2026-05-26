@@ -316,7 +316,10 @@ fun AppNavHost(
                     }
                 }
             } else {
+                val subscribedPackages by authViewModel.subscribedPackages.collectAsState()
                 LibraryScreen(
+                    subscribedPackages = subscribedPackages,
+                    navController = navController,
                     studySets = studySets,
                     folders = folders,
                     onAddDeck = { title, desc -> viewModel.addStudySet(title, desc) },
