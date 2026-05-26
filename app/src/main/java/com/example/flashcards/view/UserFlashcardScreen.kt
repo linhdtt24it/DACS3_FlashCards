@@ -31,7 +31,6 @@ import androidx.navigation.NavController
 import com.example.flashcards.ui.theme.FlowPrimary
 import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.auth.FirebaseAuth
 import java.util.Locale
 import java.util.UUID
 
@@ -118,32 +117,7 @@ fun UserFlashcardScreen(
     var isFlipped by remember { mutableStateOf(false) }
     var showWishDialog by remember { mutableStateOf(false) }
 
-    fun saveCardProgress(vocabId: String, status: String) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
-        val progressData = hashMapOf(
-            "uid" to uid,
-            "vocabId" to vocabId,
-            "levelId" to levelId,
-            "status" to status,
-            "lastReviewed" to com.google.firebase.Timestamp.now()
-        )
-        firestore.collection("user_progress")
-            .document("${uid}_${vocabId}")
-            .set(progressData, com.google.firebase.firestore.SetOptions.merge())
-            .addOnSuccessListener {
-                Log.d("UserFlashcardScreen", "Saved progress for card $vocabId as $status")
-            }
-            .addOnFailureListener { e ->
-                Log.e("UserFlashcardScreen", "Error saving card progress", e)
-            }
 
-        if (currentIndex < vocabCards.size - 1) {
-            currentIndex++
-            isFlipped = false
-        } else {
-            showWishDialog = true
-        }
-    }
 
     val progress = if (vocabCards.isNotEmpty()) (currentIndex.toFloat() / vocabCards.size) else 0f
     val displayLevelName = when (levelId) {
@@ -351,49 +325,6 @@ fun UserFlashcardScreen(
                                 color = Color.Gray,
                                 fontWeight = FontWeight.SemiBold
                             )
-                        }
-                    }
-                }
-
-                if (isFlipped) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { saveCardProgress(currentCard.id, "HARD") },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFEE2E2),
-                                contentColor = Color(0xFFB91C1C)
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.weight(1f).height(56.dp)
-                        ) {
-                            Text("Hard - Khó", fontWeight = FontWeight.Bold)
-                        }
-                        Button(
-                            onClick = { saveCardProgress(currentCard.id, "GOOD") },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFE0F2FE),
-                                contentColor = Color(0xFF0369A1)
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.weight(1f).height(56.dp)
-                        ) {
-                            Text("Good - Tốt", fontWeight = FontWeight.Bold)
-                        }
-                        Button(
-                            onClick = { saveCardProgress(currentCard.id, "EASY") },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFD1FAE5),
-                                contentColor = Color(0xFF047857)
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.weight(1f).height(56.dp)
-                        ) {
-                            Text("Easy - Dễ", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
