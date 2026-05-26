@@ -103,6 +103,67 @@ fun ProfileScreen(
     val progressPercent = if (targetWords > 0) (learnedTodayCount.toFloat() / targetWords).coerceIn(0f, 1f) else 0f
     val isGoalCompleted = targetWords > 0 && learnedTodayCount >= targetWords
 
+    var currentStreakState by remember { mutableIntStateOf(0) }
+    var longestStreakState by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(uid) {
+        if (uid.isNotEmpty()) {
+            firestore.collection("users").document(uid)
+                .addSnapshotListener { snapshot, error ->
+                    if (snapshot != null && snapshot.exists()) {
+                        currentStreakState = snapshot.getLong("currentStreak")?.toInt() ?: 0
+                        longestStreakState = snapshot.getLong("longestStreak")?.toInt() ?: 0
+                    }
+                }
+        }
+    }
+
+    val updateUserStreak = { userId: String ->
+        val userDocRef = firestore.collection("users").document(userId)
+        userDocRef.get().addOnSuccessListener { documentSnapshot ->
+            if (documentSnapshot.exists()) {
+                val currentStreak = documentSnapshot.getLong("currentStreak")?.toInt() ?: 0
+                val longestStreak = documentSnapshot.getLong("longestStreak")?.toInt() ?: 0
+                val lastActiveDate = documentSnapshot.getString("lastActiveDate") ?: ""
+
+                val calendar = Calendar.getInstance()
+                val todayStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(calendar.time)
+                calendar.add(Calendar.DAY_OF_YEAR, -1)
+                val yesterdayStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(calendar.time)
+
+                if (lastActiveDate == todayStr) {
+                    // Already counted today
+                    return@addOnSuccessListener
+                }
+
+                val newStreak = when (lastActiveDate) {
+                    "" -> 1
+                    yesterdayStr -> currentStreak + 1
+                    else -> 1
+                }
+
+                val newLongest = if (newStreak > longestStreak) newStreak else longestStreak
+
+                val updateData = hashMapOf(
+                    "currentStreak" to newStreak,
+                    "longestStreak" to newLongest,
+                    "lastActiveDate" to todayStr
+                )
+
+                userDocRef.update(updateData as Map<String, Any>)
+                    .addOnSuccessListener {
+                        android.util.Log.d("ProfileScreen", "Streak updated: $newStreak")
+                    }
+            }
+        }
+    }
+
+    LaunchedEffect(isGoalCompleted, uid) {
+        if (isGoalCompleted && uid.isNotEmpty()) {
+            updateUserStreak(uid)
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(24.dp),
         contentPadding = PaddingValues(bottom = 80.dp),
@@ -146,6 +207,48 @@ fun ProfileScreen(
                     }
                     TextButton(onClick = { Toast.makeText(context, "Pro features coming soon!", Toast.LENGTH_SHORT).show() }) {
                         Text("Manage", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(Color(0xFFFF5722).copy(alpha = 0.15f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = "Chuỗi ngày học liên tục",
+                            tint = Color(0xFFFF5722),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "$currentStreakState Ngày liên tục 🔥",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "Kỷ lục: $longestStreakState ngày",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
