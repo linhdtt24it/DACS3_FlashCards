@@ -52,6 +52,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.navigation.NavController
+import java.util.Calendar
 
 
 
@@ -216,6 +217,7 @@ fun HomeScreen(
     val firestore = remember { FirebaseFirestore.getInstance() }
     val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     var currentStreak by remember { mutableIntStateOf(0) }
+    var learnedTodayCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(uid) {
         if (uid.isNotEmpty()) {
@@ -223,6 +225,24 @@ fun HomeScreen(
                 .addSnapshotListener { snapshot, error ->
                     if (snapshot != null && snapshot.exists()) {
                         currentStreak = snapshot.getLong("currentStreak")?.toInt() ?: 0
+                    }
+                }
+
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val startOfToday = calendar.time
+            val startOfTodayTimestamp = com.google.firebase.Timestamp(startOfToday)
+
+            firestore.collection("progress")
+                .whereEqualTo("uid", uid)
+                .whereGreaterThanOrEqualTo("lastReviewed", startOfTodayTimestamp)
+                .addSnapshotListener { snapshot, error ->
+                    if (snapshot != null) {
+                        learnedTodayCount = snapshot.size()
                     }
                 }
         }
@@ -344,7 +364,7 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = "Hôm nay bạn đã học ${userStats.cardsStudiedToday} thẻ. Cố lên nhé!",
+                            text = "Hôm nay bạn đã học $learnedTodayCount thẻ. Cố lên nhé!",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
