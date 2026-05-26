@@ -213,6 +213,21 @@ fun HomeScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedVipPackage by remember { mutableStateOf<String?>(null) } // Lưu gói VIP cần kích hoạt để hiện Dialog thông báo
 
+    val firestore = remember { FirebaseFirestore.getInstance() }
+    val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
+    var currentStreak by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(uid) {
+        if (uid.isNotEmpty()) {
+            firestore.collection("users").document(uid)
+                .addSnapshotListener { snapshot, error ->
+                    if (snapshot != null && snapshot.exists()) {
+                        currentStreak = snapshot.getLong("currentStreak")?.toInt() ?: 0
+                    }
+                }
+        }
+    }
+
     if (showAddDialog) {
         AddDeckDialog(onDismiss = { showAddDialog = false }, onSave = onAddDeck)
     }
@@ -323,7 +338,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = "${userStats.streakDays} Ngày Streak",
+                            text = "$currentStreak Ngày Streak",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
