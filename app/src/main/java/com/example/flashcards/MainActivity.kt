@@ -576,7 +576,7 @@ fun AppNavHost(
             val setId = backStackEntry.arguments?.getString("setId") ?: ""
             val studySet = studySets.find { it.id == setId }
             if (studySet != null) {
-                DeckEditorScreen(
+                UserEditSetScreen(
                     studySet = studySet,
                     onSave = { updatedSet -> viewModel.updateStudySet(updatedSet) },
                     onBack = { navController.popBackStack() }
