@@ -1,7 +1,6 @@
-﻿package com.example.flashcards.view
+package com.example.flashcards.view
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,7 +30,10 @@ fun FlashcardItem(
 ) {
     val rotation by animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
-        animationSpec = tween(durationMillis = 500),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
         label = "rotation"
     )
 
@@ -41,7 +43,7 @@ fun FlashcardItem(
             .height(400.dp)
             .graphicsLayer {
                 rotationY = rotation
-                cameraDistance = 12 * density
+                cameraDistance = 16f * density
             }
             .clickable { onFlip() },
         shape = RoundedCornerShape(32.dp),

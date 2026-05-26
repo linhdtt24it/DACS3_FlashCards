@@ -2,8 +2,7 @@ package com.example.flashcards.view
 
 import android.speech.tts.TextToSpeech
 import android.util.Log
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -304,7 +303,10 @@ fun UserFlashcardScreen(
                 val currentCard = vocabCards[currentIndex]
                 val rotation by animateFloatAsState(
                     targetValue = if (isFlipped) 180f else 0f,
-                    animationSpec = tween(durationMillis = 400),
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
+                    ),
                     label = "flip"
                 )
 
@@ -315,7 +317,7 @@ fun UserFlashcardScreen(
                         .weight(1f)
                         .graphicsLayer {
                             rotationY = rotation
-                            cameraDistance = 12f * density
+                            cameraDistance = 16f * density
                         }
                         .clickable { isFlipped = !isFlipped },
                     shape = RoundedCornerShape(24.dp),
