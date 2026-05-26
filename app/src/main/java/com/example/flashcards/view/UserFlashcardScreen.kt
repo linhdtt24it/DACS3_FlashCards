@@ -160,6 +160,18 @@ fun UserFlashcardScreen(
             }
     }
 
+    val recordProgress = { cardId: String ->
+        if (uid.isNotEmpty() && uid != "anonymous") {
+            val progressDocRef = firestore.collection("progress").document("${uid}_$cardId")
+            val progressData = hashMapOf(
+                "uid" to uid,
+                "vocabId" to cardId,
+                "lastReviewed" to com.google.firebase.Timestamp.now()
+            )
+            progressDocRef.set(progressData, com.google.firebase.firestore.SetOptions.merge())
+        }
+    }
+
 
 
     val progress = if (vocabCards.isNotEmpty()) (currentIndex.toFloat() / vocabCards.size) else 0f
@@ -223,7 +235,12 @@ fun UserFlashcardScreen(
                             )
                             if (currentIndex == vocabCards.size - 1) {
                                 TextButton(
-                                    onClick = { showWishDialog = true }
+                                    onClick = {
+                                        if (vocabCards.isNotEmpty()) {
+                                            recordProgress(vocabCards[currentIndex].id)
+                                        }
+                                        showWishDialog = true
+                                    }
                                 ) {
                                     Text(
                                         text = "Hoàn thành",
@@ -234,7 +251,13 @@ fun UserFlashcardScreen(
                                 }
                             } else {
                                 IconButton(
-                                    onClick = { currentIndex++; isFlipped = false },
+                                    onClick = {
+                                        if (vocabCards.isNotEmpty()) {
+                                            recordProgress(vocabCards[currentIndex].id)
+                                        }
+                                        currentIndex++;
+                                        isFlipped = false
+                                    },
                                     enabled = currentIndex < vocabCards.size - 1
                                 ) {
                                     Icon(

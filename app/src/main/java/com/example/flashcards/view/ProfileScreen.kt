@@ -1,4 +1,4 @@
-﻿package com.example.flashcards.view
+package com.example.flashcards.view
 
 import android.content.Context
 import android.content.Intent
@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flashcards.ui.theme.*
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +60,48 @@ fun ProfileScreen(
     val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
     val dailyGoal = prefs.getInt("daily_goal", 50)
     val reviewAlgorithm = prefs.getString("review_algorithm", "Standard") ?: "Standard"
+
+    val firestore = remember { FirebaseFirestore.getInstance() }
+    val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
+    var totalFavoriteCount by remember { mutableIntStateOf(0) }
+    var learnedTodayCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(uid) {
+        if (uid.isNotEmpty()) {
+            // Count total favorites
+            firestore.collection("user_favorites")
+                .whereEqualTo("uid", uid)
+                .whereEqualTo("starred", true)
+                .addSnapshotListener { snapshot, error ->
+                    if (snapshot != null) {
+                        totalFavoriteCount = snapshot.size()
+                    }
+                }
+
+            // Count learned today from progress collection
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val startOfToday = calendar.time
+            val startOfTodayTimestamp = com.google.firebase.Timestamp(startOfToday)
+
+            firestore.collection("progress")
+                .whereEqualTo("uid", uid)
+                .whereGreaterThanOrEqualTo("lastReviewed", startOfTodayTimestamp)
+                .addSnapshotListener { snapshot, error ->
+                    if (snapshot != null) {
+                        learnedTodayCount = snapshot.size()
+                    }
+                }
+        }
+    }
+
+    val targetWords = if (totalFavoriteCount < 10) totalFavoriteCount else 10
+    val progressPercent = if (targetWords > 0) (learnedTodayCount.toFloat() / targetWords).coerceIn(0f, 1f) else 0f
+    val isGoalCompleted = targetWords > 0 && learnedTodayCount >= targetWords
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(24.dp),
@@ -103,6 +147,72 @@ fun ProfileScreen(
                     TextButton(onClick = { Toast.makeText(context, "Pro features coming soon!", Toast.LENGTH_SHORT).show() }) {
                         Text("Manage", color = Color.White, fontWeight = FontWeight.Bold)
                     }
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Mục tiêu hằng ngày",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            if (isGoalCompleted) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Hoàn thành mục tiêu",
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Surface(
+                            color = if (isGoalCompleted) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = if (isGoalCompleted) "HOÀN THÀNH" else "ĐANG THỰC HIỆN",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = if (isGoalCompleted) Color(0xFF2E7D32) else FlowPrimary,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Đã học: $learnedTodayCount / $targetWords từ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    LinearProgressIndicator(
+                        progress = { progressPercent },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(CircleShape),
+                        color = if (isGoalCompleted) Color(0xFF4CAF50) else FlowPrimary,
+                        trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
                 }
             }
         }
