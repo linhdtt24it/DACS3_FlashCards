@@ -197,7 +197,7 @@ fun AuthLoadingScreen(navController: NavController, authViewModel: AuthViewModel
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Đang kiểm tra quyền truy cập...", color = Color.White)
+            Text("...", color = Color.White)
         }
     }
 }
@@ -223,7 +223,7 @@ fun AppNavHost(
     val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
     val userEmail = user?.email ?: ""
 
-    // Bắt đầu bằng màn hình AuthLoadingScreen để kiểm soát luồng rẽ nhánh an toàn
+
     val startDestination = if (currentUserId.isNotEmpty()) "auth_loading" else "login_screen"
 
     LaunchedEffect(currentUserId) {
@@ -296,7 +296,7 @@ fun AppNavHost(
                                     viewModel.selectSet(studySets.first())
                                     navController.navigate("deck_detail")
                                 } else {
-                                    Toast.makeText(context, "Vui lòng tạo bộ thẻ trước để chơi game nối từ!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Vui lòng tạo bộ thẻ trước !", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }

@@ -4,9 +4,12 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.flashcards.ui.theme.FlowPrimary
+import com.example.flashcards.ui.theme.*
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,126 +88,215 @@ fun LevelDashboardScreen(
     val screenTitle = "$prettyLang - $prettyLevel"
     var showEssayBottomSheet by remember { mutableStateOf(false) }
 
+    val firestore = remember { FirebaseFirestore.getInstance() }
+    val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
+    var totalCardsCount by remember { mutableIntStateOf(0) }
+    var learnedCardsCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(normalizedLevelId, uid) {
+        val category = getVocabCategoryFromLevelId(normalizedLevelId)
+        firestore.collection("system_vocabulary")
+            .whereIn("category", listOf(category, normalizedLevelId))
+            .get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot != null) {
+                    val ids = snapshot.documents.map { it.id }.toSet()
+                    totalCardsCount = if (ids.isNotEmpty()) ids.size else getFallbackCount(normalizedLevelId)
+                    
+                    if (uid.isNotEmpty() && ids.isNotEmpty()) {
+                        firestore.collection("progress")
+                            .whereEqualTo("uid", uid)
+                            .addSnapshotListener { progressSnapshot, error ->
+                                if (progressSnapshot != null) {
+                                    val progressVocabIds = progressSnapshot.documents.mapNotNull { it.getString("vocabId") }.toSet()
+                                    learnedCardsCount = ids.count { progressVocabIds.contains(it) }
+                                }
+                            }
+                    } else if (uid.isNotEmpty()) {
+                        firestore.collection("progress")
+                            .whereEqualTo("uid", uid)
+                            .addSnapshotListener { progressSnapshot, error ->
+                                if (progressSnapshot != null) {
+                                    val progressVocabIds = progressSnapshot.documents.mapNotNull { it.getString("vocabId") }.toSet()
+                                    learnedCardsCount = progressVocabIds.size.coerceAtMost(totalCardsCount)
+                                }
+                            }
+                    }
+                }
+            }
+            .addOnFailureListener {
+                totalCardsCount = getFallbackCount(normalizedLevelId)
+            }
+    }
+
+    val progressPercent = if (totalCardsCount > 0) learnedCardsCount.toFloat() / totalCardsCount else 0f
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(screenTitle, fontWeight = FontWeight.Bold) },
+                title = { Text("Level Dashboard", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Welcome Section Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                shape = RoundedCornerShape(24.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(FlowPrimary, FlowPrimary.copy(alpha = 0.7f))
-                            )
-                        )
-                        .padding(24.dp)
+            // 1. Premium System Header Section
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
-                    Column {
-                        Text(
-                            text = "Trung Tâm Cấp Độ",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Học từ vựng và câu hỏi cấp độ $prettyLevel với các phương pháp ghi nhớ hiện đại, thông minh.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.9f)
-                        )
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(Color(0xFF1D4ED8), Color(0xFF3B82F6))
+                                )
+                            )
+                            .padding(24.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "CẤP ĐỘ HỆ THỐNG",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                                Surface(
+                                    color = Color.White.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = "VIP/PREMIUM",
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = screenTitle,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Luyện tập từ vựng và câu hỏi cấp độ $prettyLevel với các phương pháp ghi nhớ hiện đại nhất hệ thống.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.85f)
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Tổng số từ: $totalCardsCount từ",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = "Tiến độ: $learnedCardsCount/$totalCardsCount thẻ",
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    fontWeight = FontWeight.Medium,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { progressPercent },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(16.dp)),
+                                color = Color(0xFF10B981),
+                                trackColor = Color.White.copy(alpha = 0.25f)
+                            )
+                        }
                     }
                 }
             }
 
-            Text(
-                text = "Phương Thức Rèn Luyện",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            )
-
-            // Grid 2x2 of Feature Cards
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+            // 2. Premium 2x2 Grid Layout
+            item {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    userScrollEnabled = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(380.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    SquareFeatureCard(
-                        title = "Flashcard",
-                        description = "Ghi nhớ 3D & Audio",
-                        icon = Icons.Default.Style,
-                        gradientColors = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)),
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            navController.navigate("user_flashcard/$language/$normalizedLevelId")
-                        }
-                    )
-                    SquareFeatureCard(
-                        title = "Trắc Nghiệm",
-                        description = "Luyện đề trắc nghiệm",
-                        icon = Icons.Default.Quiz,
-                        gradientColors = listOf(Color(0xFFF97316), Color(0xFFEA580C)),
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            navController.navigate("user_play_quiz/$normalizedLevelId")
-                        }
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    SquareFeatureCard(
-                        title = "Tự Luận",
-                        description = "Gõ từ vựng nhớ lâu",
-                        icon = Icons.Default.EditNote,
-                        gradientColors = listOf(Color(0xFF10B981), Color(0xFF059669)),
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            showEssayBottomSheet = true
-                        }
-                    )
-                    SquareFeatureCard(
-                        title = "Nối Từ (Match)",
-                        description = "Game ghép từ nhanh",
-                        icon = Icons.Default.Extension,
-                        gradientColors = listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED)),
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            navController.navigate("user_play_match/$normalizedLevelId")
-                        }
-                    )
+                    item {
+                        LevelFeatureCard(
+                            title = "Flashcard",
+                            description = "Học thẻ ghi nhớ",
+                            icon = Icons.Default.Style,
+                            tintColor = Color(0xFF2563EB),
+                            onClick = {
+                                navController.navigate("user_flashcard/$language/$normalizedLevelId")
+                            }
+                        )
+                    }
+                    item {
+                        LevelFeatureCard(
+                            title = "Trắc Nghiệm",
+                            description = "Luyện trắc nghiệm",
+                            icon = Icons.Default.Quiz,
+                            tintColor = Color(0xFFF97316),
+                            onClick = {
+                                navController.navigate("user_play_quiz/$normalizedLevelId")
+                            }
+                        )
+                    }
+                    item {
+                        LevelFeatureCard(
+                            title = "Tự Luận",
+                            description = "Viết câu trả lời",
+                            icon = Icons.Default.EditNote,
+                            tintColor = Color(0xFF10B981),
+                            onClick = {
+                                showEssayBottomSheet = true
+                            }
+                        )
+                    }
+                    item {
+                        LevelFeatureCard(
+                            title = "Nối Từ (Match)",
+                            description = "Trò chơi ghép từ",
+                            icon = Icons.Default.Extension,
+                            tintColor = Color(0xFF8B5CF6),
+                            onClick = {
+                                navController.navigate("user_play_match/$normalizedLevelId")
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -226,11 +321,11 @@ fun LevelDashboardScreen(
 }
 
 @Composable
-fun SquareFeatureCard(
+fun LevelFeatureCard(
     title: String,
     description: String,
     icon: ImageVector,
-    gradientColors: List<Color>,
+    tintColor: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
@@ -238,50 +333,84 @@ fun SquareFeatureCard(
         modifier = modifier
             .aspectRatio(1f)
             .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = tintColor.copy(alpha = 0.15f)),
+        border = BorderStroke(1.dp, tintColor.copy(alpha = 0.15f))
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.linearGradient(gradientColors))
-                .padding(16.dp)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.22f)),
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(tintColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        fontSize = 18.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 12.sp
+                        tint = tintColor,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = tintColor,
+                    textAlign = TextAlign.Center
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = tintColor.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+            }
         }
+    }
+}
+
+fun getFallbackCount(levelId: String): Int {
+    return when (levelId) {
+        "QUIZ_JA_N5" -> 50
+        "QUIZ_JA_N4" -> 60
+        "QUIZ_JA_N3" -> 80
+        "QUIZ_JA_N2" -> 100
+        "QUIZ_JA_N1" -> 120
+        "QUIZ_TOEIC_450" -> 150
+        "QUIZ_TOEIC_650" -> 180
+        "QUIZ_TOEIC_800" -> 220
+        "QUIZ_IELTS_55" -> 150
+        "QUIZ_IELTS_65" -> 180
+        "QUIZ_IELTS_75" -> 250
+        "QUIZ_ZH_BASIC" -> 40
+        "QUIZ_PA_INTRO" -> 30
+        else -> 50
     }
 }

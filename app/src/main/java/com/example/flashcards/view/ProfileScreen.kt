@@ -254,16 +254,32 @@ fun ProfileScreen(
             }
         }
 
+
+
         item {
+            SettingSectionHeader("Account Settings")
+            SettingsItemRow(icon = Icons.Default.Person, title = "Personal Information", onClick = onNavigateToPersonalInfo)
+            SettingsItemRow(icon = Icons.Default.Lock, title = "Password & Security", onClick = onNavigateToSecurity)
+            SettingsItemRow(icon = Icons.Default.Notifications, title = "Notifications", value = if (notificationsEnabled) "On" else "Off", onClick = onNavigateToNotifications)
+        }
+
+        item {
+            SettingSectionHeader("Learning Preferences")
+            SettingsItemRow(icon = Icons.Default.TrendingUp, title = "Learning Progress (Stats)", onClick = onNavigateToStats)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Integrated Daily Goal Card
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToLearningPrefs() },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -271,6 +287,12 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Flag,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = "Mục tiêu hằng ngày",
                                 style = MaterialTheme.typography.titleMedium,
@@ -278,25 +300,33 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             if (isGoalCompleted) {
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = "Hoàn thành mục tiêu",
                                     tint = Color(0xFF4CAF50),
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
-                        Surface(
-                            color = if (isGoalCompleted) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = if (isGoalCompleted) "HOÀN THÀNH" else "ĐANG THỰC HIỆN",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                color = if (isGoalCompleted) Color(0xFF2E7D32) else FlowPrimary,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.labelSmall
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                color = if (isGoalCompleted) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = if (isGoalCompleted) "HOÀN THÀNH" else "ĐANG HỌC",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    color = if (isGoalCompleted) Color(0xFF2E7D32) else FlowPrimary,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -311,26 +341,14 @@ fun ProfileScreen(
                         progress = { progressPercent },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(8.dp)
+                            .height(6.dp)
                             .clip(CircleShape),
                         color = if (isGoalCompleted) Color(0xFF4CAF50) else FlowPrimary,
                         trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                     )
                 }
             }
-        }
-
-        item {
-            SettingSectionHeader("Account Settings")
-            SettingsItemRow(icon = Icons.Default.Person, title = "Personal Information", onClick = onNavigateToPersonalInfo)
-            SettingsItemRow(icon = Icons.Default.Lock, title = "Password & Security", onClick = onNavigateToSecurity)
-            SettingsItemRow(icon = Icons.Default.Notifications, title = "Notifications", value = if (notificationsEnabled) "On" else "Off", onClick = onNavigateToNotifications)
-        }
-
-        item {
-            SettingSectionHeader("Learning Preferences")
-            SettingsItemRow(icon = Icons.Default.TrendingUp, title = "Learning Progress (Stats)", onClick = onNavigateToStats)
-            SettingsItemRow(icon = Icons.Default.Flag, title = "Daily Goal", value = "$dailyGoal cards", onClick = onNavigateToLearningPrefs)
+            Spacer(modifier = Modifier.height(8.dp))
             SettingsItemRow(icon = Icons.Default.Psychology, title = "Review Algorithm", value = reviewAlgorithm, onClick = onNavigateToLearningPrefs)
         }
 

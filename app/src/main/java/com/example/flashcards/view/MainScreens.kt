@@ -218,6 +218,7 @@ fun HomeScreen(
     val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     var currentStreak by remember { mutableIntStateOf(0) }
     var learnedTodayCount by remember { mutableIntStateOf(0) }
+    var totalFavoriteCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(uid) {
         if (uid.isNotEmpty()) {
@@ -225,6 +226,15 @@ fun HomeScreen(
                 .addSnapshotListener { snapshot, error ->
                     if (snapshot != null && snapshot.exists()) {
                         currentStreak = snapshot.getLong("currentStreak")?.toInt() ?: 0
+                    }
+                }
+
+            firestore.collection("user_favorites")
+                .whereEqualTo("uid", uid)
+                .whereEqualTo("starred", true)
+                .addSnapshotListener { snapshot, error ->
+                    if (snapshot != null) {
+                        totalFavoriteCount = snapshot.size()
                     }
                 }
 
@@ -247,6 +257,8 @@ fun HomeScreen(
                 }
         }
     }
+
+    val targetWords = if (totalFavoriteCount < 10) totalFavoriteCount else 10
 
     if (showAddDialog) {
         AddDeckDialog(onDismiss = { showAddDialog = false }, onSave = onAddDeck)
@@ -364,7 +376,7 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = "Hôm nay bạn đã học $learnedTodayCount thẻ. Cố lên nhé!",
+                            text = "Hôm nay bạn đã học $learnedTodayCount/$targetWords thẻ. Cố lên nhé!",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1607,179 +1619,450 @@ fun LibraryDeckCard(
 fun StudySessionScreen(
     studySet: StudySet,
     onBack: () -> Unit,
-    onSpeak: (String, String) -> Unit,  // 👈 GIỮ của bạn tôi (thêm languageCode)
+    onSpeak: (String, String) -> Unit,
     onUpdateCard: (Flashcard, Int) -> Unit
 ) {
+    val firestore = remember { FirebaseFirestore.getInstance() }
+    val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous" }
+    var starredCardIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showWishDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uid) {
+        if (uid.isNotEmpty() && uid != "anonymous") {
+            firestore.collection("user_favorites")
+                .whereEqualTo("uid", uid)
+                .whereEqualTo("starred", true)
+                .addSnapshotListener { snapshot, error ->
+                    if (snapshot != null) {
+                        val ids = snapshot.documents.mapNotNull { it.getString("vocabId") }.toSet()
+                        starredCardIds = ids
+                    }
+                }
+        }
+    }
+
     var currentIndex by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
     val progress = if (studySet.cards.isNotEmpty()) (currentIndex.toFloat() / studySet.cards.size) else 0f
 
+    val recordProgress = { cardId: String ->
+        if (uid.isNotEmpty() && uid != "anonymous") {
+            val progressDocRef = firestore.collection("progress").document("${uid}_$cardId")
+            val progressData = hashMapOf(
+                "uid" to uid,
+                "vocabId" to cardId,
+                "lastReviewed" to com.google.firebase.Timestamp.now()
+            )
+            progressDocRef.set(progressData, com.google.firebase.firestore.SetOptions.merge())
+        }
+    }
+
+    val onCardRated = { card: Flashcard, quality: Int ->
+        recordProgress(card.id)
+        onUpdateCard(card, quality)
+        if (currentIndex == studySet.cards.size - 1) {
+            showWishDialog = true
+        } else {
+            isFlipped = false
+            currentIndex++
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = { Text("Thẻ ghi nhớ: ${studySet.title}", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground) }
-                },
-                actions = {
-                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        LinearProgressIndicator(progress = { progress }, modifier = Modifier.width(200.dp).height(8.dp).clip(CircleShape), color = FlowPrimary, trackColor = MaterialTheme.colorScheme.background)
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.Close, contentDescription = "Đóng", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
-            if (currentIndex < studySet.cards.size) {
+            if (studySet.cards.isNotEmpty() && currentIndex < studySet.cards.size) {
                 Surface(
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.background
                 ) {
                     BottomAppBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { if (currentIndex > 0) { currentIndex--; isFlipped = false } }, enabled = currentIndex > 0) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Previous", tint = if (currentIndex > 0) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = { if (currentIndex > 0) { currentIndex--; isFlipped = false } },
+                                enabled = currentIndex > 0
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowBack,
+                                    contentDescription = "Previous",
+                                    tint = if (currentIndex > 0) MaterialTheme.colorScheme.onBackground else Color.Gray
+                                )
                             }
-                            Text("Card: ${currentIndex + 1}/${studySet.cards.size}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                            IconButton(onClick = { if (currentIndex < studySet.cards.size - 1) { currentIndex++; isFlipped = false } }, enabled = currentIndex < studySet.cards.size - 1) {
-                                Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = if (currentIndex < studySet.cards.size - 1) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = "Thẻ: ${currentIndex + 1}/${studySet.cards.size}",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (currentIndex == studySet.cards.size - 1) {
+                                TextButton(
+                                    onClick = {
+                                        recordProgress(studySet.cards[currentIndex].id)
+                                        showWishDialog = true
+                                    }
+                                ) {
+                                    Text(
+                                        text = "Hoàn thành",
+                                        color = FlowPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                }
+                            } else {
+                                IconButton(
+                                    onClick = {
+                                        recordProgress(studySet.cards[currentIndex].id)
+                                        currentIndex++
+                                        isFlipped = false
+                                    },
+                                    enabled = currentIndex < studySet.cards.size - 1
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowForward,
+                                        contentDescription = "Next",
+                                        tint = MaterialTheme.colorScheme.onBackground
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(padding).padding(20.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("${studySet.title} Mastery", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(modifier = Modifier.height(24.dp))
+            if (studySet.cards.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Bộ thẻ này hiện chưa có từ vựng.", color = Color.Gray)
+                }
+            } else if (currentIndex < studySet.cards.size) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(CircleShape),
+                    color = FlowPrimary,
+                    trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                )
+                Spacer(modifier = Modifier.height(32.dp))
 
-            if (currentIndex < studySet.cards.size) {
-                val card = studySet.cards[currentIndex]
-
-                val rotation by animateFloatAsState(
+                val currentCard = studySet.cards[currentIndex]
+                val rotationState by animateFloatAsState(
                     targetValue = if (isFlipped) 180f else 0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow
-                    ), label = "flip"
+                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+                    label = "flip"
                 )
 
                 Card(
-                    modifier = Modifier.fillMaxWidth().weight(1f)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                         .graphicsLayer {
-                            rotationY = rotation
-                            cameraDistance = 16f * density
+                            rotationX = rotationState
+                            cameraDistance = 12f * density
                         }
                         .clickable { isFlipped = !isFlipped },
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
-                    val isBackVisible = rotation >= 90f
-                    Box(modifier = Modifier.fillMaxSize().graphicsLayer { if (isBackVisible) rotationY = 180f }, contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Spacer(modifier = Modifier.size(48.dp))
-                                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
-                                    Text(if (!isBackVisible) "QUESTION" else "ANSWER", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = FlowPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        if (rotationState <= 90f) {
+                            // Giao diện Mặt trước
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "MẶT TRƯỚC",
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            color = FlowPrimary,
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                    }
+                                    
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Nút Đánh dấu sao (Star)
+                                        val isStarred = starredCardIds.contains(currentCard.id)
+                                        IconButton(
+                                            onClick = {
+                                                val favDocRef = firestore.collection("user_favorites").document("${uid}_${currentCard.id}")
+                                                if (isStarred) {
+                                                    favDocRef.update("starred", false)
+                                                } else {
+                                                    val favData = hashMapOf(
+                                                        "uid" to uid,
+                                                        "vocabId" to currentCard.id,
+                                                        "front" to currentCard.question,
+                                                        "back" to currentCard.answer,
+                                                        "levelId" to studySet.id,
+                                                        "starred" to true,
+                                                        "updatedAt" to com.google.firebase.Timestamp.now()
+                                                    )
+                                                    favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
+                                                }
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Star,
+                                                contentDescription = "Đánh dấu sao",
+                                                tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        // Nút loa phát âm TTS
+                                        IconButton(
+                                            onClick = {
+                                                val wordToSpeak = currentCard.question
+                                                val cleanWord = wordToSpeak.substringBefore("(").trim()
+                                                onSpeak(cleanWord, studySet.languageCode)
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.VolumeUp,
+                                                contentDescription = "Phát âm",
+                                                tint = FlowPrimary,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+                                    }
                                 }
-                                // 👈 GIỮ của bạn tôi: truyền thêm languageCode
-                                IconButton(onClick = { onSpeak(if (!isBackVisible) card.question else card.answer, studySet.languageCode) }) {
-                                    Icon(Icons.Default.VolumeUp, contentDescription = "Speak", tint = FlowPrimary)
+
+                                Spacer(modifier = Modifier.weight(1f))
+
+                                if (currentCard.imageUrl != null) {
+                                    val imageModel = remember(currentCard.imageUrl) { ImageUtils.getImageModel(currentCard.imageUrl) }
+                                    AsyncImage(
+                                        model = imageModel,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Fit,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(160.dp)
+                                            .padding(bottom = 16.dp)
+                                    )
                                 }
-                            }
-                            Spacer(modifier = Modifier.weight(1f))
-                            if (!isBackVisible && card.imageUrl != null) {
-                                val imageModel = remember(card.imageUrl) { ImageUtils.getImageModel(card.imageUrl) } // 👈 GIỮ của bạn
-                                AsyncImage(
-                                    model = imageModel,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier.fillMaxWidth().height(160.dp).padding(bottom = 16.dp)
+
+                                Text(
+                                    text = currentCard.question,
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    textAlign = TextAlign.Center
                                 )
-                            }
-                            Text(
-                                if (!isBackVisible) card.question else card.answer,
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                textAlign = TextAlign.Center
-                            )
-                            if (isBackVisible && card.explanation.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Surface(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), shape = RoundedCornerShape(12.dp)) {
+
+                                Spacer(modifier = Modifier.weight(1f))
+                                
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.TouchApp,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        card.explanation,
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        text = "Bấm vào thẻ để lật mặt sau",
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(16.dp)
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.weight(1f))
+                        } else {
+                            // Giao diện Mặt sau (Nghĩa tiếng Việt + Giải thích + Bộ 3 nút)
+                            // Bắt buộc xoay ngược lại 180 độ theo trục X bằng graphicsLayer
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { rotationX = 180f }
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "MẶT SAU",
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                                color = FlowPrimary,
+                                                fontWeight = FontWeight.Bold,
+                                                style = MaterialTheme.typography.labelMedium
+                                            )
+                                        }
+                                        
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            // Nút Đánh dấu sao (Star)
+                                            val isStarred = starredCardIds.contains(currentCard.id)
+                                            IconButton(
+                                                onClick = {
+                                                    val favDocRef = firestore.collection("user_favorites").document("${uid}_${currentCard.id}")
+                                                    if (isStarred) {
+                                                        favDocRef.update("starred", false)
+                                                    } else {
+                                                        val favData = hashMapOf(
+                                                            "uid" to uid,
+                                                            "vocabId" to currentCard.id,
+                                                            "front" to currentCard.question,
+                                                            "back" to currentCard.answer,
+                                                            "levelId" to studySet.id,
+                                                            "starred" to true,
+                                                            "updatedAt" to com.google.firebase.Timestamp.now()
+                                                        )
+                                                        favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
+                                                    }
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Star,
+                                                    contentDescription = "Đánh dấu sao",
+                                                    tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
+                                                    modifier = Modifier.size(28.dp)
+                                                )
+                                            }
 
-                            if (!isBackVisible) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.TouchApp, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Tap to reveal answer", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                                            Spacer(modifier = Modifier.width(8.dp))
+
+                                            // Nút loa phát âm TTS
+                                            IconButton(
+                                                onClick = {
+                                                    val wordToSpeak = currentCard.answer
+                                                    val cleanWord = wordToSpeak.substringBefore("(").trim()
+                                                    onSpeak(cleanWord, studySet.languageCode)
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.VolumeUp,
+                                                    contentDescription = "Phát âm",
+                                                    tint = FlowPrimary,
+                                                    modifier = Modifier.size(28.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.weight(1f))
+
+                                    Text(
+                                        text = currentCard.answer,
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    if (currentCard.explanation.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Text(
+                                                text = currentCard.explanation,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.padding(16.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    Spacer(modifier = Modifier.height(48.dp))
                                 }
-                            } else {
-                                Spacer(modifier = Modifier.height(48.dp))
-                            }
-                        }
 
-                        if (isBackVisible) {
-                            Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(24.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Button(
-                                        onClick = { onUpdateCard(card, 1); isFlipped = false; currentIndex++ },
-                                        modifier = Modifier.weight(1f).height(52.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = FlowWarningLight)
+                                Column(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .fillMaxWidth()
+                                        .padding(24.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        Text("Hard", color = FlowWarning, fontWeight = FontWeight.Bold)
-                                    }
-                                    Button(
-                                        onClick = { onUpdateCard(card, 3); isFlipped = false; currentIndex++ },
-                                        modifier = Modifier.weight(1f).height(52.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                                    ) {
-                                        Text("Good", color = FlowPrimary, fontWeight = FontWeight.Bold)
-                                    }
-                                    Button(
-                                        onClick = { onUpdateCard(card, 5); isFlipped = false; currentIndex++ },
-                                        modifier = Modifier.weight(1f).height(52.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = FlowSuccessLight)
-                                    ) {
-                                        Text("Easy", color = FlowSuccess, fontWeight = FontWeight.Bold)
+                                        Button(
+                                            onClick = { onCardRated(currentCard, 1) },
+                                            modifier = Modifier.weight(1f).height(52.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = FlowWarningLight)
+                                        ) {
+                                            Text("Khó", color = FlowWarning, fontWeight = FontWeight.Bold)
+                                        }
+                                        Button(
+                                            onClick = { onCardRated(currentCard, 3) },
+                                            modifier = Modifier.weight(1f).height(52.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                                        ) {
+                                            Text("Tốt", color = FlowPrimary, fontWeight = FontWeight.Bold)
+                                        }
+                                        Button(
+                                            onClick = { onCardRated(currentCard, 5) },
+                                            modifier = Modifier.weight(1f).height(52.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = FlowSuccessLight)
+                                        ) {
+                                            Text("Dễ", color = FlowSuccess, fontWeight = FontWeight.Bold)
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-
                 Spacer(modifier = Modifier.height(24.dp))
-
-            } else {
-                Text("Session Complete!", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onBackground)
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = onBack,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
-                ) {
-                    Text("Return to Library", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
             }
         }
     }

@@ -27,7 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.flashcards.ui.theme.FlowPrimary
+import com.example.flashcards.ui.theme.*
+import androidx.compose.material.icons.filled.*
 import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.auth.FirebaseAuth
@@ -159,15 +160,26 @@ fun UserFlashcardScreen(
             }
     }
 
-    val recordProgress = { cardId: String ->
+    val recordProgress = { cardId: String, status: String ->
         if (uid.isNotEmpty() && uid != "anonymous") {
             val progressDocRef = firestore.collection("progress").document("${uid}_$cardId")
             val progressData = hashMapOf(
                 "uid" to uid,
                 "vocabId" to cardId,
+                "status" to status,
                 "lastReviewed" to com.google.firebase.Timestamp.now()
             )
             progressDocRef.set(progressData, com.google.firebase.firestore.SetOptions.merge())
+        }
+    }
+
+    val onCardRated = { card: VocabCard, status: String ->
+        recordProgress(card.id, status)
+        if (currentIndex == vocabCards.size - 1) {
+            showWishDialog = true
+        } else {
+            isFlipped = false
+            currentIndex++
         }
     }
 
@@ -236,7 +248,7 @@ fun UserFlashcardScreen(
                                 TextButton(
                                     onClick = {
                                         if (vocabCards.isNotEmpty()) {
-                                            recordProgress(vocabCards[currentIndex].id)
+                                            recordProgress(vocabCards[currentIndex].id, "GOOD")
                                         }
                                         showWishDialog = true
                                     }
@@ -252,7 +264,7 @@ fun UserFlashcardScreen(
                                 IconButton(
                                     onClick = {
                                         if (vocabCards.isNotEmpty()) {
-                                            recordProgress(vocabCards[currentIndex].id)
+                                            recordProgress(vocabCards[currentIndex].id, "GOOD")
                                         }
                                         currentIndex++;
                                         isFlipped = false
@@ -301,23 +313,20 @@ fun UserFlashcardScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 val currentCard = vocabCards[currentIndex]
-                val rotation by animateFloatAsState(
+                val rotationState by animateFloatAsState(
                     targetValue = if (isFlipped) 180f else 0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow
-                    ),
+                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
                     label = "flip"
                 )
 
-                // Flashcard container with 3D Flip animation
+                // Flashcard container with 3D Vertical Flip animation
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
                         .graphicsLayer {
-                            rotationY = rotation
-                            cameraDistance = 16f * density
+                            rotationX = rotationState
+                            cameraDistance = 12f * density
                         }
                         .clickable { isFlipped = !isFlipped },
                     shape = RoundedCornerShape(24.dp),
@@ -325,122 +334,274 @@ fun UserFlashcardScreen(
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
-                    val isBackVisible = rotation >= 90f
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer { if (isBackVisible) rotationY = 180f },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        if (rotationState <= 90f) {
+                            // Giao diện Mặt trước (Từ gốc + Loa + Sao)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = if (!isBackVisible) "MẶT TRƯỚC" else "MẶT SAU",
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        color = FlowPrimary,
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                }
-                                
                                 Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Nút Đánh dấu sao (Star)
-                                    val isStarred = starredCardIds.contains(currentCard.id)
-                                    IconButton(
-                                        onClick = {
-                                            val favDocRef = firestore.collection("user_favorites").document("${uid}_${currentCard.id}")
-                                            if (isStarred) {
-                                                favDocRef.update("starred", false)
-                                            } else {
-                                                val favData = hashMapOf(
-                                                    "uid" to uid,
-                                                    "vocabId" to currentCard.id,
-                                                    "front" to currentCard.front,
-                                                    "back" to currentCard.back,
-                                                    "levelId" to if (levelId == "STARRED") currentCard.levelId else levelId,
-                                                    "starred" to true,
-                                                    "updatedAt" to com.google.firebase.Timestamp.now()
-                                                )
-                                                favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
-                                            }
-                                        }
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        shape = RoundedCornerShape(8.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Star,
-                                            contentDescription = "Đánh dấu sao",
-                                            tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
-                                            modifier = Modifier.size(28.dp)
+                                        Text(
+                                            text = "MẶT TRƯỚC",
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            color = FlowPrimary,
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.labelMedium
                                         )
                                     }
-
-                                    Spacer(modifier = Modifier.width(8.dp))
-
-                                    // Volume up phát âm tiếng TTS
-                                    IconButton(
-                                        onClick = {
-                                            val wordToSpeak = if (!isBackVisible) currentCard.front else currentCard.back
-                                            // Chỉ phát âm từ gốc
-                                            val cleanWord = wordToSpeak.substringBefore("(").trim()
-                                            val speakLocale = when {
-                                                currentCard.levelId.contains("JA") -> Locale.JAPANESE
-                                                currentCard.levelId.contains("ZH") -> Locale.CHINESE
-                                                currentCard.levelId.contains("PA") -> Locale.US
-                                                else -> {
-                                                    when (language.uppercase()) {
-                                                        "JAPANESE" -> Locale.JAPANESE
-                                                        "CHINESE" -> Locale.CHINESE
-                                                        else -> Locale.US
-                                                    }
+                                    
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Nút Đánh dấu sao (Star)
+                                        val isStarred = starredCardIds.contains(currentCard.id)
+                                        IconButton(
+                                            onClick = {
+                                                val favDocRef = firestore.collection("user_favorites").document("${uid}_${currentCard.id}")
+                                                if (isStarred) {
+                                                    favDocRef.update("starred", false)
+                                                } else {
+                                                    val favData = hashMapOf(
+                                                        "uid" to uid,
+                                                        "vocabId" to currentCard.id,
+                                                        "front" to currentCard.front,
+                                                        "back" to currentCard.back,
+                                                        "levelId" to if (levelId == "STARRED") currentCard.levelId else levelId,
+                                                        "starred" to true,
+                                                        "updatedAt" to com.google.firebase.Timestamp.now()
+                                                    )
+                                                    favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
                                                 }
                                             }
-                                            tts?.language = speakLocale
-                                            tts?.speak(cleanWord, TextToSpeech.QUEUE_FLUSH, null, null)
-                                        },
-                                        enabled = isTtsReady
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Star,
+                                                contentDescription = "Đánh dấu sao",
+                                                tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        // Volume up phát âm tiếng TTS
+                                        IconButton(
+                                            onClick = {
+                                                val wordToSpeak = currentCard.front
+                                                val cleanWord = wordToSpeak.substringBefore("(").trim()
+                                                val speakLocale = when {
+                                                    currentCard.levelId.contains("JA") -> Locale.JAPANESE
+                                                    currentCard.levelId.contains("ZH") -> Locale.CHINESE
+                                                    currentCard.levelId.contains("PA") -> Locale.US
+                                                    else -> {
+                                                        when (language.uppercase()) {
+                                                            "JAPANESE" -> Locale.JAPANESE
+                                                            "CHINESE" -> Locale.CHINESE
+                                                            else -> Locale.US
+                                                        }
+                                                    }
+                                                }
+                                                tts?.language = speakLocale
+                                                tts?.speak(cleanWord, TextToSpeech.QUEUE_FLUSH, null, null)
+                                            },
+                                            enabled = isTtsReady
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.VolumeUp,
+                                                contentDescription = "Phát âm",
+                                                tint = FlowPrimary,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.weight(1f))
+
+                                Text(
+                                    text = currentCard.front,
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(modifier = Modifier.weight(1f))
+                                
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.TouchApp,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Bấm vào thẻ để lật mặt sau",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        } else {
+                            // Giao diện Mặt sau (Nghĩa tiếng Việt + Bộ 3 nút Hard/Good/Easy)
+                            // Bắt buộc xoay ngược lại 180 độ theo trục X bằng graphicsLayer
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { rotationX = 180f }
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.VolumeUp,
-                                            contentDescription = "Phát âm",
-                                            tint = FlowPrimary,
-                                            modifier = Modifier.size(28.dp)
-                                        )
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "MẶT SAU",
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                                color = FlowPrimary,
+                                                fontWeight = FontWeight.Bold,
+                                                style = MaterialTheme.typography.labelMedium
+                                            )
+                                        }
+                                        
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            // Nút Đánh dấu sao (Star)
+                                            val isStarred = starredCardIds.contains(currentCard.id)
+                                            IconButton(
+                                                onClick = {
+                                                    val favDocRef = firestore.collection("user_favorites").document("${uid}_${currentCard.id}")
+                                                    if (isStarred) {
+                                                        favDocRef.update("starred", false)
+                                                    } else {
+                                                        val favData = hashMapOf(
+                                                            "uid" to uid,
+                                                            "vocabId" to currentCard.id,
+                                                            "front" to currentCard.front,
+                                                            "back" to currentCard.back,
+                                                            "levelId" to if (levelId == "STARRED") currentCard.levelId else levelId,
+                                                            "starred" to true,
+                                                            "updatedAt" to com.google.firebase.Timestamp.now()
+                                                        )
+                                                        favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
+                                                    }
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Star,
+                                                    contentDescription = "Đánh dấu sao",
+                                                    tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
+                                                    modifier = Modifier.size(28.dp)
+                                                )
+                                            }
+
+                                            Spacer(modifier = Modifier.width(8.dp))
+
+                                            // Volume up phát âm tiếng TTS
+                                            IconButton(
+                                                onClick = {
+                                                    val wordToSpeak = currentCard.back
+                                                    val cleanWord = wordToSpeak.substringBefore("(").trim()
+                                                    val speakLocale = when {
+                                                        currentCard.levelId.contains("JA") -> Locale.JAPANESE
+                                                        currentCard.levelId.contains("ZH") -> Locale.CHINESE
+                                                        currentCard.levelId.contains("PA") -> Locale.US
+                                                        else -> {
+                                                            when (language.uppercase()) {
+                                                                "JAPANESE" -> Locale.JAPANESE
+                                                                "CHINESE" -> Locale.CHINESE
+                                                                else -> Locale.US
+                                                            }
+                                                        }
+                                                    }
+                                                    tts?.language = speakLocale
+                                                    tts?.speak(cleanWord, TextToSpeech.QUEUE_FLUSH, null, null)
+                                                },
+                                                enabled = isTtsReady
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.VolumeUp,
+                                                    contentDescription = "Phát âm",
+                                                    tint = FlowPrimary,
+                                                    modifier = Modifier.size(28.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.weight(1f))
+
+                                    Text(
+                                        text = currentCard.back,
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    Spacer(modifier = Modifier.height(48.dp))
+                                }
+
+                                Column(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .fillMaxWidth()
+                                        .padding(24.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Button(
+                                            onClick = { onCardRated(currentCard, "HARD") },
+                                            modifier = Modifier.weight(1f).height(52.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = FlowWarningLight)
+                                        ) {
+                                            Text("Khó", color = FlowWarning, fontWeight = FontWeight.Bold)
+                                        }
+                                        Button(
+                                            onClick = { onCardRated(currentCard, "GOOD") },
+                                            modifier = Modifier.weight(1f).height(52.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                                        ) {
+                                            Text("Tốt", color = FlowPrimary, fontWeight = FontWeight.Bold)
+                                        }
+                                        Button(
+                                            onClick = { onCardRated(currentCard, "EASY") },
+                                            modifier = Modifier.weight(1f).height(52.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = FlowSuccessLight)
+                                        ) {
+                                            Text("Dễ", color = FlowSuccess, fontWeight = FontWeight.Bold)
+                                        }
                                     }
                                 }
                             }
-
-                            Spacer(modifier = Modifier.weight(1f))
-
-                            Text(
-                                text = if (!isBackVisible) currentCard.front else currentCard.back,
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                textAlign = TextAlign.Center
-                            )
-
-                            Spacer(modifier = Modifier.weight(1f))
-                            
-                            Text(
-                                text = "Bấm vào thẻ để lật mặt sau",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray,
-                                fontWeight = FontWeight.SemiBold
-                            )
                         }
                     }
                 }
