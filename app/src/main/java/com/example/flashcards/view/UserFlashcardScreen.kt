@@ -106,6 +106,114 @@ fun UserFlashcardScreen(
                     isLoading = false
                     vocabCards = emptyList()
                 }
+        } else if (levelId.startsWith("day_")) {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
+            if (uid != "anonymous") {
+                firestore.collection("users").document(uid).get()
+                    .addOnSuccessListener { userDoc ->
+                        val dailyLimit = userDoc.getLong("dailyWordLimit")?.toInt() ?: 10
+                        
+                        firestore.collection("progress")
+                            .whereEqualTo("uid", uid)
+                            .get()
+                            .addOnSuccessListener { progressSnapshot ->
+                                val dayIndex = levelId.substringAfter("day_").toIntOrNull() ?: 1
+                                val calendar = java.util.Calendar.getInstance()
+                                calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                calendar.set(java.util.Calendar.MINUTE, 0)
+                                calendar.set(java.util.Calendar.SECOND, 0)
+                                calendar.set(java.util.Calendar.MILLISECOND, 0)
+                                val startOfToday = calendar.timeInMillis
+                                
+                                val dayEndTimes = LongArray(7)
+                                for (i in 0..6) {
+                                    calendar.timeInMillis = startOfToday
+                                    calendar.add(java.util.Calendar.DAY_OF_YEAR, i)
+                                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                    calendar.set(java.util.Calendar.MINUTE, 59)
+                                    calendar.set(java.util.Calendar.SECOND, 59)
+                                    calendar.set(java.util.Calendar.MILLISECOND, 999)
+                                    dayEndTimes[i] = calendar.timeInMillis
+                                }
+                                
+                                val dueVocabIds = mutableListOf<String>()
+                                progressSnapshot.documents.forEach { doc ->
+                                    val vocabId = doc.getString("vocabId") ?: ""
+                                    val status = doc.getString("status") ?: ""
+                                    val nextReview = doc.getTimestamp("nextReview")
+                                    if (vocabId.isNotEmpty() && status != "MASTERED") {
+                                        if (nextReview != null) {
+                                            val reviewTime = nextReview.toDate().time
+                                            if (dayIndex == 1) {
+                                                if (reviewTime <= dayEndTimes[0]) {
+                                                    dueVocabIds.add(vocabId)
+                                                }
+                                            } else {
+                                                val startRange = dayEndTimes[dayIndex - 2]
+                                                val endRange = dayEndTimes[dayIndex - 1]
+                                                if (reviewTime > startRange && reviewTime <= endRange) {
+                                                    dueVocabIds.add(vocabId)
+                                                }
+                                            }
+                                        } else if (dayIndex == 1) {
+                                            dueVocabIds.add(vocabId)
+                                        }
+                                    }
+                                }
+                                
+                                val finalVocabIds = if (dayIndex == 1) dueVocabIds.take(dailyLimit) else dueVocabIds
+                                
+                                if (finalVocabIds.isEmpty()) {
+                                    vocabCards = emptyList()
+                                    isLoading = false
+                                } else {
+                                    val chunks = finalVocabIds.chunked(30)
+                                    val loadedCards = mutableListOf<VocabCard>()
+                                    var chunksLeft = chunks.size
+                                    
+                                    chunks.forEach { chunk ->
+                                        firestore.collection("system_vocabulary")
+                                            .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
+                                            .get()
+                                            .addOnSuccessListener { vocabSnapshot ->
+                                                vocabSnapshot.documents.forEach { d ->
+                                                    try {
+                                                        val id = d.id
+                                                        val rawFront = d.getString("front") ?: ""
+                                                        val rawBack = d.getString("back") ?: ""
+                                                        val front = CryptoUtils.decrypt(rawFront)
+                                                        val back = CryptoUtils.decrypt(rawBack)
+                                                        if (front.isNotEmpty() && back.isNotEmpty()) {
+                                                            loadedCards.add(VocabCard(id, front, back, levelId))
+                                                        }
+                                                    } catch (e: Exception) {}
+                                                }
+                                                chunksLeft--
+                                                if (chunksLeft == 0) {
+                                                    vocabCards = loadedCards
+                                                    isLoading = false
+                                                }
+                                            }
+                                            .addOnFailureListener {
+                                                chunksLeft--
+                                                if (chunksLeft == 0) {
+                                                    vocabCards = loadedCards
+                                                    isLoading = false
+                                                }
+                                            }
+                                    }
+                                }
+                            }
+                            .addOnFailureListener {
+                                isLoading = false
+                            }
+                    }
+                    .addOnFailureListener {
+                        isLoading = false
+                    }
+            } else {
+                isLoading = false
+            }
         } else {
             val vocabCategory = getVocabCategoryFromLevelId(levelId)
             firestore.collection("system_vocabulary")

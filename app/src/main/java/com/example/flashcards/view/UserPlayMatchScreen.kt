@@ -50,38 +50,157 @@ fun UserPlayMatchScreen(
 
     // Load vocabulary cards from Firestore
     LaunchedEffect(levelId) {
-        val vocabCategory = getVocabCategoryFromLevelId(levelId)
-        firestore.collection("system_vocabulary")
-            .whereIn("category", listOf(vocabCategory, levelId))
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                isLoading = false
-                val list = querySnapshot.documents.mapNotNull { doc ->
-                    try {
-                        val id = doc.id
-                        val rawFront = doc.getString("front") ?: ""
-                        val rawBack = doc.getString("back") ?: ""
-                        val front = CryptoUtils.decrypt(rawFront)
-                        val back = CryptoUtils.decrypt(rawBack)
-                        if (front.isNotEmpty() && back.isNotEmpty()) {
-                            VocabCard(id, front, back)
-                        } else null
-                    } catch (e: Exception) {
-                        null
+        if (levelId.startsWith("day_")) {
+            val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
+            if (uid != "anonymous") {
+                firestore.collection("users").document(uid).get()
+                    .addOnSuccessListener { userDoc ->
+                        val dailyLimit = userDoc.getLong("dailyWordLimit")?.toInt() ?: 10
+                        
+                        firestore.collection("progress")
+                            .whereEqualTo("uid", uid)
+                            .get()
+                            .addOnSuccessListener { progressSnapshot ->
+                                val dayIndex = levelId.substringAfter("day_").toIntOrNull() ?: 1
+                                val calendar = java.util.Calendar.getInstance()
+                                calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                calendar.set(java.util.Calendar.MINUTE, 0)
+                                calendar.set(java.util.Calendar.SECOND, 0)
+                                calendar.set(java.util.Calendar.MILLISECOND, 0)
+                                val startOfToday = calendar.timeInMillis
+                                
+                                val dayEndTimes = LongArray(7)
+                                for (i in 0..6) {
+                                    calendar.timeInMillis = startOfToday
+                                    calendar.add(java.util.Calendar.DAY_OF_YEAR, i)
+                                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                    calendar.set(java.util.Calendar.MINUTE, 59)
+                                    calendar.set(java.util.Calendar.SECOND, 59)
+                                    calendar.set(java.util.Calendar.MILLISECOND, 999)
+                                    dayEndTimes[i] = calendar.timeInMillis
+                                }
+                                
+                                val dueVocabIds = mutableListOf<String>()
+                                progressSnapshot.documents.forEach { doc ->
+                                    val vocabId = doc.getString("vocabId") ?: ""
+                                    val status = doc.getString("status") ?: ""
+                                    val nextReview = doc.getTimestamp("nextReview")
+                                    if (vocabId.isNotEmpty() && status != "MASTERED") {
+                                        if (nextReview != null) {
+                                            val reviewTime = nextReview.toDate().time
+                                            if (dayIndex == 1) {
+                                                if (reviewTime <= dayEndTimes[0]) {
+                                                    dueVocabIds.add(vocabId)
+                                                }
+                                            } else {
+                                                val startRange = dayEndTimes[dayIndex - 2]
+                                                val endRange = dayEndTimes[dayIndex - 1]
+                                                if (reviewTime > startRange && reviewTime <= endRange) {
+                                                    dueVocabIds.add(vocabId)
+                                                }
+                                            }
+                                        } else if (dayIndex == 1) {
+                                            dueVocabIds.add(vocabId)
+                                        }
+                                    }
+                                }
+                                
+                                val finalVocabIds = if (dayIndex == 1) dueVocabIds.take(dailyLimit) else dueVocabIds
+                                
+                                if (finalVocabIds.isEmpty()) {
+                                    rawVocabList = emptyList()
+                                    isLoading = false
+                                    initializeGame(rawVocabList) { gridItems = it }
+                                } else {
+                                    val chunks = finalVocabIds.chunked(30)
+                                    val loadedCards = mutableListOf<VocabCard>()
+                                    var chunksLeft = chunks.size
+                                    
+                                    chunks.forEach { chunk ->
+                                        firestore.collection("system_vocabulary")
+                                            .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
+                                            .get()
+                                            .addOnSuccessListener { vocabSnapshot ->
+                                                vocabSnapshot.documents.forEach { d ->
+                                                    try {
+                                                        val id = d.id
+                                                        val rawFront = d.getString("front") ?: ""
+                                                        val rawBack = d.getString("back") ?: ""
+                                                        val front = CryptoUtils.decrypt(rawFront)
+                                                        val back = CryptoUtils.decrypt(rawBack)
+                                                        if (front.isNotEmpty() && back.isNotEmpty()) {
+                                                            loadedCards.add(VocabCard(id, front, back, levelId))
+                                                        }
+                                                    } catch (e: Exception) {}
+                                                }
+                                                chunksLeft--
+                                                if (chunksLeft == 0) {
+                                                    rawVocabList = loadedCards
+                                                    isLoading = false
+                                                    initializeGame(rawVocabList) { gridItems = it }
+                                                }
+                                            }
+                                            .addOnFailureListener {
+                                                chunksLeft--
+                                                if (chunksLeft == 0) {
+                                                    rawVocabList = loadedCards
+                                                    isLoading = false
+                                                    initializeGame(rawVocabList) { gridItems = it }
+                                                }
+                                            }
+                                    }
+                                }
+                            }
+                            .addOnFailureListener {
+                                isLoading = false
+                                rawVocabList = getFallbackVocabList(levelId)
+                                initializeGame(rawVocabList) { gridItems = it }
+                            }
                     }
-                }
-                if (list.isNotEmpty()) {
-                    rawVocabList = list
-                } else {
-                    rawVocabList = getFallbackVocabList(levelId)
-                }
-                initializeGame(rawVocabList) { gridItems = it }
-            }
-            .addOnFailureListener {
+                    .addOnFailureListener {
+                        isLoading = false
+                        rawVocabList = getFallbackVocabList(levelId)
+                        initializeGame(rawVocabList) { gridItems = it }
+                    }
+            } else {
                 isLoading = false
                 rawVocabList = getFallbackVocabList(levelId)
                 initializeGame(rawVocabList) { gridItems = it }
             }
+        } else {
+            val vocabCategory = getVocabCategoryFromLevelId(levelId)
+            firestore.collection("system_vocabulary")
+                .whereIn("category", listOf(vocabCategory, levelId))
+                .get()
+                .addOnSuccessListener { querySnapshot ->
+                    isLoading = false
+                    val list = querySnapshot.documents.mapNotNull { doc ->
+                        try {
+                            val id = doc.id
+                            val rawFront = doc.getString("front") ?: ""
+                            val rawBack = doc.getString("back") ?: ""
+                            val front = CryptoUtils.decrypt(rawFront)
+                            val back = CryptoUtils.decrypt(rawBack)
+                            if (front.isNotEmpty() && back.isNotEmpty()) {
+                                VocabCard(id, front, back)
+                            } else null
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                    if (list.isNotEmpty()) {
+                        rawVocabList = list
+                    } else {
+                        rawVocabList = getFallbackVocabList(levelId)
+                    }
+                    initializeGame(rawVocabList) { gridItems = it }
+                }
+                .addOnFailureListener {
+                    isLoading = false
+                    rawVocabList = getFallbackVocabList(levelId)
+                    initializeGame(rawVocabList) { gridItems = it }
+                }
+        }
     }
 
     var selectedFirstIndex by remember { mutableStateOf<Int?>(null) }

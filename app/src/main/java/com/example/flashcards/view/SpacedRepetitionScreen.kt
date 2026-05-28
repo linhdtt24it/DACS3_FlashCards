@@ -3,6 +3,7 @@ package com.example.flashcards.view
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -337,7 +338,10 @@ fun SpacedRepetitionScreen(navController: NavController) {
                             dayIndex = index,
                             title = title,
                             subtitle = subtitle,
-                            wordCount = count
+                            wordCount = count,
+                            onClick = {
+                                navController.navigate("spaced_repetition_dashboard/day_$index")
+                            }
                         )
                     }
                 }
@@ -351,7 +355,8 @@ fun TimelineDayCard(
     dayIndex: Int,
     title: String,
     subtitle: String,
-    wordCount: Int
+    wordCount: Int,
+    onClick: () -> Unit
 ) {
     val isToday = dayIndex == 1
     val containerColor = if (isToday) {
@@ -367,7 +372,7 @@ fun TimelineDayCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         border = BorderStroke(1.dp, borderColor)

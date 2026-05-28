@@ -46,41 +46,161 @@ fun UserPlayEssayScreen(
 
     // Load questions from Firestore with local fallback
     LaunchedEffect(categoryId) {
-        try {
-            val snapshot = firestore.collection("system_quizzes")
-                .whereEqualTo("level", categoryId)
-                .whereEqualTo("type", "text_input")
-                .get()
-                .addOnSuccessListener { querySnapshot ->
-                    isLoading = false
-                    val list = querySnapshot.documents.mapNotNull { doc ->
-                        try {
-                            val id = doc.id
-                            val rawQuest = doc.getString("question") ?: ""
-                            val rawAns = doc.getString("correctAnswer") ?: ""
-                            val question = CryptoUtils.decrypt(rawQuest)
-                            val answer = CryptoUtils.decrypt(rawAns)
-                            if (question.isNotEmpty() && answer.isNotEmpty()) {
-                                EssayQuestion(id, question, answer)
-                            } else null
-                        } catch (e: Exception) {
-                            null
+        if (categoryId.startsWith("day_")) {
+            val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
+            if (uid != "anonymous") {
+                try {
+                    firestore.collection("users").document(uid).get()
+                        .addOnSuccessListener { userDoc ->
+                            val dailyLimit = userDoc.getLong("dailyWordLimit")?.toInt() ?: 10
+                            
+                            firestore.collection("progress")
+                                .whereEqualTo("uid", uid)
+                                .get()
+                                .addOnSuccessListener { progressSnapshot ->
+                                    val dayIndex = categoryId.substringAfter("day_").toIntOrNull() ?: 1
+                                    val calendar = java.util.Calendar.getInstance()
+                                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                    calendar.set(java.util.Calendar.MINUTE, 0)
+                                    calendar.set(java.util.Calendar.SECOND, 0)
+                                    calendar.set(java.util.Calendar.MILLISECOND, 0)
+                                    val startOfToday = calendar.timeInMillis
+                                    
+                                    val dayEndTimes = LongArray(7)
+                                    for (i in 0..6) {
+                                        calendar.timeInMillis = startOfToday
+                                        calendar.add(java.util.Calendar.DAY_OF_YEAR, i)
+                                        calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                        calendar.set(java.util.Calendar.MINUTE, 59)
+                                        calendar.set(java.util.Calendar.SECOND, 59)
+                                        calendar.set(java.util.Calendar.MILLISECOND, 999)
+                                        dayEndTimes[i] = calendar.timeInMillis
+                                    }
+                                    
+                                    val dueVocabIds = mutableListOf<String>()
+                                    progressSnapshot.documents.forEach { doc ->
+                                        val vocabId = doc.getString("vocabId") ?: ""
+                                        val status = doc.getString("status") ?: ""
+                                        val nextReview = doc.getTimestamp("nextReview")
+                                        if (vocabId.isNotEmpty() && status != "MASTERED") {
+                                            if (nextReview != null) {
+                                                val reviewTime = nextReview.toDate().time
+                                                if (dayIndex == 1) {
+                                                    if (reviewTime <= dayEndTimes[0]) {
+                                                        dueVocabIds.add(vocabId)
+                                                    }
+                                                } else {
+                                                    val startRange = dayEndTimes[dayIndex - 2]
+                                                    val endRange = dayEndTimes[dayIndex - 1]
+                                                    if (reviewTime > startRange && reviewTime <= endRange) {
+                                                        dueVocabIds.add(vocabId)
+                                                    }
+                                                }
+                                            } else if (dayIndex == 1) {
+                                                dueVocabIds.add(vocabId)
+                                            }
+                                        }
+                                    }
+                                    
+                                    val finalVocabIds = if (dayIndex == 1) dueVocabIds.take(dailyLimit) else dueVocabIds
+                                    
+                                    if (finalVocabIds.isEmpty()) {
+                                        questions = emptyList()
+                                        isLoading = false
+                                    } else {
+                                        val chunks = finalVocabIds.chunked(30)
+                                        val loadedQuestions = mutableListOf<EssayQuestion>()
+                                        var chunksLeft = chunks.size
+                                        
+                                        chunks.forEach { chunk ->
+                                            firestore.collection("system_vocabulary")
+                                                .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
+                                                .get()
+                                                .addOnSuccessListener { vocabSnapshot ->
+                                                    vocabSnapshot.documents.forEach { d ->
+                                                        try {
+                                                            val id = d.id
+                                                            val rawQuest = d.getString("front") ?: ""
+                                                            val rawAns = d.getString("back") ?: ""
+                                                            val front = CryptoUtils.decrypt(rawQuest)
+                                                            val back = CryptoUtils.decrypt(rawAns)
+                                                            if (front.isNotEmpty() && back.isNotEmpty()) {
+                                                                val questionText = if (playMode == "1") front else back
+                                                                val answerText = if (playMode == "1") back else front
+                                                                loadedQuestions.add(EssayQuestion(id, questionText, answerText))
+                                                            }
+                                                        } catch (e: Exception) {}
+                                                    }
+                                                    chunksLeft--
+                                                    if (chunksLeft == 0) {
+                                                        questions = loadedQuestions
+                                                        isLoading = false
+                                                    }
+                                                }
+                                                .addOnFailureListener {
+                                                    chunksLeft--
+                                                    if (chunksLeft == 0) {
+                                                        questions = loadedQuestions
+                                                        isLoading = false
+                                                    }
+                                                }
+                                        }
+                                    }
+                                }
+                                .addOnFailureListener {
+                                    isLoading = false
+                                    questions = getFallbackEssayQuestions(categoryId)
+                                }
                         }
-                    }
-                    if (list.isNotEmpty()) {
-                        questions = list
-                    } else {
-                        // Fallback to defaults
-                        questions = getFallbackEssayQuestions(categoryId)
-                    }
-                }
-                .addOnFailureListener {
+                        .addOnFailureListener {
+                            isLoading = false
+                            questions = getFallbackEssayQuestions(categoryId)
+                        }
+                } catch (e: Exception) {
                     isLoading = false
                     questions = getFallbackEssayQuestions(categoryId)
                 }
-        } catch (e: Exception) {
-            isLoading = false
-            questions = getFallbackEssayQuestions(categoryId)
+            } else {
+                isLoading = false
+                questions = getFallbackEssayQuestions(categoryId)
+            }
+        } else {
+            try {
+                val snapshot = firestore.collection("system_quizzes")
+                    .whereEqualTo("level", categoryId)
+                    .whereEqualTo("type", "text_input")
+                    .get()
+                    .addOnSuccessListener { querySnapshot ->
+                        isLoading = false
+                        val list = querySnapshot.documents.mapNotNull { doc ->
+                            try {
+                                val id = doc.id
+                                val rawQuest = doc.getString("question") ?: ""
+                                val rawAns = doc.getString("correctAnswer") ?: ""
+                                val question = CryptoUtils.decrypt(rawQuest)
+                                val answer = CryptoUtils.decrypt(rawAns)
+                                if (question.isNotEmpty() && answer.isNotEmpty()) {
+                                    EssayQuestion(id, question, answer)
+                                } else null
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                        if (list.isNotEmpty()) {
+                            questions = list
+                        } else {
+                            // Fallback to defaults
+                            questions = getFallbackEssayQuestions(categoryId)
+                        }
+                    }
+                    .addOnFailureListener {
+                        isLoading = false
+                        questions = getFallbackEssayQuestions(categoryId)
+                    }
+            } catch (e: Exception) {
+                isLoading = false
+                questions = getFallbackEssayQuestions(categoryId)
+            }
         }
     }
 
