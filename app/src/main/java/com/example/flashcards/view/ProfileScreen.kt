@@ -265,7 +265,7 @@ fun ProfileScreen(
 
         item {
             SettingSectionHeader("Learning Preferences")
-            SettingsItemRow(icon = Icons.Default.TrendingUp, title = "Learning Progress (Stats)", onClick = onNavigateToStats)
+            SettingsItemRow(icon = Icons.Default.CalendarMonth, title = "Spaced Repetition", onClick = onNavigateToStats)
             Spacer(modifier = Modifier.height(8.dp))
             
             // Integrated Daily Goal Card

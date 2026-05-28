@@ -163,11 +163,30 @@ fun UserFlashcardScreen(
     val recordProgress = { cardId: String, status: String ->
         if (uid.isNotEmpty() && uid != "anonymous") {
             val progressDocRef = firestore.collection("progress").document("${uid}_$cardId")
+            
+            val calendar = java.util.Calendar.getInstance()
+            val lastReviewed = com.google.firebase.Timestamp(calendar.time)
+            
+            val nextReview: com.google.firebase.Timestamp? = when (status) {
+                "HARD" -> {
+                    calendar.add(java.util.Calendar.DAY_OF_YEAR, 2)
+                    com.google.firebase.Timestamp(calendar.time)
+                }
+                "GOOD" -> {
+                    calendar.add(java.util.Calendar.DAY_OF_YEAR, 7)
+                    com.google.firebase.Timestamp(calendar.time)
+                }
+                else -> null // EASY (MASTERED)
+            }
+            
+            val finalStatus = if (status == "EASY") "MASTERED" else status
+            
             val progressData = hashMapOf(
                 "uid" to uid,
                 "vocabId" to cardId,
-                "status" to status,
-                "lastReviewed" to com.google.firebase.Timestamp.now()
+                "status" to finalStatus,
+                "lastReviewed" to lastReviewed,
+                "nextReview" to nextReview
             )
             progressDocRef.set(progressData, com.google.firebase.firestore.SetOptions.merge())
         }

@@ -1641,26 +1641,150 @@ fun StudySessionScreen(
         }
     }
 
+    var dailyWordLimit by remember { mutableIntStateOf(10) }
+    var userProgressMap by remember { mutableStateOf<Map<String, Map<String, Any?>>>(emptyMap()) }
+    var isLoadingData by remember { mutableStateOf(true) }
+
+    LaunchedEffect(uid, studySet.id) {
+        if (uid.isNotEmpty() && uid != "anonymous") {
+            isLoadingData = true
+            firestore.collection("users").document(uid).get()
+                .addOnSuccessListener { doc ->
+                    if (doc.exists()) {
+                        dailyWordLimit = doc.getLong("dailyWordLimit")?.toInt() ?: 10
+                    }
+                    firestore.collection("progress")
+                        .whereEqualTo("uid", uid)
+                        .get()
+                        .addOnSuccessListener { snapshot ->
+                            val progressMap = mutableMapOf<String, Map<String, Any?>>()
+                            snapshot.documents.forEach { d ->
+                                val vocabId = d.getString("vocabId") ?: ""
+                                val status = d.getString("status") ?: ""
+                                val nextReview = d.getTimestamp("nextReview")
+                                progressMap[vocabId] = mapOf(
+                                    "status" to status,
+                                    "nextReview" to nextReview
+                                )
+                            }
+                            userProgressMap = progressMap
+                            isLoadingData = false
+                        }
+                        .addOnFailureListener {
+                            isLoadingData = false
+                        }
+                }
+                .addOnFailureListener {
+                    isLoadingData = false
+                }
+        } else {
+            isLoadingData = false
+        }
+    }
+
+    val calendarInstance = remember { Calendar.getInstance() }
+    val endOfToday = remember(calendarInstance) {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 23)
+        cal.set(Calendar.MINUTE, 59)
+        cal.set(Calendar.SECOND, 59)
+        cal.set(Calendar.MILLISECOND, 999)
+        cal.timeInMillis
+    }
+
+    val allDueCards = remember(studySet.cards, userProgressMap, endOfToday) {
+        studySet.cards.filter { card ->
+            val progress = userProgressMap[card.id]
+            if (progress != null) {
+                val status = progress["status"] as? String ?: ""
+                val nextReview = progress["nextReview"] as? com.google.firebase.Timestamp
+                if (status == "MASTERED") {
+                    false
+                } else if (nextReview != null) {
+                    nextReview.toDate().time <= endOfToday
+                } else {
+                    true
+                }
+            } else {
+                true
+            }
+        }
+    }
+
+    val activeCards = remember(allDueCards, dailyWordLimit) {
+        allDueCards.take(dailyWordLimit)
+    }
+
+    val remainingCards = remember(allDueCards, dailyWordLimit) {
+        allDueCards.drop(dailyWordLimit)
+    }
+
     var currentIndex by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
-    val progress = if (studySet.cards.isNotEmpty()) (currentIndex.toFloat() / studySet.cards.size) else 0f
+    val progress = if (activeCards.isNotEmpty()) (currentIndex.toFloat() / activeCards.size) else 0f
 
-    val recordProgress = { cardId: String ->
+    val recordProgress = { cardId: String, status: String ->
         if (uid.isNotEmpty() && uid != "anonymous") {
             val progressDocRef = firestore.collection("progress").document("${uid}_$cardId")
+            val calendar = java.util.Calendar.getInstance()
+            val lastReviewed = com.google.firebase.Timestamp(calendar.time)
+            
+            val nextReview: com.google.firebase.Timestamp? = when (status) {
+                "HARD" -> {
+                    calendar.add(java.util.Calendar.DAY_OF_YEAR, 2)
+                    com.google.firebase.Timestamp(calendar.time)
+                }
+                "GOOD" -> {
+                    calendar.add(java.util.Calendar.DAY_OF_YEAR, 7)
+                    com.google.firebase.Timestamp(calendar.time)
+                }
+                else -> null
+            }
+            
+            val finalStatus = if (status == "EASY") "MASTERED" else status
             val progressData = hashMapOf(
                 "uid" to uid,
                 "vocabId" to cardId,
-                "lastReviewed" to com.google.firebase.Timestamp.now()
+                "status" to finalStatus,
+                "lastReviewed" to lastReviewed,
+                "nextReview" to nextReview
             )
             progressDocRef.set(progressData, com.google.firebase.firestore.SetOptions.merge())
         }
     }
 
+    val performRollover = {
+        if (uid.isNotEmpty() && uid != "anonymous" && remainingCards.isNotEmpty()) {
+            val calendar = java.util.Calendar.getInstance()
+            calendar.add(java.util.Calendar.DAY_OF_YEAR, 1)
+            calendar.set(java.util.Calendar.HOUR_OF_DAY, 8)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            val tomorrowTimestamp = com.google.firebase.Timestamp(calendar.time)
+            
+            remainingCards.forEach { card ->
+                val progressDocRef = firestore.collection("progress").document("${uid}_${card.id}")
+                val progressData = hashMapOf(
+                    "uid" to uid,
+                    "vocabId" to card.id,
+                    "nextReview" to tomorrowTimestamp,
+                    "status" to "HARD"
+                )
+                progressDocRef.set(progressData, com.google.firebase.firestore.SetOptions.merge())
+            }
+        }
+    }
+
     val onCardRated = { card: Flashcard, quality: Int ->
-        recordProgress(card.id)
+        val statusStr = when (quality) {
+            1 -> "HARD"
+            3 -> "GOOD"
+            else -> "EASY"
+        }
+        recordProgress(card.id, statusStr)
         onUpdateCard(card, quality)
-        if (currentIndex == studySet.cards.size - 1) {
+        if (currentIndex == activeCards.size - 1) {
+            performRollover()
             showWishDialog = true
         } else {
             isFlipped = false
@@ -1681,7 +1805,7 @@ fun StudySessionScreen(
             )
         },
         bottomBar = {
-            if (studySet.cards.isNotEmpty() && currentIndex < studySet.cards.size) {
+            if (!isLoadingData && activeCards.isNotEmpty() && currentIndex < activeCards.size) {
                 Surface(
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.background
@@ -1705,14 +1829,15 @@ fun StudySessionScreen(
                                 )
                             }
                             Text(
-                                text = "Thẻ: ${currentIndex + 1}/${studySet.cards.size}",
+                                text = "Thẻ: ${currentIndex + 1}/${activeCards.size}",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold
                             )
-                            if (currentIndex == studySet.cards.size - 1) {
+                            if (currentIndex == activeCards.size - 1) {
                                 TextButton(
                                     onClick = {
-                                        recordProgress(studySet.cards[currentIndex].id)
+                                        recordProgress(activeCards[currentIndex].id, "GOOD")
+                                        performRollover()
                                         showWishDialog = true
                                     }
                                 ) {
@@ -1726,11 +1851,11 @@ fun StudySessionScreen(
                             } else {
                                 IconButton(
                                     onClick = {
-                                        recordProgress(studySet.cards[currentIndex].id)
+                                        recordProgress(activeCards[currentIndex].id, "GOOD")
                                         currentIndex++
                                         isFlipped = false
                                     },
-                                    enabled = currentIndex < studySet.cards.size - 1
+                                    enabled = currentIndex < activeCards.size - 1
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.ArrowForward,
@@ -1753,11 +1878,46 @@ fun StudySessionScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (studySet.cards.isEmpty()) {
+            if (isLoadingData) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = FlowPrimary)
+                }
+            } else if (studySet.cards.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Bộ thẻ này hiện chưa có từ vựng.", color = Color.Gray)
                 }
-            } else if (currentIndex < studySet.cards.size) {
+            } else if (activeCards.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = FlowSuccess,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Chúc mừng! Bạn đã ôn tập hết từ vựng cho hôm nay.",
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Quay lại", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else if (currentIndex < activeCards.size) {
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
@@ -1769,7 +1929,7 @@ fun StudySessionScreen(
                 )
                 Spacer(modifier = Modifier.height(32.dp))
 
-                val currentCard = studySet.cards[currentIndex]
+                val currentCard = activeCards[currentIndex]
                 val rotationState by animateFloatAsState(
                     targetValue = if (isFlipped) 180f else 0f,
                     animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
@@ -2065,6 +2225,15 @@ fun StudySessionScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+
+    if (showWishDialog) {
+        RandomWishDialog(
+            onDismiss = {
+                showWishDialog = false
+                onBack()
+            }
+        )
     }
 }
 

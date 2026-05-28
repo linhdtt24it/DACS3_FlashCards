@@ -405,8 +405,12 @@ fun AppNavHost(
                 onNavigateToSecurity = {},
                 onNavigateToNotifications = {},
                 onNavigateToLearningPrefs = {},
-                onNavigateToStats = {}
+                onNavigateToStats = { navController.navigate("spaced_repetition") }
             )
+        }
+
+        composable("spaced_repetition") {
+            SpacedRepetitionScreen(navController = navController)
         }
 
         composable("notifications") {
