@@ -43,6 +43,31 @@ fun SpacedRepetitionDashboardScreen(
     var isLoadingData by remember { mutableStateOf(true) }
     var showEssayBottomSheet by remember { mutableStateOf(false) }
 
+    var hardVocabList by remember { mutableStateOf<List<VocabItem>>(emptyList()) }
+    var goodVocabList by remember { mutableStateOf<List<VocabItem>>(emptyList()) }
+    var easyVocabList by remember { mutableStateOf<List<VocabItem>>(emptyList()) }
+    var selectedTab by remember { mutableStateOf("HARD") }
+
+    var isTtsReady by remember { mutableStateOf(false) }
+    var tts by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(Unit) {
+        tts = android.speech.tts.TextToSpeech(context) { status ->
+            if (status != android.speech.tts.TextToSpeech.ERROR) {
+                tts?.language = java.util.Locale.US
+                isTtsReady = true
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
+        }
+    }
+
     val dayIndex = remember(selectedDay) {
         selectedDay.substringAfter("day_").toIntOrNull() ?: 1
     }
@@ -89,39 +114,66 @@ fun SpacedRepetitionDashboardScreen(
 
                                 var totalCount = 0
                                 var studied = 0
+                                
+                                val hList = mutableListOf<VocabItem>()
+                                val gList = mutableListOf<VocabItem>()
+                                val eList = mutableListOf<VocabItem>()
 
                                 progressSnapshot.documents.forEach { doc ->
                                     val status = doc.getString("status") ?: ""
                                     val nextReview = doc.getTimestamp("nextReview")
                                     val lastReviewed = doc.getTimestamp("lastReviewed")
 
-                                    if (status != "MASTERED") {
-                                        if (nextReview != null) {
-                                            val reviewTime = nextReview.toDate().time
-                                            if (dayIndex == 1) {
-                                                if (reviewTime <= dayEndTimes[0]) {
-                                                    totalCount++
-                                                    if (lastReviewed != null) {
-                                                        // Checked if reviewed today
-                                                        val reviewDate = lastReviewed.toDate().time
-                                                        if (reviewDate >= startOfToday) {
-                                                            studied++
-                                                        }
-                                                    }
-                                                }
-                                            } else {
-                                                val startRange = dayEndTimes[dayIndex - 2]
-                                                val endRange = dayEndTimes[dayIndex - 1]
-                                                if (reviewTime > startRange && reviewTime <= endRange) {
-                                                    totalCount++
-                                                }
-                                            }
-                                        } else if (dayIndex == 1) {
-                                            // New unscheduled card is due today
-                                            totalCount++
-                                        }
-                                    }
+                                     var isDue = false
+                                     if (status != "MASTERED") {
+                                         if (nextReview != null) {
+                                             val reviewTime = nextReview.toDate().time
+                                             if (dayIndex == 1) {
+                                                 if (reviewTime <= dayEndTimes[0]) {
+                                                     isDue = true
+                                                     totalCount++
+                                                     if (lastReviewed != null) {
+                                                         // Checked if reviewed today
+                                                         val reviewDate = lastReviewed.toDate().time
+                                                         if (reviewDate >= startOfToday) {
+                                                             studied++
+                                                         }
+                                                     }
+                                                 }
+                                             } else {
+                                                 val startRange = dayEndTimes[dayIndex - 2]
+                                                 val endRange = dayEndTimes[dayIndex - 1]
+                                                 if (reviewTime > startRange && reviewTime <= endRange) {
+                                                     isDue = true
+                                                     totalCount++
+                                                 }
+                                             }
+                                         } else if (dayIndex == 1) {
+                                             // New unscheduled card is due today
+                                             isDue = true
+                                             totalCount++
+                                         }
+                                     }
+
+                                     if (isDue) {
+                                         val rawFront = doc.getString("front") ?: ""
+                                         val rawBack = doc.getString("back") ?: ""
+                                         val front = try { com.example.flashcards.utils.CryptoUtils.decrypt(rawFront) } catch (e: Exception) { rawFront }
+                                         val back = try { com.example.flashcards.utils.CryptoUtils.decrypt(rawBack) } catch (e: Exception) { rawBack }
+                                         if (front.isNotBlank() && back.isNotBlank()) {
+                                             val item = VocabItem(doc.id, front, back, status)
+                                             when (status) {
+                                                 "HARD" -> hList.add(item)
+                                                 "GOOD" -> gList.add(item)
+                                                 else -> eList.add(item)
+                                             }
+                                         }
+                                     }
                                 }
+
+                                hardVocabList = hList
+                                goodVocabList = gList
+                                easyVocabList = eList
 
                                 totalCardsCount = if (dayIndex == 1) minOf(totalCount, dailyWordLimit) else totalCount
                                 studiedCount = minOf(studied, totalCardsCount)
@@ -315,6 +367,177 @@ fun SpacedRepetitionDashboardScreen(
                                     navController.navigate("user_play_match/$selectedDay")
                                 }
                             )
+                        }
+                    }
+                }
+
+                // 3. Tab Title Section
+                item {
+                    Text(
+                        text = "Từ vựng ôn tập của ngày (" + totalCardsCount + " từ)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                // 4. Premium Tab Selector
+                item {
+                    val tabs = listOf(
+                        "HARD" to ("Khó (" + hardVocabList.size + ")"),
+                        "GOOD" to ("Tốt (" + goodVocabList.size + ")"),
+                        "EASY" to ("Dễ (" + easyVocabList.size + ")")
+                    )
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        tabs.forEach { (tabId, label) ->
+                            val isSelected = selectedTab == tabId
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isSelected) FlowPrimary else Color.Transparent)
+                                    .clickable { selectedTab = tabId }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 5. Active List Items
+                val activeList = when (selectedTab) {
+                    "HARD" -> hardVocabList
+                    "GOOD" -> goodVocabList
+                    else -> easyVocabList
+                }
+
+                if (activeList.isEmpty()) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.Inbox,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Không có từ vựng nào trong danh mục này.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    items(activeList) { vocab ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Left: Word
+                                Column(modifier = Modifier.weight(1.2f)) {
+                                    val cleanFront = vocab.front.substringBefore("(").trim()
+                                    val reading = if (vocab.front.contains("(")) {
+                                        "(" + vocab.front.substringAfter("(")
+                                    } else ""
+                                    
+                                    Text(
+                                        text = cleanFront,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+                                    if (reading.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = reading,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // Center: Definition
+                                Box(
+                                    modifier = Modifier.weight(1.2f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = vocab.back,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+
+                                // Right: Speak
+                                Row(
+                                    modifier = Modifier.weight(0.6f),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            val wordToSpeak = vocab.front
+                                            val cleanWord = wordToSpeak.substringBefore("(").trim()
+                                            val speakLocale = if (cleanWord.any { it.code in 0x3040..0x30FF || it.code in 0x4E00..0x9FFF }) {
+                                                java.util.Locale.JAPANESE
+                                            } else {
+                                                java.util.Locale.US
+                                            }
+                                            tts?.language = speakLocale
+                                            tts?.speak(cleanWord, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, null)
+                                        },
+                                        enabled = isTtsReady,
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.VolumeUp,
+                                            contentDescription = "Phát âm",
+                                            tint = FlowPrimary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

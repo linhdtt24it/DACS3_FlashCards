@@ -32,6 +32,7 @@ import java.util.Calendar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    navController: androidx.navigation.NavController,
     userName: String,
     userEmail: String,
     onLogout: () -> Unit,
@@ -272,10 +273,10 @@ fun ProfileScreen(
             ) {
                 // 1. Spaced Repetition Card
                 Card(
+                    onClick = { navController.navigate("spaced_repetition_route") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 72.dp)
-                        .clickable { onNavigateToStats() },
+                        .heightIn(min = 72.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -311,11 +312,12 @@ fun ProfileScreen(
                 }
 
                 // 2. Daily Goal Card (Mục tiêu hằng ngày)
+                // 2. Daily Goal Card (Mục tiêu hằng ngày)
                 Card(
+                    onClick = { navController.navigate("learning_preferences") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 72.dp)
-                        .clickable { onNavigateToLearningPrefs() },
+                        .heightIn(min = 72.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -400,11 +402,12 @@ fun ProfileScreen(
                 }
 
                 // 3. Review Algorithm Card
+                // 3. Review Algorithm Card
                 Card(
+                    onClick = { navController.navigate("learning_preferences") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 72.dp)
-                        .clickable { onNavigateToLearningPrefs() },
+                        .heightIn(min = 72.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))

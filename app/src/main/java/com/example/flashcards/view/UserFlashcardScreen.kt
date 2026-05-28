@@ -106,103 +106,172 @@ fun UserFlashcardScreen(
                     isLoading = false
                     vocabCards = emptyList()
                 }
-        } else if (levelId.startsWith("day_")) {
+        } else if (levelId.startsWith("day_") || language.uppercase() == "SPACED") {
             val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
             if (uid != "anonymous") {
                 firestore.collection("users").document(uid).get()
                     .addOnSuccessListener { userDoc ->
                         val dailyLimit = userDoc.getLong("dailyWordLimit")?.toInt() ?: 10
                         
+                        // Query progress and user_progress in parallel to be extremely robust
                         firestore.collection("progress")
                             .whereEqualTo("uid", uid)
                             .get()
                             .addOnSuccessListener { progressSnapshot ->
-                                val dayIndex = levelId.substringAfter("day_").toIntOrNull() ?: 1
-                                val calendar = java.util.Calendar.getInstance()
-                                calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                                calendar.set(java.util.Calendar.MINUTE, 0)
-                                calendar.set(java.util.Calendar.SECOND, 0)
-                                calendar.set(java.util.Calendar.MILLISECOND, 0)
-                                val startOfToday = calendar.timeInMillis
-                                
-                                val dayEndTimes = LongArray(7)
-                                for (i in 0..6) {
-                                    calendar.timeInMillis = startOfToday
-                                    calendar.add(java.util.Calendar.DAY_OF_YEAR, i)
-                                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
-                                    calendar.set(java.util.Calendar.MINUTE, 59)
-                                    calendar.set(java.util.Calendar.SECOND, 59)
-                                    calendar.set(java.util.Calendar.MILLISECOND, 999)
-                                    dayEndTimes[i] = calendar.timeInMillis
-                                }
-                                
-                                val dueVocabIds = mutableListOf<String>()
-                                progressSnapshot.documents.forEach { doc ->
-                                    val vocabId = doc.getString("vocabId") ?: ""
-                                    val status = doc.getString("status") ?: ""
-                                    val nextReview = doc.getTimestamp("nextReview")
-                                    if (vocabId.isNotEmpty() && status != "MASTERED") {
-                                        if (nextReview != null) {
-                                            val reviewTime = nextReview.toDate().time
-                                            if (dayIndex == 1) {
-                                                if (reviewTime <= dayEndTimes[0]) {
-                                                    dueVocabIds.add(vocabId)
-                                                }
-                                            } else {
-                                                val startRange = dayEndTimes[dayIndex - 2]
-                                                val endRange = dayEndTimes[dayIndex - 1]
-                                                if (reviewTime > startRange && reviewTime <= endRange) {
+                                firestore.collection("user_progress")
+                                    .whereEqualTo("uid", uid)
+                                    .get()
+                                    .addOnSuccessListener { userProgressSnapshot ->
+                                        val allProgressDocs = (progressSnapshot?.documents ?: emptyList()) + (userProgressSnapshot?.documents ?: emptyList())
+                                        val uniqueProgressDocs = allProgressDocs.associateBy { it.id }.values
+                                        
+                                        val dayIndex = levelId.substringAfter("day_").toIntOrNull() ?: 1
+                                        val calendar = java.util.Calendar.getInstance()
+                                        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                        calendar.set(java.util.Calendar.MINUTE, 0)
+                                        calendar.set(java.util.Calendar.SECOND, 0)
+                                        calendar.set(java.util.Calendar.MILLISECOND, 0)
+                                        val startOfToday = calendar.timeInMillis
+                                        
+                                        val dayEndTimes = LongArray(7)
+                                        for (i in 0..6) {
+                                            calendar.timeInMillis = startOfToday
+                                            calendar.add(java.util.Calendar.DAY_OF_YEAR, i)
+                                            calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                            calendar.set(java.util.Calendar.MINUTE, 59)
+                                            calendar.set(java.util.Calendar.SECOND, 59)
+                                            calendar.set(java.util.Calendar.MILLISECOND, 999)
+                                            dayEndTimes[i] = calendar.timeInMillis
+                                        }
+                                        
+                                        val dueVocabIds = mutableListOf<String>()
+                                        val statusMap = mutableMapOf<String, String>()
+                                        
+                                        uniqueProgressDocs.forEach { doc ->
+                                            val vocabId = doc.getString("vocabId") ?: ""
+                                            val status = doc.getString("status") ?: ""
+                                            val nextReview = doc.getTimestamp("nextReview")
+                                            if (vocabId.isNotEmpty() && status != "MASTERED" && status != "MASTER") {
+                                                statusMap[vocabId] = status
+                                                if (nextReview != null) {
+                                                    val reviewTime = nextReview.toDate().time
+                                                    if (dayIndex == 1) {
+                                                        if (reviewTime <= dayEndTimes[0]) {
+                                                            dueVocabIds.add(vocabId)
+                                                        }
+                                                    } else {
+                                                        val startRange = dayEndTimes[dayIndex - 2]
+                                                        val endRange = dayEndTimes[dayIndex - 1]
+                                                        if (reviewTime > startRange && reviewTime <= endRange) {
+                                                            dueVocabIds.add(vocabId)
+                                                        }
+                                                    }
+                                                } else if (dayIndex == 1) {
                                                     dueVocabIds.add(vocabId)
                                                 }
                                             }
-                                        } else if (dayIndex == 1) {
-                                            dueVocabIds.add(vocabId)
+                                        }
+                                        
+                                        val finalVocabIds = if (dayIndex == 1) dueVocabIds.take(dailyLimit) else dueVocabIds
+                                        
+                                        if (finalVocabIds.isEmpty()) {
+                                            vocabCards = emptyList()
+                                            isLoading = false
+                                        } else {
+                                            // Load custom user deck cards from Firestore to match custom IDs
+                                            val userCardsMap = mutableMapOf<String, VocabCard>()
+                                            firestore.collection("users").document(uid).collection("studySets").get()
+                                                .addOnSuccessListener { studySetsSnapshot ->
+                                                    if (studySetsSnapshot != null) {
+                                                        studySetsSnapshot.documents.forEach { sDoc ->
+                                                            val cards = sDoc.get("cards") as? List<Map<String, Any>> ?: emptyList()
+                                                            cards.forEach { cardMap ->
+                                                                val id = cardMap["id"] as? String
+                                                                val question = cardMap["question"] as? String
+                                                                val answer = cardMap["answer"] as? String
+                                                                if (id != null && question != null && answer != null) {
+                                                                    userCardsMap[id] = VocabCard(id, question, answer, sDoc.id)
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    val chunks = finalVocabIds.chunked(30)
+                                                    val loadedCards = mutableListOf<VocabCard>()
+                                                    var chunksLeft = chunks.size
+                                                    
+                                                    chunks.forEach { chunk ->
+                                                        firestore.collection("system_vocabulary")
+                                                            .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
+                                                            .get()
+                                                            .addOnSuccessListener { vocabSnapshot ->
+                                                                vocabSnapshot.documents.forEach { d ->
+                                                                    try {
+                                                                        val id = d.id
+                                                                        val rawFront = d.getString("front") ?: ""
+                                                                        val rawBack = d.getString("back") ?: ""
+                                                                        val front = CryptoUtils.decrypt(rawFront)
+                                                                        val back = CryptoUtils.decrypt(rawBack)
+                                                                        if (front.isNotEmpty() && back.isNotEmpty()) {
+                                                                            loadedCards.add(VocabCard(id, front, back, levelId))
+                                                                        }
+                                                                    } catch (e: Exception) {}
+                                                                }
+                                                                chunksLeft--
+                                                                if (chunksLeft == 0) {
+                                                                    // Merge custom cards
+                                                                    finalVocabIds.forEach { id ->
+                                                                        if (loadedCards.none { it.id == id }) {
+                                                                            userCardsMap[id]?.let {
+                                                                                loadedCards.add(it.copy(levelId = levelId))
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    // Priority sorting: HARD (1) -> GOOD (2) -> EASY/NEW (3)
+                                                                    val sortedCards = loadedCards.sortedWith(compareBy { card ->
+                                                                        val status = statusMap[card.id] ?: ""
+                                                                        when (status.uppercase()) {
+                                                                            "HARD" -> 1
+                                                                            "GOOD" -> 2
+                                                                            else -> 3
+                                                                        }
+                                                                    })
+                                                                    vocabCards = sortedCards
+                                                                    isLoading = false
+                                                                }
+                                                            }
+                                                            .addOnFailureListener {
+                                                                chunksLeft--
+                                                                if (chunksLeft == 0) {
+                                                                    // Fallback custom cards
+                                                                    finalVocabIds.forEach { id ->
+                                                                        userCardsMap[id]?.let {
+                                                                            loadedCards.add(it.copy(levelId = levelId))
+                                                                        }
+                                                                    }
+                                                                    val sortedCards = loadedCards.sortedWith(compareBy { card ->
+                                                                        val status = statusMap[card.id] ?: ""
+                                                                        when (status.uppercase()) {
+                                                                            "HARD" -> 1
+                                                                            "GOOD" -> 2
+                                                                            else -> 3
+                                                                        }
+                                                                    })
+                                                                    vocabCards = sortedCards
+                                                                    isLoading = false
+                                                                }
+                                                            }
+                                                    }
+                                                }
+                                                .addOnFailureListener {
+                                                    isLoading = false
+                                                }
                                         }
                                     }
-                                }
-                                
-                                val finalVocabIds = if (dayIndex == 1) dueVocabIds.take(dailyLimit) else dueVocabIds
-                                
-                                if (finalVocabIds.isEmpty()) {
-                                    vocabCards = emptyList()
-                                    isLoading = false
-                                } else {
-                                    val chunks = finalVocabIds.chunked(30)
-                                    val loadedCards = mutableListOf<VocabCard>()
-                                    var chunksLeft = chunks.size
-                                    
-                                    chunks.forEach { chunk ->
-                                        firestore.collection("system_vocabulary")
-                                            .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
-                                            .get()
-                                            .addOnSuccessListener { vocabSnapshot ->
-                                                vocabSnapshot.documents.forEach { d ->
-                                                    try {
-                                                        val id = d.id
-                                                        val rawFront = d.getString("front") ?: ""
-                                                        val rawBack = d.getString("back") ?: ""
-                                                        val front = CryptoUtils.decrypt(rawFront)
-                                                        val back = CryptoUtils.decrypt(rawBack)
-                                                        if (front.isNotEmpty() && back.isNotEmpty()) {
-                                                            loadedCards.add(VocabCard(id, front, back, levelId))
-                                                        }
-                                                    } catch (e: Exception) {}
-                                                }
-                                                chunksLeft--
-                                                if (chunksLeft == 0) {
-                                                    vocabCards = loadedCards
-                                                    isLoading = false
-                                                }
-                                            }
-                                            .addOnFailureListener {
-                                                chunksLeft--
-                                                if (chunksLeft == 0) {
-                                                    vocabCards = loadedCards
-                                                    isLoading = false
-                                                }
-                                            }
+                                    .addOnFailureListener {
+                                        isLoading = false
                                     }
-                                }
                             }
                             .addOnFailureListener {
                                 isLoading = false
@@ -238,7 +307,6 @@ fun UserFlashcardScreen(
                     if (list.isNotEmpty()) {
                         vocabCards = list
                     } else {
-                        // Fallback to default level vocabulary list
                         vocabCards = getFallbackVocabList(levelId)
                     }
                 }
@@ -252,6 +320,7 @@ fun UserFlashcardScreen(
     var currentIndex by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
     var showWishDialog by remember { mutableStateOf(false) }
+    var shuffleTrigger by remember { mutableIntStateOf(0) }
 
     var starredCardIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous" }
@@ -270,8 +339,6 @@ fun UserFlashcardScreen(
 
     val recordProgress = { cardId: String, status: String ->
         if (uid.isNotEmpty() && uid != "anonymous") {
-            val progressDocRef = firestore.collection("progress").document("${uid}_$cardId")
-            
             val calendar = java.util.Calendar.getInstance()
             val lastReviewed = com.google.firebase.Timestamp(calendar.time)
             
@@ -296,7 +363,12 @@ fun UserFlashcardScreen(
                 "lastReviewed" to lastReviewed,
                 "nextReview" to nextReview
             )
-            progressDocRef.set(progressData, com.google.firebase.firestore.SetOptions.merge())
+            
+            firestore.collection("progress").document("${uid}_$cardId")
+                .set(progressData, com.google.firebase.firestore.SetOptions.merge())
+                
+            firestore.collection("user_progress").document("${uid}_$cardId")
+                .set(progressData, com.google.firebase.firestore.SetOptions.merge())
         }
     }
 
@@ -337,6 +409,18 @@ fun UserFlashcardScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.Close, contentDescription = "Đóng")
+                    }
+                },
+                actions = {
+                    if (vocabCards.isNotEmpty()) {
+                        IconButton(onClick = {
+                            vocabCards = vocabCards.shuffled()
+                            currentIndex = 0
+                            isFlipped = false
+                            shuffleTrigger++
+                        }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Học lại", tint = MaterialTheme.colorScheme.onBackground)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -446,6 +530,18 @@ fun UserFlashcardScreen(
                     label = "flip"
                 )
 
+                val scaleAnim = remember { Animatable(1f) }
+                LaunchedEffect(currentIndex, shuffleTrigger) {
+                    scaleAnim.snapTo(0.9f)
+                    scaleAnim.animateTo(
+                        targetValue = 1f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        )
+                    )
+                }
+
                 // Flashcard container with 3D Vertical Flip animation
                 Card(
                     modifier = Modifier
@@ -454,6 +550,8 @@ fun UserFlashcardScreen(
                         .graphicsLayer {
                             rotationX = rotationState
                             cameraDistance = 12f * density
+                            scaleX = scaleAnim.value
+                            scaleY = scaleAnim.value
                         }
                         .clickable { isFlipped = !isFlipped },
                     shape = RoundedCornerShape(24.dp),
@@ -528,6 +626,8 @@ fun UserFlashcardScreen(
                                                 val wordToSpeak = currentCard.front
                                                 val cleanWord = wordToSpeak.substringBefore("(").trim()
                                                 val speakLocale = when {
+                                                    cleanWord.any { it.code in 0x3040..0x30FF || it.code in 0x31F0..0x31FF } -> Locale.JAPANESE
+                                                    cleanWord.any { it.code in 0x4E00..0x9FFF } && !cleanWord.any { it.code in 0x3040..0x309F } -> Locale.CHINESE
                                                     currentCard.levelId.contains("JA") -> Locale.JAPANESE
                                                     currentCard.levelId.contains("ZH") -> Locale.CHINESE
                                                     currentCard.levelId.contains("PA") -> Locale.US
@@ -652,6 +752,8 @@ fun UserFlashcardScreen(
                                                     val wordToSpeak = currentCard.back
                                                     val cleanWord = wordToSpeak.substringBefore("(").trim()
                                                     val speakLocale = when {
+                                                        cleanWord.any { it.code in 0x3040..0x30FF || it.code in 0x31F0..0x31FF } -> Locale.JAPANESE
+                                                        cleanWord.any { it.code in 0x4E00..0x9FFF } && !cleanWord.any { it.code in 0x3040..0x309F } -> Locale.CHINESE
                                                         currentCard.levelId.contains("JA") -> Locale.JAPANESE
                                                         currentCard.levelId.contains("ZH") -> Locale.CHINESE
                                                         currentCard.levelId.contains("PA") -> Locale.US
@@ -741,6 +843,13 @@ fun UserFlashcardScreen(
             onDismiss = {
                 showWishDialog = false
                 navController.popBackStack()
+            },
+            onReviewAgain = {
+                showWishDialog = false
+                vocabCards = vocabCards.shuffled()
+                currentIndex = 0
+                isFlipped = false
+                shuffleTrigger++
             }
         )
     }

@@ -1719,9 +1719,15 @@ fun StudySessionScreen(
         allDueCards.drop(dailyWordLimit)
     }
 
+    var sessionCards by remember { mutableStateOf<List<Flashcard>>(emptyList()) }
+    LaunchedEffect(activeCards) {
+        sessionCards = activeCards
+    }
+
     var currentIndex by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
-    val progress = if (activeCards.isNotEmpty()) (currentIndex.toFloat() / activeCards.size) else 0f
+    var shuffleTrigger by remember { mutableIntStateOf(0) }
+    val progress = if (sessionCards.isNotEmpty()) (currentIndex.toFloat() / sessionCards.size) else 0f
 
     val recordProgress = { cardId: String, status: String ->
         if (uid.isNotEmpty() && uid != "anonymous") {
@@ -1783,7 +1789,7 @@ fun StudySessionScreen(
         }
         recordProgress(card.id, statusStr)
         onUpdateCard(card, quality)
-        if (currentIndex == activeCards.size - 1) {
+        if (currentIndex == sessionCards.size - 1) {
             performRollover()
             showWishDialog = true
         } else {
@@ -1801,11 +1807,23 @@ fun StudySessionScreen(
                         Icon(Icons.Default.Close, contentDescription = "Đóng", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
+                actions = {
+                    if (sessionCards.isNotEmpty()) {
+                        IconButton(onClick = {
+                            sessionCards = sessionCards.shuffled()
+                            currentIndex = 0
+                            isFlipped = false
+                            shuffleTrigger++
+                        }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Học lại", tint = MaterialTheme.colorScheme.onBackground)
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         bottomBar = {
-            if (!isLoadingData && activeCards.isNotEmpty() && currentIndex < activeCards.size) {
+            if (!isLoadingData && sessionCards.isNotEmpty() && currentIndex < sessionCards.size) {
                 Surface(
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.background
@@ -1829,14 +1847,14 @@ fun StudySessionScreen(
                                 )
                             }
                             Text(
-                                text = "Thẻ: ${currentIndex + 1}/${activeCards.size}",
+                                text = "Thẻ: ${currentIndex + 1}/${sessionCards.size}",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold
                             )
-                            if (currentIndex == activeCards.size - 1) {
+                            if (currentIndex == sessionCards.size - 1) {
                                 TextButton(
                                     onClick = {
-                                        recordProgress(activeCards[currentIndex].id, "GOOD")
+                                        recordProgress(sessionCards[currentIndex].id, "GOOD")
                                         performRollover()
                                         showWishDialog = true
                                     }
@@ -1851,11 +1869,11 @@ fun StudySessionScreen(
                             } else {
                                 IconButton(
                                     onClick = {
-                                        recordProgress(activeCards[currentIndex].id, "GOOD")
+                                        recordProgress(sessionCards[currentIndex].id, "GOOD")
                                         currentIndex++
                                         isFlipped = false
                                     },
-                                    enabled = currentIndex < activeCards.size - 1
+                                    enabled = currentIndex < sessionCards.size - 1
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.ArrowForward,
@@ -1886,7 +1904,7 @@ fun StudySessionScreen(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Bộ thẻ này hiện chưa có từ vựng.", color = Color.Gray)
                 }
-            } else if (activeCards.isEmpty()) {
+            } else if (sessionCards.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1917,7 +1935,7 @@ fun StudySessionScreen(
                         }
                     }
                 }
-            } else if (currentIndex < activeCards.size) {
+            } else if (currentIndex < sessionCards.size) {
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
@@ -1929,12 +1947,24 @@ fun StudySessionScreen(
                 )
                 Spacer(modifier = Modifier.height(32.dp))
 
-                val currentCard = activeCards[currentIndex]
+                val currentCard = sessionCards[currentIndex]
                 val rotationState by animateFloatAsState(
                     targetValue = if (isFlipped) 180f else 0f,
                     animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
                     label = "flip"
                 )
+
+                val scaleAnim = remember { Animatable(1f) }
+                LaunchedEffect(currentIndex, shuffleTrigger) {
+                    scaleAnim.snapTo(0.9f)
+                    scaleAnim.animateTo(
+                        targetValue = 1f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        )
+                    )
+                }
 
                 Card(
                     modifier = Modifier
@@ -1943,6 +1973,8 @@ fun StudySessionScreen(
                         .graphicsLayer {
                             rotationX = rotationState
                             cameraDistance = 12f * density
+                            scaleX = scaleAnim.value
+                            scaleY = scaleAnim.value
                         }
                         .clickable { isFlipped = !isFlipped },
                     shape = RoundedCornerShape(24.dp),
@@ -2232,6 +2264,13 @@ fun StudySessionScreen(
             onDismiss = {
                 showWishDialog = false
                 onBack()
+            },
+            onReviewAgain = {
+                showWishDialog = false
+                sessionCards = sessionCards.shuffled()
+                currentIndex = 0
+                isFlipped = false
+                shuffleTrigger++
             }
         )
     }
@@ -2550,7 +2589,7 @@ fun DeckEditorScreen(
     if (showBulkImport) {
         BulkImportDialog(
             onDismiss = { showBulkImport = false },
-            onImport = { newCards ->
+            onImport = { newCards: List<Flashcard> ->
                 cards = cards + newCards
             }
         )

@@ -1,5 +1,6 @@
 package com.example.flashcards.view
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -14,7 +15,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun RandomWishDialog(
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onReviewAgain: (() -> Unit)? = null
 ) {
     val firestore = remember { FirebaseFirestore.getInstance() }
     var wishText by remember { mutableStateOf<String?>(null) }
@@ -93,19 +95,47 @@ fun RandomWishDialog(
             }
         },
         confirmButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Button(
-                    onClick = onDismiss,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
+            if (onReviewAgain != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Đóng", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Về trang chủ", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                    Button(
+                        onClick = onReviewAgain,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Học lại bộ này 🔄", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Text("Đóng", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
                 }
             }
         },

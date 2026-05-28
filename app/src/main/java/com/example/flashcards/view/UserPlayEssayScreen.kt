@@ -50,6 +50,45 @@ fun UserPlayEssayScreen(
             val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
             if (uid != "anonymous") {
                 try {
+                    val onFallback = {
+                        firestore.collection("user_favorites")
+                            .whereEqualTo("uid", uid)
+                            .whereEqualTo("starred", true)
+                            .get()
+                            .addOnSuccessListener { favSnapshot ->
+                                val favCards = favSnapshot.documents.mapNotNull { doc ->
+                                    val id = doc.getString("vocabId") ?: doc.id
+                                    val front = doc.getString("front") ?: ""
+                                    val back = doc.getString("back") ?: ""
+                                    val explanation = doc.getString("explanation") ?: ""
+                                    if (front.isNotEmpty() && back.isNotEmpty()) {
+                                        val questionText = if (playMode == "1") front else back
+                                        val answerText = if (playMode == "1") back else front
+                                        EssayQuestion(id, questionText, answerText, explanation)
+                                    } else null
+                                }
+                                if (favCards.isNotEmpty()) {
+                                    questions = favCards.take(10)
+                                    isLoading = false
+                                } else {
+                                    questions = getFallbackEssayQuestions(categoryId).map { eq ->
+                                        if (playMode == "2") {
+                                            EssayQuestion(eq.id, eq.correctAnswer, eq.question, eq.explanation)
+                                        } else eq
+                                    }
+                                    isLoading = false
+                                }
+                            }
+                            .addOnFailureListener {
+                                questions = getFallbackEssayQuestions(categoryId).map { eq ->
+                                    if (playMode == "2") {
+                                        EssayQuestion(eq.id, eq.correctAnswer, eq.question, eq.explanation)
+                                    } else eq
+                                }
+                                isLoading = false
+                            }
+                    }
+
                     firestore.collection("users").document(uid).get()
                         .addOnSuccessListener { userDoc ->
                             val dailyLimit = userDoc.getLong("dailyWordLimit")?.toInt() ?: 10
@@ -58,111 +97,200 @@ fun UserPlayEssayScreen(
                                 .whereEqualTo("uid", uid)
                                 .get()
                                 .addOnSuccessListener { progressSnapshot ->
-                                    val dayIndex = categoryId.substringAfter("day_").toIntOrNull() ?: 1
-                                    val calendar = java.util.Calendar.getInstance()
-                                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                                    calendar.set(java.util.Calendar.MINUTE, 0)
-                                    calendar.set(java.util.Calendar.SECOND, 0)
-                                    calendar.set(java.util.Calendar.MILLISECOND, 0)
-                                    val startOfToday = calendar.timeInMillis
-                                    
-                                    val dayEndTimes = LongArray(7)
-                                    for (i in 0..6) {
-                                        calendar.timeInMillis = startOfToday
-                                        calendar.add(java.util.Calendar.DAY_OF_YEAR, i)
-                                        calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
-                                        calendar.set(java.util.Calendar.MINUTE, 59)
-                                        calendar.set(java.util.Calendar.SECOND, 59)
-                                        calendar.set(java.util.Calendar.MILLISECOND, 999)
-                                        dayEndTimes[i] = calendar.timeInMillis
-                                    }
-                                    
-                                    val dueVocabIds = mutableListOf<String>()
-                                    progressSnapshot.documents.forEach { doc ->
-                                        val vocabId = doc.getString("vocabId") ?: ""
-                                        val status = doc.getString("status") ?: ""
-                                        val nextReview = doc.getTimestamp("nextReview")
-                                        if (vocabId.isNotEmpty() && status != "MASTERED") {
-                                            if (nextReview != null) {
-                                                val reviewTime = nextReview.toDate().time
-                                                if (dayIndex == 1) {
-                                                    if (reviewTime <= dayEndTimes[0]) {
-                                                        dueVocabIds.add(vocabId)
-                                                    }
-                                                } else {
-                                                    val startRange = dayEndTimes[dayIndex - 2]
-                                                    val endRange = dayEndTimes[dayIndex - 1]
-                                                    if (reviewTime > startRange && reviewTime <= endRange) {
+                                    firestore.collection("user_progress")
+                                        .whereEqualTo("uid", uid)
+                                        .get()
+                                        .addOnSuccessListener { userProgressSnapshot ->
+                                            val allProgressDocs = (progressSnapshot?.documents ?: emptyList()) + (userProgressSnapshot?.documents ?: emptyList())
+                                            val uniqueProgressDocs = allProgressDocs.associateBy { it.id }.values
+                                            
+                                            val dayIndex = categoryId.substringAfter("day_").toIntOrNull() ?: 1
+                                            val calendar = java.util.Calendar.getInstance()
+                                            calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                            calendar.set(java.util.Calendar.MINUTE, 0)
+                                            calendar.set(java.util.Calendar.SECOND, 0)
+                                            calendar.set(java.util.Calendar.MILLISECOND, 0)
+                                            val startOfToday = calendar.timeInMillis
+                                            
+                                            val dayEndTimes = LongArray(7)
+                                            for (i in 0..6) {
+                                                calendar.timeInMillis = startOfToday
+                                                calendar.add(java.util.Calendar.DAY_OF_YEAR, i)
+                                                calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                                calendar.set(java.util.Calendar.MINUTE, 59)
+                                                calendar.set(java.util.Calendar.SECOND, 59)
+                                                calendar.set(java.util.Calendar.MILLISECOND, 999)
+                                                dayEndTimes[i] = calendar.timeInMillis
+                                            }
+                                            
+                                            val dueVocabIds = mutableListOf<String>()
+                                            val statusMap = mutableMapOf<String, String>()
+                                            
+                                            uniqueProgressDocs.forEach { doc ->
+                                                val vocabId = doc.getString("vocabId") ?: ""
+                                                val status = doc.getString("status") ?: ""
+                                                val nextReview = doc.getTimestamp("nextReview")
+                                                if (vocabId.isNotEmpty() && status != "MASTERED" && status != "MASTER") {
+                                                    statusMap[vocabId] = status
+                                                    if (nextReview != null) {
+                                                        val reviewTime = nextReview.toDate().time
+                                                        if (dayIndex == 1) {
+                                                            if (reviewTime <= dayEndTimes[0]) {
+                                                                dueVocabIds.add(vocabId)
+                                                            }
+                                                        } else {
+                                                            val startRange = dayEndTimes[dayIndex - 2]
+                                                            val endRange = dayEndTimes[dayIndex - 1]
+                                                            if (reviewTime > startRange && reviewTime <= endRange) {
+                                                                dueVocabIds.add(vocabId)
+                                                            }
+                                                        }
+                                                    } else if (dayIndex == 1) {
                                                         dueVocabIds.add(vocabId)
                                                     }
                                                 }
-                                            } else if (dayIndex == 1) {
-                                                dueVocabIds.add(vocabId)
+                                            }
+                                            
+                                            val finalVocabIds = if (dayIndex == 1) dueVocabIds.take(dailyLimit) else dueVocabIds
+                                            
+                                            if (finalVocabIds.isEmpty()) {
+                                                onFallback()
+                                            } else {
+                                                val userCardsMap = mutableMapOf<String, EssayQuestion>()
+                                                firestore.collection("users").document(uid).collection("studySets").get()
+                                                    .addOnSuccessListener { studySetsSnapshot ->
+                                                        if (studySetsSnapshot != null) {
+                                                            studySetsSnapshot.documents.forEach { sDoc ->
+                                                                val cards = sDoc.get("cards") as? List<Map<String, Any>> ?: emptyList()
+                                                                cards.forEach { cardMap ->
+                                                                    val id = cardMap["id"] as? String
+                                                                    val front = cardMap["question"] as? String
+                                                                    val back = cardMap["answer"] as? String
+                                                                    if (id != null && front != null && back != null) {
+                                                                        val questionText = if (playMode == "1") front else back
+                                                                        val answerText = if (playMode == "1") back else front
+                                                                        userCardsMap[id] = EssayQuestion(id, questionText, answerText)
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        
+                                                        val chunks = finalVocabIds.chunked(30)
+                                                        val loadedQuestions = mutableListOf<EssayQuestion>()
+                                                        var chunksLeft = chunks.size
+                                                        
+                                                        chunks.forEach { chunk ->
+                                                            firestore.collection("system_vocabulary")
+                                                                .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
+                                                                .get()
+                                                                .addOnSuccessListener { vocabSnapshot ->
+                                                                    vocabSnapshot.documents.forEach { d ->
+                                                                        try {
+                                                                            val id = d.id
+                                                                            val rawQuest = d.getString("front") ?: ""
+                                                                            val rawAns = d.getString("back") ?: ""
+                                                                            val front = CryptoUtils.decrypt(rawQuest)
+                                                                            val back = CryptoUtils.decrypt(rawAns)
+                                                                            if (front.isNotEmpty() && back.isNotEmpty()) {
+                                                                                val questionText = if (playMode == "1") front else back
+                                                                                val answerText = if (playMode == "1") back else front
+                                                                                loadedQuestions.add(EssayQuestion(id, questionText, answerText))
+                                                                            }
+                                                                        } catch (e: Exception) {}
+                                                                    }
+                                                                    chunksLeft--
+                                                                    if (chunksLeft == 0) {
+                                                                        finalVocabIds.forEach { id ->
+                                                                            if (loadedQuestions.none { it.id == id }) {
+                                                                                userCardsMap[id]?.let {
+                                                                                    loadedQuestions.add(it)
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        val sortedQuestions = loadedQuestions.sortedWith(compareBy { q ->
+                                                                            val status = statusMap[q.id] ?: ""
+                                                                            when (status.uppercase()) {
+                                                                                "HARD" -> 1
+                                                                                "GOOD" -> 2
+                                                                                else -> 3
+                                                                            }
+                                                                        })
+                                                                        if (sortedQuestions.isEmpty()) {
+                                                                            onFallback()
+                                                                        } else {
+                                                                            questions = sortedQuestions
+                                                                            isLoading = false
+                                                                        }
+                                                                    }
+                                                                }
+                                                                .addOnFailureListener {
+                                                                    chunksLeft--
+                                                                    if (chunksLeft == 0) {
+                                                                        finalVocabIds.forEach { id ->
+                                                                            if (loadedQuestions.none { it.id == id }) {
+                                                                                userCardsMap[id]?.let {
+                                                                                    loadedQuestions.add(it)
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        val sortedQuestions = loadedQuestions.sortedWith(compareBy { q ->
+                                                                            val status = statusMap[q.id] ?: ""
+                                                                            when (status.uppercase()) {
+                                                                                "HARD" -> 1
+                                                                                "GOOD" -> 2
+                                                                                else -> 3
+                                                                            }
+                                                                        })
+                                                                        if (sortedQuestions.isEmpty()) {
+                                                                            onFallback()
+                                                                        } else {
+                                                                            questions = sortedQuestions
+                                                                            isLoading = false
+                                                                        }
+                                                                    }
+                                                                }
+                                                        }
+                                                    }
+                                                    .addOnFailureListener {
+                                                        onFallback()
+                                                    }
                                             }
                                         }
-                                    }
-                                    
-                                    val finalVocabIds = if (dayIndex == 1) dueVocabIds.take(dailyLimit) else dueVocabIds
-                                    
-                                    if (finalVocabIds.isEmpty()) {
-                                        questions = emptyList()
-                                        isLoading = false
-                                    } else {
-                                        val chunks = finalVocabIds.chunked(30)
-                                        val loadedQuestions = mutableListOf<EssayQuestion>()
-                                        var chunksLeft = chunks.size
-                                        
-                                        chunks.forEach { chunk ->
-                                            firestore.collection("system_vocabulary")
-                                                .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
-                                                .get()
-                                                .addOnSuccessListener { vocabSnapshot ->
-                                                    vocabSnapshot.documents.forEach { d ->
-                                                        try {
-                                                            val id = d.id
-                                                            val rawQuest = d.getString("front") ?: ""
-                                                            val rawAns = d.getString("back") ?: ""
-                                                            val front = CryptoUtils.decrypt(rawQuest)
-                                                            val back = CryptoUtils.decrypt(rawAns)
-                                                            if (front.isNotEmpty() && back.isNotEmpty()) {
-                                                                val questionText = if (playMode == "1") front else back
-                                                                val answerText = if (playMode == "1") back else front
-                                                                loadedQuestions.add(EssayQuestion(id, questionText, answerText))
-                                                            }
-                                                        } catch (e: Exception) {}
-                                                    }
-                                                    chunksLeft--
-                                                    if (chunksLeft == 0) {
-                                                        questions = loadedQuestions
-                                                        isLoading = false
-                                                    }
-                                                }
-                                                .addOnFailureListener {
-                                                    chunksLeft--
-                                                    if (chunksLeft == 0) {
-                                                        questions = loadedQuestions
-                                                        isLoading = false
-                                                    }
-                                                }
-                                        }
-                                    }
+                                        .addOnFailureListener { onFallback() }
                                 }
                                 .addOnFailureListener {
                                     isLoading = false
-                                    questions = getFallbackEssayQuestions(categoryId)
+                                    questions = getFallbackEssayQuestions(categoryId).map { eq ->
+                                        if (playMode == "2") {
+                                            EssayQuestion(eq.id, eq.correctAnswer, eq.question, eq.explanation)
+                                        } else eq
+                                    }
                                 }
                         }
                         .addOnFailureListener {
                             isLoading = false
-                            questions = getFallbackEssayQuestions(categoryId)
+                            questions = getFallbackEssayQuestions(categoryId).map { eq ->
+                                if (playMode == "2") {
+                                    EssayQuestion(eq.id, eq.correctAnswer, eq.question, eq.explanation)
+                                } else eq
+                            }
                         }
                 } catch (e: Exception) {
                     isLoading = false
-                    questions = getFallbackEssayQuestions(categoryId)
+                    questions = getFallbackEssayQuestions(categoryId).map { eq ->
+                        if (playMode == "2") {
+                            EssayQuestion(eq.id, eq.correctAnswer, eq.question, eq.explanation)
+                        } else eq
+                    }
                 }
             } else {
                 isLoading = false
-                questions = getFallbackEssayQuestions(categoryId)
+                questions = getFallbackEssayQuestions(categoryId).map { eq ->
+                    if (playMode == "2") {
+                        EssayQuestion(eq.id, eq.correctAnswer, eq.question, eq.explanation)
+                    } else eq
+                }
             }
         } else {
             try {
@@ -189,17 +317,28 @@ fun UserPlayEssayScreen(
                         if (list.isNotEmpty()) {
                             questions = list
                         } else {
-                            // Fallback to defaults
-                            questions = getFallbackEssayQuestions(categoryId)
+                            questions = getFallbackEssayQuestions(categoryId).map { eq ->
+                                if (playMode == "2") {
+                                    EssayQuestion(eq.id, eq.correctAnswer, eq.question, eq.explanation)
+                                } else eq
+                            }
                         }
                     }
                     .addOnFailureListener {
                         isLoading = false
-                        questions = getFallbackEssayQuestions(categoryId)
+                        questions = getFallbackEssayQuestions(categoryId).map { eq ->
+                            if (playMode == "2") {
+                                EssayQuestion(eq.id, eq.correctAnswer, eq.question, eq.explanation)
+                            } else eq
+                        }
                     }
             } catch (e: Exception) {
                 isLoading = false
-                questions = getFallbackEssayQuestions(categoryId)
+                questions = getFallbackEssayQuestions(categoryId).map { eq ->
+                    if (playMode == "2") {
+                        EssayQuestion(eq.id, eq.correctAnswer, eq.question, eq.explanation)
+                    } else eq
+                }
             }
         }
     }

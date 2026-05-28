@@ -43,12 +43,24 @@ class StudySetRepository {
 
     suspend fun saveStudySet(studySet: StudySet) {
         try {
-            studySetsCollection.document(studySet.id).set(studySet).await()
+            val batch = db.batch()
+            val userSetRef = studySetsCollection.document(studySet.id)
+            val publicSetRef = publicStudySetsCollection.document(studySet.id)
+            
+            batch.set(userSetRef, studySet)
             if (studySet.isPublic) {
-                publicStudySetsCollection.document(studySet.id).set(studySet).await()
+                batch.set(publicSetRef, studySet)
             } else {
-                publicStudySetsCollection.document(studySet.id).delete().await()
+                batch.delete(publicSetRef)
             }
+            
+            // Sync cards to user_decks -> deckId -> cards sub-collection
+            val userDecksCardsRef = db.collection("user_decks").document(studySet.id).collection("cards")
+            studySet.cards.forEach { card ->
+                batch.set(userDecksCardsRef.document(card.id), card)
+            }
+            
+            batch.commit().await()
         } catch (e: Exception) {
             Log.e("StudySetRepository", "Lỗi cập nhật thẻ", e)
         }
@@ -56,8 +68,10 @@ class StudySetRepository {
 
     suspend fun deleteStudySet(id: String) {
         try {
-            studySetsCollection.document(id).delete().await()
-            publicStudySetsCollection.document(id).delete().await()
+            val batch = db.batch()
+            batch.delete(studySetsCollection.document(id))
+            batch.delete(publicStudySetsCollection.document(id))
+            batch.commit().await()
         } catch (e: Exception) {
             Log.e("StudySetRepository", "Lỗi xóa bộ thẻ", e)
         }

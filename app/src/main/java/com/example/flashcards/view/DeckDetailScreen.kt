@@ -90,23 +90,100 @@ fun UserSetDashboardScreen(
 
     val firestore = remember { FirebaseFirestore.getInstance() }
     val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
-    var learnedCardsCount by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(uid, studySet.id) {
-        if (uid.isNotEmpty() && studySet.cards.isNotEmpty()) {
-            firestore.collection("progress")
-                .whereEqualTo("uid", uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (snapshot != null) {
-                        val progressVocabIds = snapshot.documents.mapNotNull { it.getString("vocabId") }.toSet()
-                        val learned = studySet.cards.count { progressVocabIds.contains(it.id) }
-                        learnedCardsCount = learned
+    // Listen to cards inside user_decks -> deckId -> cards collection
+    var cardsList by remember { mutableStateOf<List<Flashcard>>(emptyList()) }
+    DisposableEffect(studySet.id) {
+        if (studySet.id.isEmpty()) {
+            cardsList = studySet.cards
+            return@DisposableEffect onDispose {}
+        }
+        val registration = firestore.collection("user_decks").document(studySet.id).collection("cards")
+            .addSnapshotListener { snapshot, error ->
+                if (snapshot != null && !snapshot.isEmpty) {
+                    val list = snapshot.documents.mapNotNull { doc ->
+                        try {
+                            doc.toObject(Flashcard::class.java)?.copy(id = doc.id)
+                        } catch (e: Exception) {
+                            null
+                        }
                     }
+                    cardsList = list
+                } else {
+                    cardsList = studySet.cards
                 }
+            }
+        onDispose {
+            registration.remove()
         }
     }
 
-    val progressPercent = if (studySet.cards.isNotEmpty()) learnedCardsCount.toFloat() / studySet.cards.size else 0f
+    // Dynamic TextToSpeech initialization based on languageCode
+    var isTtsReady by remember { mutableStateOf(false) }
+    var tts by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(studySet.languageCode) {
+        tts = android.speech.tts.TextToSpeech(context) { status ->
+            if (status != android.speech.tts.TextToSpeech.ERROR) {
+                val locale = when (studySet.languageCode.uppercase()) {
+                    "JA", "JAPANESE" -> java.util.Locale.JAPANESE
+                    "EN", "ENGLISH" -> java.util.Locale.US
+                    "ZH", "CHINESE" -> java.util.Locale.CHINESE
+                    else -> java.util.Locale.US
+                }
+                tts?.language = locale
+                isTtsReady = true
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
+        }
+    }
+
+    // Real-time favorite card IDs tracking
+    var starredCardIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    DisposableEffect(uid) {
+        if (uid.isEmpty()) return@DisposableEffect onDispose {}
+        val registration = firestore.collection("user_favorites")
+            .whereEqualTo("uid", uid)
+            .whereEqualTo("starred", true)
+            .addSnapshotListener { snapshot, error ->
+                if (snapshot != null) {
+                    val ids = snapshot.documents.mapNotNull { it.getString("vocabId") }.toSet()
+                    starredCardIds = ids
+                }
+            }
+        onDispose {
+            registration.remove()
+        }
+    }
+
+    // Real-time progress tracking to compute mastery
+    var progressVocabIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    DisposableEffect(uid) {
+        if (uid.isEmpty()) return@DisposableEffect onDispose {}
+        val registration = firestore.collection("progress")
+            .whereEqualTo("uid", uid)
+            .addSnapshotListener { snapshot, error ->
+                if (snapshot != null) {
+                    progressVocabIds = snapshot.documents.mapNotNull { it.getString("vocabId") }.toSet()
+                }
+            }
+        onDispose {
+            registration.remove()
+        }
+    }
+
+    val learnedCardsCount = remember(progressVocabIds, cardsList) {
+        cardsList.count { progressVocabIds.contains(it.id) }
+    }
+
+    val progressPercent = if (cardsList.isNotEmpty()) learnedCardsCount.toFloat() / cardsList.size else 0f
     val creatorName = studySet.creatorName.ifEmpty { userName }
 
     Scaffold(
@@ -238,13 +315,13 @@ fun UserSetDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Tổng số từ: ${studySet.cards.size} từ",
+                                    text = "Tổng số từ: ${cardsList.size} từ",
                                     color = Color.White,
                                     fontWeight = FontWeight.SemiBold,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
-                                    text = "Tiến độ: $learnedCardsCount/${studySet.cards.size} thẻ",
+                                    text = "Tiến độ: $learnedCardsCount/${cardsList.size} thẻ",
                                     color = Color.White.copy(alpha = 0.9f),
                                     fontWeight = FontWeight.Medium,
                                     style = MaterialTheme.typography.bodySmall
@@ -316,27 +393,133 @@ fun UserSetDashboardScreen(
                 }
             }
 
-            // 3. Cards Preview Header
+            // 3. Vocabulary List Title Section
             item {
-                Row(
+                Text(
+                    text = "Danh sách thẻ từ vựng (${cardsList.size} từ)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            // 4. Vocabulary List Items Section
+            items(cardsList) { card ->
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Text(
-                        text = "Danh sách thẻ (${studySet.cards.size})",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Left: Word + Reading Caption
+                        Column(modifier = Modifier.weight(1.2f)) {
+                            val cleanFront = card.question.substringBefore("(").trim()
+                            val reading = if (card.question.contains("(")) {
+                                "(" + card.question.substringAfter("(")
+                            } else ""
+                            
+                            Text(
+                                text = cleanFront,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            if (reading.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = reading,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        // Center: Vietnamese definition
+                        Box(
+                            modifier = Modifier.weight(1.2f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = card.answer,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        // Right: Actions (Speak + Star)
+                        Row(
+                            modifier = Modifier.weight(0.8f),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    val wordToSpeak = card.question
+                                    val cleanWord = wordToSpeak.substringBefore("(").trim()
+                                    val speakLocale = when (studySet.languageCode.uppercase()) {
+                                        "JA", "JAPANESE" -> java.util.Locale.JAPANESE
+                                        "ZH", "CHINESE" -> java.util.Locale.CHINESE
+                                        else -> java.util.Locale.US
+                                    }
+                                    tts?.language = speakLocale
+                                    tts?.speak(cleanWord, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, null)
+                                },
+                                enabled = isTtsReady,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VolumeUp,
+                                    contentDescription = "Phát âm",
+                                    tint = FlowPrimary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(4.dp))
+
+                            val isStarred = starredCardIds.contains(card.id)
+                            IconButton(
+                                onClick = {
+                                    val favDocRef = firestore.collection("user_favorites").document("${uid}_${card.id}")
+                                    if (isStarred) {
+                                        favDocRef.update("starred", false)
+                                    } else {
+                                        val favData = hashMapOf(
+                                            "uid" to uid,
+                                            "vocabId" to card.id,
+                                            "front" to card.question,
+                                            "back" to card.answer,
+                                            "levelId" to studySet.id,
+                                            "starred" to true,
+                                            "updatedAt" to com.google.firebase.Timestamp.now()
+                                        )
+                                        favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
+                                    }
+                                },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Đánh dấu sao",
+                                    tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
-            // 4. Cards Preview List
-            items(studySet.cards) { card ->
-                CardPreviewItem(card)
-            }
-            
             // 5. Comments Section Header
             item {
                 Spacer(modifier = Modifier.height(8.dp))

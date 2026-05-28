@@ -394,6 +394,7 @@ fun AppNavHost(
 
         composable("profile") {
             ProfileScreen(
+                navController = navController,
                 userName = userName,
                 userEmail = userEmail,
                 onLogout = {
@@ -401,16 +402,36 @@ fun AppNavHost(
                     viewModel.clearData()
                     navController.navigate("login_screen") { popUpTo(0) { inclusive = true } }
                 },
-                onNavigateToPersonalInfo = {},
-                onNavigateToSecurity = {},
-                onNavigateToNotifications = {},
-                onNavigateToLearningPrefs = {},
-                onNavigateToStats = { navController.navigate("spaced_repetition") }
+                onNavigateToPersonalInfo = { navController.navigate("personal_info") },
+                onNavigateToSecurity = { navController.navigate("security") },
+                onNavigateToNotifications = { navController.navigate("notifications_settings") },
+                onNavigateToLearningPrefs = { navController.navigate("learning_preferences") },
+                onNavigateToStats = { navController.navigate("spaced_repetition_route") }
             )
         }
 
         composable("spaced_repetition") {
             SpacedRepetitionScreen(navController = navController)
+        }
+
+        composable("spaced_repetition_route") {
+            SpacedRepetitionScreen(navController = navController)
+        }
+
+        composable("personal_info") {
+            PersonalInfoScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable("security") {
+            SecurityScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable("notifications_settings") {
+            NotificationSettingsScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable("learning_preferences") {
+            LearningPreferencesScreen(onBack = { navController.popBackStack() })
         }
 
         composable("spaced_repetition_dashboard/{selectedDay}") { backStackEntry ->
@@ -575,8 +596,8 @@ fun AppNavHost(
                 }
             } else {
                 CreateDeckScreen(
-                    onSave = { title, desc, isPublic ->
-                        viewModel.addStudySet(title, desc, isPublic)
+                    onSave = { title, desc, isPublic, cards ->
+                        viewModel.addStudySet(title, desc, isPublic, cards)
                         navController.popBackStack()
                     },
                     onBack = { navController.popBackStack() }
@@ -711,6 +732,66 @@ fun AppNavHost(
                 
                 LaunchedEffect(quizId, uid) {
                     if (uid.isNotEmpty()) {
+                        val onFallback = {
+                            firestore.collection("user_favorites")
+                                .whereEqualTo("uid", uid)
+                                .whereEqualTo("starred", true)
+                                .get()
+                                .addOnSuccessListener { favSnapshot ->
+                                    val favCards = favSnapshot.documents.mapNotNull { doc ->
+                                        val id = doc.getString("vocabId") ?: doc.id
+                                        val front = doc.getString("front") ?: ""
+                                        val back = doc.getString("back") ?: ""
+                                        val explanation = doc.getString("explanation") ?: ""
+                                        if (front.isNotEmpty() && back.isNotEmpty()) {
+                                            com.example.flashcards.model.Flashcard(
+                                                id = id,
+                                                question = front,
+                                                answer = back,
+                                                explanation = explanation
+                                            )
+                                        } else null
+                                    }
+                                    val dayIndex = quizId.substringAfter("day_").toIntOrNull() ?: 1
+                                    if (favCards.isNotEmpty()) {
+                                        studySetState = com.example.flashcards.model.StudySet(
+                                            id = quizId,
+                                            title = "Ôn tập Sao Ngày $dayIndex",
+                                            cards = favCards.take(10)
+                                        )
+                                        isLoading = false
+                                    } else {
+                                        studySetState = com.example.flashcards.model.StudySet(
+                                            id = quizId,
+                                            title = "Luyện tập Ngày $dayIndex",
+                                            cards = listOf(
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "食べる (taberu)", "Ăn"),
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "飲む (nomu)", "Uống"),
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "行く (iku)", "Đi"),
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "見る (miru)", "Xem / Nhìn"),
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "先生 (sensei)", "Giáo viên")
+                                            )
+                                        )
+                                        isLoading = false
+                                    }
+                                }
+                                .addOnFailureListener {
+                                    val dayIndex = quizId.substringAfter("day_").toIntOrNull() ?: 1
+                                    studySetState = com.example.flashcards.model.StudySet(
+                                        id = quizId,
+                                        title = "Luyện tập Ngày $dayIndex",
+                                        cards = listOf(
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "食べる (taberu)", "Ăn"),
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "飲む (nomu)", "Uống"),
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "行く (iku)", "Đi"),
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "見る (miru)", "Xem / Nhìn"),
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "先生 (sensei)", "Giáo viên")
+                                        )
+                                    )
+                                    isLoading = false
+                                }
+                        }
+
                         firestore.collection("users").document(uid).get()
                             .addOnSuccessListener { userDoc ->
                                 val dailyLimit = userDoc.getLong("dailyWordLimit")?.toInt() ?: 10
@@ -719,104 +800,183 @@ fun AppNavHost(
                                     .whereEqualTo("uid", uid)
                                     .get()
                                     .addOnSuccessListener { progressSnapshot ->
-                                        val dayIndex = quizId.substringAfter("day_").toIntOrNull() ?: 1
-                                        val calendar = java.util.Calendar.getInstance()
-                                        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                                        calendar.set(java.util.Calendar.MINUTE, 0)
-                                        calendar.set(java.util.Calendar.SECOND, 0)
-                                        calendar.set(java.util.Calendar.MILLISECOND, 0)
-                                        val startOfToday = calendar.timeInMillis
-                                        
-                                        val dayEndTimes = LongArray(7)
-                                        for (i in 0..6) {
-                                            calendar.timeInMillis = startOfToday
-                                            calendar.add(java.util.Calendar.DAY_OF_YEAR, i)
-                                            calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
-                                            calendar.set(java.util.Calendar.MINUTE, 59)
-                                            calendar.set(java.util.Calendar.SECOND, 59)
-                                            calendar.set(java.util.Calendar.MILLISECOND, 999)
-                                            dayEndTimes[i] = calendar.timeInMillis
-                                        }
-                                        
-                                        val dueVocabIds = mutableListOf<String>()
-                                        progressSnapshot.documents.forEach { doc ->
-                                            val vocabId = doc.getString("vocabId") ?: ""
-                                            val status = doc.getString("status") ?: ""
-                                            val nextReview = doc.getTimestamp("nextReview")
-                                            if (vocabId.isNotEmpty() && status != "MASTERED") {
-                                                if (nextReview != null) {
-                                                    val reviewTime = nextReview.toDate().time
-                                                    if (dayIndex == 1) {
-                                                        if (reviewTime <= dayEndTimes[0]) {
-                                                            dueVocabIds.add(vocabId)
-                                                        }
-                                                    } else {
-                                                        val startRange = dayEndTimes[dayIndex - 2]
-                                                        val endRange = dayEndTimes[dayIndex - 1]
-                                                        if (reviewTime > startRange && reviewTime <= endRange) {
+                                        firestore.collection("user_progress")
+                                            .whereEqualTo("uid", uid)
+                                            .get()
+                                            .addOnSuccessListener { userProgressSnapshot ->
+                                                val allProgressDocs = (progressSnapshot?.documents ?: emptyList()) + (userProgressSnapshot?.documents ?: emptyList())
+                                                val uniqueProgressDocs = allProgressDocs.associateBy { it.id }.values
+                                                
+                                                val dayIndex = quizId.substringAfter("day_").toIntOrNull() ?: 1
+                                                val calendar = java.util.Calendar.getInstance()
+                                                calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                                calendar.set(java.util.Calendar.MINUTE, 0)
+                                                calendar.set(java.util.Calendar.SECOND, 0)
+                                                calendar.set(java.util.Calendar.MILLISECOND, 0)
+                                                val startOfToday = calendar.timeInMillis
+                                                
+                                                val dayEndTimes = LongArray(7)
+                                                for (i in 0..6) {
+                                                    calendar.timeInMillis = startOfToday
+                                                    calendar.add(java.util.Calendar.DAY_OF_YEAR, i)
+                                                    calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+                                                    calendar.set(java.util.Calendar.MINUTE, 59)
+                                                    calendar.set(java.util.Calendar.SECOND, 59)
+                                                    calendar.set(java.util.Calendar.MILLISECOND, 999)
+                                                    dayEndTimes[i] = calendar.timeInMillis
+                                                }
+                                                
+                                                val dueVocabIds = mutableListOf<String>()
+                                                val statusMap = mutableMapOf<String, String>()
+                                                
+                                                uniqueProgressDocs.forEach { doc ->
+                                                    val vocabId = doc.getString("vocabId") ?: ""
+                                                    val status = doc.getString("status") ?: ""
+                                                    val nextReview = doc.getTimestamp("nextReview")
+                                                    if (vocabId.isNotEmpty() && status != "MASTERED" && status != "MASTER") {
+                                                        statusMap[vocabId] = status
+                                                        if (nextReview != null) {
+                                                            val reviewTime = nextReview.toDate().time
+                                                            if (dayIndex == 1) {
+                                                                if (reviewTime <= dayEndTimes[0]) {
+                                                                    dueVocabIds.add(vocabId)
+                                                                }
+                                                            } else {
+                                                                val startRange = dayEndTimes[dayIndex - 2]
+                                                                val endRange = dayEndTimes[dayIndex - 1]
+                                                                if (reviewTime > startRange && reviewTime <= endRange) {
+                                                                    dueVocabIds.add(vocabId)
+                                                                }
+                                                            }
+                                                        } else if (dayIndex == 1) {
                                                             dueVocabIds.add(vocabId)
                                                         }
                                                     }
-                                                } else if (dayIndex == 1) {
-                                                    dueVocabIds.add(vocabId)
+                                                }
+                                                
+                                                val finalVocabIds = if (dayIndex == 1) dueVocabIds.take(dailyLimit) else dueVocabIds
+                                                
+                                                if (finalVocabIds.isEmpty()) {
+                                                    onFallback()
+                                                } else {
+                                                    val userCardsMap = mutableMapOf<String, com.example.flashcards.model.Flashcard>()
+                                                    firestore.collection("users").document(uid).collection("studySets").get()
+                                                        .addOnSuccessListener { studySetsSnapshot ->
+                                                            if (studySetsSnapshot != null) {
+                                                                studySetsSnapshot.documents.forEach { sDoc ->
+                                                                    val cards = sDoc.get("cards") as? List<Map<String, Any>> ?: emptyList()
+                                                                    cards.forEach { cardMap ->
+                                                                        val id = cardMap["id"] as? String
+                                                                        val question = cardMap["question"] as? String
+                                                                        val answer = cardMap["answer"] as? String
+                                                                        if (id != null && question != null && answer != null) {
+                                                                            userCardsMap[id] = com.example.flashcards.model.Flashcard(
+                                                                                id = id,
+                                                                                question = question,
+                                                                                answer = answer
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            
+                                                            val chunks = finalVocabIds.chunked(30)
+                                                            val loadedCards = mutableListOf<com.example.flashcards.model.Flashcard>()
+                                                            var chunksLeft = chunks.size
+                                                            
+                                                            chunks.forEach { chunk ->
+                                                                firestore.collection("system_vocabulary")
+                                                                    .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
+                                                                    .get()
+                                                                    .addOnSuccessListener { vocabSnapshot ->
+                                                                        vocabSnapshot.documents.forEach { d ->
+                                                                            try {
+                                                                                val id = d.id
+                                                                                val rawQuest = d.getString("front") ?: ""
+                                                                                val rawAns = d.getString("back") ?: ""
+                                                                                val explanation = d.getString("explanation") ?: ""
+                                                                                val question = com.example.flashcards.utils.CryptoUtils.decrypt(rawQuest)
+                                                                                val answer = com.example.flashcards.utils.CryptoUtils.decrypt(rawAns)
+                                                                                if (question.isNotEmpty() && answer.isNotEmpty()) {
+                                                                                    loadedCards.add(
+                                                                                        com.example.flashcards.model.Flashcard(
+                                                                                            id = id,
+                                                                                            question = question,
+                                                                                            answer = answer,
+                                                                                            explanation = explanation
+                                                                                        )
+                                                                                    )
+                                                                                }
+                                                                            } catch (e: Exception) {}
+                                                                        }
+                                                                        chunksLeft--
+                                                                        if (chunksLeft == 0) {
+                                                                            finalVocabIds.forEach { id ->
+                                                                                if (loadedCards.none { it.id == id }) {
+                                                                                    userCardsMap[id]?.let {
+                                                                                        loadedCards.add(it)
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                            
+                                                                            val sortedCards = loadedCards.sortedWith(compareBy { card ->
+                                                                                val status = statusMap[card.id] ?: ""
+                                                                                when (status.uppercase()) {
+                                                                                    "HARD" -> 1
+                                                                                    "GOOD" -> 2
+                                                                                    else -> 3
+                                                                                }
+                                                                            })
+                                                                            if (sortedCards.isEmpty()) {
+                                                                                onFallback()
+                                                                            } else {
+                                                                                studySetState = com.example.flashcards.model.StudySet(
+                                                                                    id = quizId,
+                                                                                    title = "Luyện tập Ngày $dayIndex",
+                                                                                    cards = sortedCards
+                                                                                )
+                                                                                isLoading = false
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    .addOnFailureListener {
+                                                                        chunksLeft--
+                                                                        if (chunksLeft == 0) {
+                                                                            finalVocabIds.forEach { id ->
+                                                                                if (loadedCards.none { it.id == id }) {
+                                                                                    userCardsMap[id]?.let {
+                                                                                        loadedCards.add(it)
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                            val sortedCards = loadedCards.sortedWith(compareBy { card ->
+                                                                                val status = statusMap[card.id] ?: ""
+                                                                                when (status.uppercase()) {
+                                                                                    "HARD" -> 1
+                                                                                    "GOOD" -> 2
+                                                                                    else -> 3
+                                                                                }
+                                                                            })
+                                                                            if (sortedCards.isEmpty()) {
+                                                                                onFallback()
+                                                                            } else {
+                                                                                studySetState = com.example.flashcards.model.StudySet(
+                                                                                    id = quizId,
+                                                                                    title = "Luyện tập Ngày $dayIndex",
+                                                                                    cards = sortedCards
+                                                                                )
+                                                                                isLoading = false
+                                                                            }
+                                                                        }
+                                                                    }
+                                                            }
+                                                        }
+                                                        .addOnFailureListener {
+                                                            onFallback()
+                                                        }
                                                 }
                                             }
-                                        }
-                                        
-                                        val finalVocabIds = if (dayIndex == 1) dueVocabIds.take(dailyLimit) else dueVocabIds
-                                        
-                                        if (finalVocabIds.isEmpty()) {
-                                            studySetState = com.example.flashcards.model.StudySet(id = quizId, title = "Luyện tập Ngày $dayIndex", cards = emptyList())
-                                            isLoading = false
-                                        } else {
-                                            val chunks = finalVocabIds.chunked(30)
-                                            val loadedCards = mutableListOf<com.example.flashcards.model.Flashcard>()
-                                            var chunksLeft = chunks.size
-                                            
-                                            chunks.forEach { chunk ->
-                                                firestore.collection("system_vocabulary")
-                                                    .whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk)
-                                                    .get()
-                                                    .addOnSuccessListener { vocabSnapshot ->
-                                                        vocabSnapshot.documents.forEach { d ->
-                                                            try {
-                                                                val id = d.id
-                                                                val rawQuest = d.getString("front") ?: ""
-                                                                val rawAns = d.getString("back") ?: ""
-                                                                val explanation = d.getString("explanation") ?: ""
-                                                                val question = com.example.flashcards.utils.CryptoUtils.decrypt(rawQuest)
-                                                                val answer = com.example.flashcards.utils.CryptoUtils.decrypt(rawAns)
-                                                                if (question.isNotEmpty() && answer.isNotEmpty()) {
-                                                                    loadedCards.add(
-                                                                        com.example.flashcards.model.Flashcard(
-                                                                            id = id,
-                                                                            question = question,
-                                                                            answer = answer,
-                                                                            explanation = explanation
-                                                                        )
-                                                                    )
-                                                                }
-                                                            } catch (e: Exception) {}
-                                                        }
-                                                        chunksLeft--
-                                                        if (chunksLeft == 0) {
-                                                            studySetState = com.example.flashcards.model.StudySet(
-                                                                id = quizId,
-                                                                title = "Luyện tập Ngày $dayIndex",
-                                                                cards = loadedCards
-                                                            )
-                                                            isLoading = false
-                                                        }
-                                                    }
-                                                    .addOnFailureListener {
-                                                        chunksLeft--
-                                                        if (chunksLeft == 0) {
-                                                            studySetState = com.example.flashcards.model.StudySet(id = quizId, title = "Luyện tập Ngày $dayIndex", cards = loadedCards)
-                                                            isLoading = false
-                                                        }
-                                                    }
-                                            }
-                                        }
+                                            .addOnFailureListener { onFallback() }
                                     }
                                     .addOnFailureListener { isLoading = false }
                             }

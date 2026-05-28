@@ -34,7 +34,8 @@ fun UserEditSetScreen(
     var title by remember { mutableStateOf(studySet.title) }
     var description by remember { mutableStateOf(studySet.description) }
     var isPublic by remember { mutableStateOf(studySet.isPublic) }
-    var cardsList by remember { mutableStateOf(studySet.cards) }
+    val cardsList = remember { studySet.cards.toMutableStateList() }
+    var showImportDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -49,7 +50,7 @@ fun UserEditSetScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    cardsList = cardsList + Flashcard(id = UUID.randomUUID().toString(), question = "", answer = "")
+                    cardsList.add(Flashcard(id = UUID.randomUUID().toString(), question = "", answer = ""))
                 },
                 containerColor = FlowPrimary,
                 contentColor = Color.White,
@@ -153,13 +154,29 @@ fun UserEditSetScreen(
             }
 
             item {
-                Text(
-                    text = "Thuật ngữ trong bộ thẻ (${cardsList.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Thuật ngữ trong bộ thẻ (${cardsList.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    
+                    Button(
+                        onClick = { showImportDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text("Nhập hàng loạt bằng văn bản 📋", color = FlowPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                }
             }
 
             itemsIndexed(cardsList) { index, card ->
@@ -183,7 +200,7 @@ fun UserEditSetScreen(
                             )
                             IconButton(
                                 onClick = {
-                                    cardsList = cardsList.filterIndexed { i, _ -> i != index }
+                                    cardsList.removeAt(index)
                                 }
                             ) {
                                 Icon(
@@ -199,9 +216,7 @@ fun UserEditSetScreen(
                         OutlinedTextField(
                             value = card.question,
                             onValueChange = { newQ ->
-                                cardsList = cardsList.mapIndexed { i, c ->
-                                    if (i == index) c.copy(question = newQ) else c
-                                }
+                                cardsList[index] = cardsList[index].copy(question = newQ)
                             },
                             label = { Text("Mặt trước (Thuật ngữ)") },
                             modifier = Modifier.fillMaxWidth(),
@@ -217,9 +232,7 @@ fun UserEditSetScreen(
                         OutlinedTextField(
                             value = card.answer,
                             onValueChange = { newA ->
-                                cardsList = cardsList.mapIndexed { i, c ->
-                                    if (i == index) c.copy(answer = newA) else c
-                                }
+                                cardsList[index] = cardsList[index].copy(answer = newA)
                             },
                             label = { Text("Mặt sau (Định nghĩa)") },
                             modifier = Modifier.fillMaxWidth(),
@@ -233,5 +246,16 @@ fun UserEditSetScreen(
                 }
             }
         }
+    }
+
+    if (showImportDialog) {
+        BulkImportDialog(
+            onDismiss = { showImportDialog = false },
+            onImport = { parsed: List<Pair<String, String>> ->
+                parsed.forEach { pair ->
+                    cardsList.add(Flashcard(id = UUID.randomUUID().toString(), question = pair.first, answer = pair.second))
+                }
+            }
+        )
     }
 }
