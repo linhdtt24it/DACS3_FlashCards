@@ -819,7 +819,7 @@ fun StudySessionScreen(
                                 Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
                                     Text(if (!isBackVisible) "QUESTION" else "ANSWER", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = FlowPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                                 }
-                                // 👈 GIỮ của bạn tôi: truyền thêm languageCode
+
                                 IconButton(onClick = { onSpeak(if (!isBackVisible) card.question else card.answer, studySet.languageCode) }) {
                                     Icon(Icons.Default.VolumeUp, contentDescription = "Speak", tint = FlowPrimary)
                                 }
