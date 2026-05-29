@@ -40,6 +40,16 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
     private var tts: TextToSpeech? = null
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        val prefs = newBase.getSharedPreferences("profile_prefs", android.content.Context.MODE_PRIVATE)
+        val language = prefs.getString("app_language", "en") ?: "en"
+        val locale = Locale(language)
+        Locale.setDefault(locale)
+        val config = android.content.res.Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -406,7 +416,7 @@ fun AppNavHost(
                 onNavigateToSecurity = { navController.navigate("security") },
                 onNavigateToNotifications = { navController.navigate("notifications_settings") },
                 onNavigateToLearningPrefs = { navController.navigate("learning_preferences") },
-                onNavigateToStats = { navController.navigate("spaced_repetition_route") }
+                onNavigateToStats = { navController.navigate("statistics_screen") }
             )
         }
 
@@ -416,6 +426,16 @@ fun AppNavHost(
 
         composable("spaced_repetition_route") {
             SpacedRepetitionScreen(navController = navController)
+        }
+
+        composable("statistics_screen") {
+            val userStats by viewModel.userStats.collectAsState()
+            val srViewModel: com.example.flashcards.viewmodel.SpacedRepetitionViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            StatisticsScreen(
+                srViewModel = srViewModel,
+                userStats = userStats,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable("personal_info") {
@@ -629,10 +649,23 @@ fun AppNavHost(
                     onBack = { navController.popBackStack() },
                     onStudyFlashcards = { navController.navigate("study_session") },
                     onQuiz = { navController.navigate("quiz_session") },
-                    onMatch = {
+                    onPlayMatchGame = { navController.navigate("user_play_match/deck_${set.id}") },
+                    onPlayBattle = {
                         viewModel.createBattle(set, 
                             onSuccess = { battleId -> navController.navigate("battle_session/$battleId") },
                             onError = { error -> Toast.makeText(context, error, Toast.LENGTH_SHORT).show() }
+                        )
+                    },
+                    onJoinBattle = { code ->
+                        viewModel.joinBattleByCode(code,
+                            onSuccess = { battleId -> navController.navigate("battle_session/$battleId") },
+                            onError = { Toast.makeText(context, "Mã phòng không hợp lệ hoặc phòng không tồn tại", Toast.LENGTH_SHORT).show() }
+                        )
+                    },
+                    onJoinRandomBattle = {
+                        viewModel.joinRandomBattle(set.id,
+                            onSuccess = { battleId -> navController.navigate("battle_session/$battleId") },
+                            onError = { Toast.makeText(context, "Không tìm thấy phòng trống nào", Toast.LENGTH_SHORT).show() }
                         )
                     },
                     onEditDeck = { navController.navigate("edit_deck/${set.id}") },

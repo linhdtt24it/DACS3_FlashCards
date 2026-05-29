@@ -1,4 +1,4 @@
-﻿package com.example.flashcards.view
+package com.example.flashcards.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,7 +21,7 @@ import com.example.flashcards.model.StudySet
 import com.example.flashcards.ui.theme.*
 
 // ---- Emoji picker options ----
-val FOLDER_EMOJIS = listOf("📁","📚","📖","✏️","🧠","🔬","🎯","💡","🌏","🎨","🎵","💪","🏆","⭐","🔑","🚀")
+val FOLDER_EMOJIS = listOf("??","??","??","??","??","??","??","??","??","??","??","??","??","?","??","??")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -187,7 +187,7 @@ fun FolderSetItem(set: StudySet, onClick: () -> Unit, onRemove: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Text(
-                    "${set.cards.size} terms  •  ${if (set.isPublic) "Public" else "Private"}",
+                    "${set.cards.size} terms  �  ${if (set.isPublic) "Public" else "Private"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

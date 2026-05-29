@@ -12,7 +12,8 @@ data class Flashcard(
     val nextReviewDate: Long = System.currentTimeMillis(),
     val interval: Int = 0,
     val easeFactor: Double = 2.5,
-    val repetitions: Int = 0
+    val repetitions: Int = 0,
+    val state: CardState = CardState.NEW
 )
 
 data class StudySet(

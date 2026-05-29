@@ -93,6 +93,7 @@ fun LevelDashboardScreen(
 
     val screenTitle = "$prettyLang - $prettyLevel"
     var showEssayBottomSheet by remember { mutableStateOf(false) }
+    var showGameBottomSheet by remember { mutableStateOf(false) }
 
     val firestore = remember { FirebaseFirestore.getInstance() }
     val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
@@ -351,14 +352,12 @@ fun LevelDashboardScreen(
                             }
                         )
                         LevelFeatureCard(
-                            title = "Nối Từ (Match)",
-                            description = "Trò chơi ghép từ",
-                            icon = Icons.Default.Extension,
+                            title = "Giải Trí",
+                            description = "Nối từ, Minigames",
+                            icon = Icons.Default.VideogameAsset,
                             tintColor = Color(0xFF8B5CF6),
                             modifier = Modifier.weight(1f),
-                            onClick = {
-                                navController.navigate("user_play_match/$normalizedLevelId")
-                            }
+                            onClick = { showGameBottomSheet = true }
                         )
                     }
                 }
@@ -513,6 +512,17 @@ fun LevelDashboardScreen(
             onModeSelected = { mode ->
                 showEssayBottomSheet = false
                 navController.navigate("user_play_essay/$normalizedLevelId/$mode")
+            }
+        )
+    }
+
+    if (showGameBottomSheet) {
+        GameSelectionBottomSheet(
+            hasBattleFeature = false,
+            onDismiss = { showGameBottomSheet = false },
+            onPlayMatch = {
+                showGameBottomSheet = false
+                navController.navigate("user_play_match/$normalizedLevelId")
             }
         )
     }

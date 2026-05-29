@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +45,7 @@ fun SpacedRepetitionDashboardScreen(
     var studiedCount by remember { mutableIntStateOf(0) }
     var isLoadingData by remember { mutableStateOf(true) }
     var showEssayBottomSheet by remember { mutableStateOf(false) }
+    var showGameBottomSheet by remember { mutableStateOf(false) }
 
     var hardVocabList by remember { mutableStateOf<List<VocabItem>>(emptyList()) }
     var goodVocabList by remember { mutableStateOf<List<VocabItem>>(emptyList()) }
@@ -196,7 +200,7 @@ fun SpacedRepetitionDashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Luyện Tập Theo Lịch Trình", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.ui_text_81), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -242,8 +246,7 @@ fun SpacedRepetitionDashboardScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = "SPACED REPETITION",
+                                    Text(stringResource(R.string.ui_text_82),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White.copy(alpha = 0.8f)
@@ -252,8 +255,7 @@ fun SpacedRepetitionDashboardScreen(
                                         color = Color.White.copy(alpha = 0.2f),
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
-                                        Text(
-                                            text = "LỊCH TRÌNH 7 NGÀY",
+                                        Text(stringResource(R.string.ui_text_83),
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                             color = Color.White,
                                             fontWeight = FontWeight.Bold,
@@ -269,8 +271,7 @@ fun SpacedRepetitionDashboardScreen(
                                     color = Color.White
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = "Phương pháp học lặp lại ngắt quãng thông minh giúp tối ưu hóa khả năng ghi nhớ dài hạn của bạn.",
+                                Text(stringResource(R.string.ui_text_84),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color.White.copy(alpha = 0.85f)
                                 )
@@ -359,13 +360,11 @@ fun SpacedRepetitionDashboardScreen(
                         }
                         item {
                             LevelFeatureCard(
-                                title = "Nối Từ (Match)",
-                                description = "Trò chơi ghép từ",
-                                icon = Icons.Default.Extension,
+                                title = "Giải Trí",
+                                description = "Nối từ, Minigames",
+                                icon = Icons.Default.VideogameAsset,
                                 tintColor = Color(0xFF8B5CF6),
-                                onClick = {
-                                    navController.navigate("user_play_match/$selectedDay")
-                                }
+                                onClick = { showGameBottomSheet = true }
                             )
                         }
                     }
@@ -373,8 +372,7 @@ fun SpacedRepetitionDashboardScreen(
 
                 // 3. Tab Title Section
                 item {
-                    Text(
-                        text = "Từ vựng ôn tập của ngày (" + totalCardsCount + " từ)",
+                    Text(stringResource(R.string.ui_text_85) + totalCardsCount + " từ)",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -440,14 +438,13 @@ fun SpacedRepetitionDashboardScreen(
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Icon(
-                                        imageVector = Icons.Default.Inbox,
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Info,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                                         modifier = Modifier.size(48.dp)
                                     )
                                     Spacer(modifier = Modifier.height(12.dp))
-                                    Text(
-                                        text = "Không có từ vựng nào trong danh mục này.",
+                                    Text(stringResource(R.string.ui_text_86),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                                         textAlign = TextAlign.Center
@@ -558,6 +555,17 @@ fun SpacedRepetitionDashboardScreen(
             onModeSelected = { mode ->
                 showEssayBottomSheet = false
                 navController.navigate("user_play_essay/$selectedDay/$mode")
+            }
+        )
+    }
+
+    if (showGameBottomSheet) {
+        GameSelectionBottomSheet(
+            hasBattleFeature = false,
+            onDismiss = { showGameBottomSheet = false },
+            onPlayMatch = {
+                showGameBottomSheet = false
+                navController.navigate("user_play_match/$selectedDay")
             }
         )
     }

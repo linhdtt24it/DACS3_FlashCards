@@ -1,4 +1,4 @@
-﻿package com.example.flashcards.view
+package com.example.flashcards.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -95,7 +95,7 @@ fun NotificationItem(notification: SocialNotification, onClick: () -> Unit) {
                 if (notification.type == "COMMENT") {
                     Text("\"${notification.content}\"", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 } else if (notification.type == "RATING") {
-                    Text("⭐ ${notification.content}", style = MaterialTheme.typography.bodySmall, color = FlowWarning, maxLines = 1)
+                    Text("? ${notification.content}", style = MaterialTheme.typography.bodySmall, color = FlowWarning, maxLines = 1)
                 }
                 val date = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(notification.timestamp))
                 Text(date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

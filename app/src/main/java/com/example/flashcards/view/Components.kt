@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -107,5 +108,90 @@ fun AssessmentButton(label: String, color: Color, modifier: Modifier, onClick: (
         shape = RoundedCornerShape(20.dp)
     ) {
         Text(label, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun LoadingStateView(message: String = "Đang tải dữ liệu...") {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(
+                color = com.example.flashcards.ui.theme.FlowPrimary,
+                strokeWidth = 4.dp,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyStateView(
+    title: String,
+    message: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.Info,
+    actionText: String? = null,
+    onActionClick: (() -> Unit)? = null
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(com.example.flashcards.ui.theme.FlowPrimary.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = com.example.flashcards.ui.theme.FlowPrimary,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            
+            if (actionText != null && onActionClick != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = onActionClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = com.example.flashcards.ui.theme.FlowPrimary),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(text = actionText, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
     }
 }

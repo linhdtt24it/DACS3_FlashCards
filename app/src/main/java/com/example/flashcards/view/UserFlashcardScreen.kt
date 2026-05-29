@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -35,12 +36,19 @@ import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Star
 import java.util.Locale
 import java.util.UUID
+import com.example.flashcards.model.CardState
+import com.example.flashcards.model.ReviewRating
+import com.example.flashcards.viewmodel.SpacedRepetitionViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 data class VocabCard(
     val id: String,
-    val front: String, // original word, e.g. "食べる"
-    val back: String, // meaning, e.g. "Ăn"
-    val levelId: String = ""
+    val front: String,
+    val back: String,
+    val levelId: String = "",
+    val state: CardState = CardState.NEW,
+    val interval: Int = 0,
+    val easeFactor: Double = 2.5
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,8 +58,12 @@ fun UserFlashcardScreen(
     language: String,
     levelId: String
 ) {
+    val firestore = FirebaseFirestore.getInstance()
+    val auth = FirebaseAuth.getInstance()
+    val uid = auth.currentUser?.uid ?: "anonymous"
+    
+    val spacedRepetitionViewModel: SpacedRepetitionViewModel = viewModel()
     val context = LocalContext.current
-    val firestore = remember { FirebaseFirestore.getInstance() }
     var vocabCards by remember { mutableStateOf<List<VocabCard>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
@@ -146,13 +158,19 @@ fun UserFlashcardScreen(
                                         
                                         val dueVocabIds = mutableListOf<String>()
                                         val statusMap = mutableMapOf<String, String>()
+                                        val sm2DataMap = mutableMapOf<String, Triple<CardState, Int, Double>>()
                                         
                                         uniqueProgressDocs.forEach { doc ->
                                             val vocabId = doc.getString("vocabId") ?: ""
                                             val status = doc.getString("status") ?: ""
                                             val nextReview = doc.getTimestamp("nextReview")
+                                            val interval = doc.getLong("interval")?.toInt() ?: 0
+                                            val easeFactor = doc.getDouble("easeFactor") ?: 2.5
+                                            val cardState = try { CardState.valueOf(status) } catch (e: Exception) { CardState.NEW }
+                                            
                                             if (vocabId.isNotEmpty() && status != "MASTERED" && status != "MASTER") {
                                                 statusMap[vocabId] = status
+                                                sm2DataMap[vocabId] = Triple(cardState, interval, easeFactor)
                                                 if (nextReview != null) {
                                                     val reviewTime = nextReview.toDate().time
                                                     if (dayIndex == 1) {
@@ -213,7 +231,8 @@ fun UserFlashcardScreen(
                                                                         val front = CryptoUtils.decrypt(rawFront)
                                                                         val back = CryptoUtils.decrypt(rawBack)
                                                                         if (front.isNotEmpty() && back.isNotEmpty()) {
-                                                                            loadedCards.add(VocabCard(id, front, back, levelId))
+                                                                            val sm2Data = sm2DataMap[id] ?: Triple(CardState.NEW, 0, 2.5)
+                                                                            loadedCards.add(VocabCard(id, front, back, levelId, sm2Data.first, sm2Data.second, sm2Data.third))
                                                                         }
                                                                     } catch (e: Exception) {}
                                                                 }
@@ -223,7 +242,8 @@ fun UserFlashcardScreen(
                                                                     finalVocabIds.forEach { id ->
                                                                         if (loadedCards.none { it.id == id }) {
                                                                             userCardsMap[id]?.let {
-                                                                                loadedCards.add(it.copy(levelId = levelId))
+                                                                                val sm2Data = sm2DataMap[id] ?: Triple(CardState.NEW, 0, 2.5)
+                                                                                loadedCards.add(it.copy(levelId = levelId, state = sm2Data.first, interval = sm2Data.second, easeFactor = sm2Data.third))
                                                                             }
                                                                         }
                                                                     }
@@ -321,9 +341,10 @@ fun UserFlashcardScreen(
     var isFlipped by remember { mutableStateOf(false) }
     var showWishDialog by remember { mutableStateOf(false) }
     var shuffleTrigger by remember { mutableIntStateOf(0) }
+    var isStudyMode by remember { mutableStateOf(language.uppercase() == "SPACED" || levelId.startsWith("day_")) }
 
     var starredCardIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-    val uid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous" }
+    // val uid is already defined at the top of the composable
 
     LaunchedEffect(uid) {
         firestore.collection("user_favorites")
@@ -337,43 +358,21 @@ fun UserFlashcardScreen(
             }
     }
 
-    val recordProgress = { cardId: String, status: String ->
+    val recordProgress = { card: VocabCard, rating: ReviewRating ->
         if (uid.isNotEmpty() && uid != "anonymous") {
-            val calendar = java.util.Calendar.getInstance()
-            val lastReviewed = com.google.firebase.Timestamp(calendar.time)
-            
-            val nextReview: com.google.firebase.Timestamp? = when (status) {
-                "HARD" -> {
-                    calendar.add(java.util.Calendar.DAY_OF_YEAR, 2)
-                    com.google.firebase.Timestamp(calendar.time)
-                }
-                "GOOD" -> {
-                    calendar.add(java.util.Calendar.DAY_OF_YEAR, 7)
-                    com.google.firebase.Timestamp(calendar.time)
-                }
-                else -> null // EASY (MASTERED)
-            }
-            
-            val finalStatus = if (status == "EASY") "MASTERED" else status
-            
-            val progressData = hashMapOf(
-                "uid" to uid,
-                "vocabId" to cardId,
-                "status" to finalStatus,
-                "lastReviewed" to lastReviewed,
-                "nextReview" to nextReview
+            spacedRepetitionViewModel.recordProgress(
+                vocabId = card.id,
+                currentState = card.state,
+                currentInterval = card.interval,
+                currentEaseFactor = card.easeFactor,
+                rating = rating
             )
-            
-            firestore.collection("progress").document("${uid}_$cardId")
-                .set(progressData, com.google.firebase.firestore.SetOptions.merge())
-                
-            firestore.collection("user_progress").document("${uid}_$cardId")
-                .set(progressData, com.google.firebase.firestore.SetOptions.merge())
         }
     }
 
-    val onCardRated = { card: VocabCard, status: String ->
-        recordProgress(card.id, status)
+    val onCardRated = { card: VocabCard, ratingName: String ->
+        val rating = try { ReviewRating.valueOf(ratingName) } catch (e: Exception) { ReviewRating.GOOD }
+        recordProgress(card, rating)
         if (currentIndex == vocabCards.size - 1) {
             showWishDialog = true
         } else {
@@ -412,6 +411,21 @@ fun UserFlashcardScreen(
                     }
                 },
                 actions = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (isStudyMode) "Học" else "Duyệt",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isStudyMode) FlowPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Switch(
+                            checked = isStudyMode,
+                            onCheckedChange = { isStudyMode = it },
+                            colors = SwitchDefaults.colors(checkedThumbColor = FlowPrimary, checkedTrackColor = FlowPrimary.copy(alpha = 0.5f)),
+                            modifier = Modifier.scale(0.8f)
+                        )
+                    }
                     if (vocabCards.isNotEmpty()) {
                         IconButton(onClick = {
                             vocabCards = vocabCards.shuffled()
@@ -427,7 +441,7 @@ fun UserFlashcardScreen(
             )
         },
         bottomBar = {
-            if (vocabCards.isNotEmpty()) {
+            if (vocabCards.isNotEmpty() && !isStudyMode) {
                 Surface(
                     shadowElevation = 8.dp,
                     color = MaterialTheme.colorScheme.background
@@ -458,9 +472,6 @@ fun UserFlashcardScreen(
                             if (currentIndex == vocabCards.size - 1) {
                                 TextButton(
                                     onClick = {
-                                        if (vocabCards.isNotEmpty()) {
-                                            recordProgress(vocabCards[currentIndex].id, "GOOD")
-                                        }
                                         showWishDialog = true
                                     }
                                 ) {
@@ -474,9 +485,6 @@ fun UserFlashcardScreen(
                             } else {
                                 IconButton(
                                     onClick = {
-                                        if (vocabCards.isNotEmpty()) {
-                                            recordProgress(vocabCards[currentIndex].id, "GOOD")
-                                        }
                                         currentIndex++;
                                         isFlipped = false
                                     },
@@ -524,314 +532,82 @@ fun UserFlashcardScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 val currentCard = vocabCards[currentIndex]
-                val rotationState by animateFloatAsState(
-                    targetValue = if (isFlipped) 180f else 0f,
-                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
-                    label = "flip"
-                )
+                val isStarred = starredCardIds.contains(currentCard.id)
 
-                val scaleAnim = remember { Animatable(1f) }
-                LaunchedEffect(currentIndex, shuffleTrigger) {
-                    scaleAnim.snapTo(0.9f)
-                    scaleAnim.animateTo(
-                        targetValue = 1f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
+                val onToggleStar: () -> Unit = {
+                    val favDocRef = firestore.collection("user_favorites").document("${uid}_${currentCard.id}")
+                    if (isStarred) {
+                        favDocRef.update("starred", false)
+                    } else {
+                        val favData = hashMapOf(
+                            "uid" to uid,
+                            "vocabId" to currentCard.id,
+                            "front" to currentCard.front,
+                            "back" to currentCard.back,
+                            "levelId" to if (levelId == "STARRED") currentCard.levelId else levelId,
+                            "starred" to true,
+                            "updatedAt" to com.google.firebase.Timestamp.now()
                         )
-                    )
+                        favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
+                    }
                 }
 
-                // Flashcard container with 3D Vertical Flip animation
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .graphicsLayer {
-                            rotationX = rotationState
-                            cameraDistance = 12f * density
-                            scaleX = scaleAnim.value
-                            scaleY = scaleAnim.value
-                        }
-                        .clickable { isFlipped = !isFlipped },
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        if (rotationState <= 90f) {
-                            // Giao diện Mặt trước (Từ gốc + Loa + Sao)
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            text = "MẶT TRƯỚC",
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                            color = FlowPrimary,
-                                            fontWeight = FontWeight.Bold,
-                                            style = MaterialTheme.typography.labelMedium
-                                        )
-                                    }
-                                    
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        // Nút Đánh dấu sao (Star)
-                                        val isStarred = starredCardIds.contains(currentCard.id)
-                                        IconButton(
-                                            onClick = {
-                                                val favDocRef = firestore.collection("user_favorites").document("${uid}_${currentCard.id}")
-                                                if (isStarred) {
-                                                    favDocRef.update("starred", false)
-                                                } else {
-                                                    val favData = hashMapOf(
-                                                        "uid" to uid,
-                                                        "vocabId" to currentCard.id,
-                                                        "front" to currentCard.front,
-                                                        "back" to currentCard.back,
-                                                        "levelId" to if (levelId == "STARRED") currentCard.levelId else levelId,
-                                                        "starred" to true,
-                                                        "updatedAt" to com.google.firebase.Timestamp.now()
-                                                    )
-                                                    favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
-                                                }
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Star,
-                                                contentDescription = "Đánh dấu sao",
-                                                tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
-                                                modifier = Modifier.size(28.dp)
-                                            )
-                                        }
-
-                                        Spacer(modifier = Modifier.width(8.dp))
-
-                                        // Volume up phát âm tiếng TTS
-                                        IconButton(
-                                            onClick = {
-                                                val wordToSpeak = currentCard.front
-                                                val cleanWord = wordToSpeak.substringBefore("(").trim()
-                                                val speakLocale = when {
-                                                    cleanWord.any { it.code in 0x3040..0x30FF || it.code in 0x31F0..0x31FF } -> Locale.JAPANESE
-                                                    cleanWord.any { it.code in 0x4E00..0x9FFF } && !cleanWord.any { it.code in 0x3040..0x309F } -> Locale.CHINESE
-                                                    currentCard.levelId.contains("JA") -> Locale.JAPANESE
-                                                    currentCard.levelId.contains("ZH") -> Locale.CHINESE
-                                                    currentCard.levelId.contains("PA") -> Locale.US
-                                                    else -> {
-                                                        when (language.uppercase()) {
-                                                            "JAPANESE" -> Locale.JAPANESE
-                                                            "CHINESE" -> Locale.CHINESE
-                                                            else -> Locale.US
-                                                        }
-                                                    }
-                                                }
-                                                tts?.language = speakLocale
-                                                tts?.speak(cleanWord, TextToSpeech.QUEUE_FLUSH, null, null)
-                                            },
-                                            enabled = isTtsReady
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.VolumeUp,
-                                                contentDescription = "Phát âm",
-                                                tint = FlowPrimary,
-                                                modifier = Modifier.size(28.dp)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                Text(
-                                    text = currentCard.front,
-                                    style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    textAlign = TextAlign.Center
-                                )
-
-                                Spacer(modifier = Modifier.weight(1f))
-                                
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.TouchApp,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Bấm vào thẻ để lật mặt sau",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        } else {
-                            // Giao diện Mặt sau (Nghĩa tiếng Việt + Bộ 3 nút Hard/Good/Easy)
-                            // Bắt buộc xoay ngược lại 180 độ theo trục X bằng graphicsLayer
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer { rotationX = 180f }
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(24.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Surface(
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) {
-                                            Text(
-                                                text = "MẶT SAU",
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                                color = FlowPrimary,
-                                                fontWeight = FontWeight.Bold,
-                                                style = MaterialTheme.typography.labelMedium
-                                            )
-                                        }
-                                        
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            // Nút Đánh dấu sao (Star)
-                                            val isStarred = starredCardIds.contains(currentCard.id)
-                                            IconButton(
-                                                onClick = {
-                                                    val favDocRef = firestore.collection("user_favorites").document("${uid}_${currentCard.id}")
-                                                    if (isStarred) {
-                                                        favDocRef.update("starred", false)
-                                                    } else {
-                                                        val favData = hashMapOf(
-                                                            "uid" to uid,
-                                                            "vocabId" to currentCard.id,
-                                                            "front" to currentCard.front,
-                                                            "back" to currentCard.back,
-                                                            "levelId" to if (levelId == "STARRED") currentCard.levelId else levelId,
-                                                            "starred" to true,
-                                                            "updatedAt" to com.google.firebase.Timestamp.now()
-                                                        )
-                                                        favDocRef.set(favData, com.google.firebase.firestore.SetOptions.merge())
-                                                    }
-                                                }
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Star,
-                                                    contentDescription = "Đánh dấu sao",
-                                                    tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
-                                                    modifier = Modifier.size(28.dp)
-                                                )
-                                            }
-
-                                            Spacer(modifier = Modifier.width(8.dp))
-
-                                            // Volume up phát âm tiếng TTS
-                                            IconButton(
-                                                onClick = {
-                                                    val wordToSpeak = currentCard.back
-                                                    val cleanWord = wordToSpeak.substringBefore("(").trim()
-                                                    val speakLocale = when {
-                                                        cleanWord.any { it.code in 0x3040..0x30FF || it.code in 0x31F0..0x31FF } -> Locale.JAPANESE
-                                                        cleanWord.any { it.code in 0x4E00..0x9FFF } && !cleanWord.any { it.code in 0x3040..0x309F } -> Locale.CHINESE
-                                                        currentCard.levelId.contains("JA") -> Locale.JAPANESE
-                                                        currentCard.levelId.contains("ZH") -> Locale.CHINESE
-                                                        currentCard.levelId.contains("PA") -> Locale.US
-                                                        else -> {
-                                                            when (language.uppercase()) {
-                                                                "JAPANESE" -> Locale.JAPANESE
-                                                                "CHINESE" -> Locale.CHINESE
-                                                                else -> Locale.US
-                                                            }
-                                                        }
-                                                    }
-                                                    tts?.language = speakLocale
-                                                    tts?.speak(cleanWord, TextToSpeech.QUEUE_FLUSH, null, null)
-                                                },
-                                                enabled = isTtsReady
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.VolumeUp,
-                                                    contentDescription = "Phát âm",
-                                                    tint = FlowPrimary,
-                                                    modifier = Modifier.size(28.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.weight(1f))
-
-                                    Text(
-                                        text = currentCard.back,
-                                        style = MaterialTheme.typography.headlineLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        textAlign = TextAlign.Center
-                                    )
-
-                                    Spacer(modifier = Modifier.weight(1f))
-                                    Spacer(modifier = Modifier.height(48.dp))
-                                }
-
-                                Column(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .fillMaxWidth()
-                                        .padding(24.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        Button(
-                                            onClick = { onCardRated(currentCard, "HARD") },
-                                            modifier = Modifier.weight(1f).height(52.dp),
-                                            shape = RoundedCornerShape(12.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = FlowWarningLight)
-                                        ) {
-                                            Text("Khó", color = FlowWarning, fontWeight = FontWeight.Bold)
-                                        }
-                                        Button(
-                                            onClick = { onCardRated(currentCard, "GOOD") },
-                                            modifier = Modifier.weight(1f).height(52.dp),
-                                            shape = RoundedCornerShape(12.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                                        ) {
-                                            Text("Tốt", color = FlowPrimary, fontWeight = FontWeight.Bold)
-                                        }
-                                        Button(
-                                            onClick = { onCardRated(currentCard, "EASY") },
-                                            modifier = Modifier.weight(1f).height(52.dp),
-                                            shape = RoundedCornerShape(12.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = FlowSuccessLight)
-                                        ) {
-                                            Text("Dễ", color = FlowSuccess, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
+                val onPlayTts: (String) -> Unit = { text: String ->
+                    val cleanWord = text.substringBefore("(").trim()
+                    val speakLocale = when {
+                        cleanWord.any { it.code in 0x3040..0x30FF || it.code in 0x31F0..0x31FF } -> Locale.JAPANESE
+                        cleanWord.any { it.code in 0x4E00..0x9FFF } && !cleanWord.any { it.code in 0x3040..0x309F } -> Locale.CHINESE
+                        currentCard.levelId.contains("JA") -> Locale.JAPANESE
+                        currentCard.levelId.contains("ZH") -> Locale.CHINESE
+                        currentCard.levelId.contains("PA") -> Locale.US
+                        else -> {
+                            when (language.uppercase()) {
+                                "JAPANESE" -> Locale.JAPANESE
+                                "CHINESE" -> Locale.CHINESE
+                                else -> Locale.US
                             }
                         }
+                    }
+                    tts?.language = speakLocale
+                    tts?.speak(cleanWord, TextToSpeech.QUEUE_FLUSH, null, null)
+                }
+
+                StudyFlashcard(
+                    modifier = Modifier.weight(1f),
+                    frontText = currentCard.front,
+                    backText = currentCard.back,
+                    isFlipped = isFlipped,
+                    onFlip = { isFlipped = !isFlipped },
+                    isStarred = isStarred,
+                    onToggleStar = onToggleStar,
+                    onPlayTts = onPlayTts
+                )
+
+                if (isFlipped) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    val againResult = com.example.flashcards.model.SpacedRepetition.calculateNextReview(currentCard.state, currentCard.interval, currentCard.easeFactor, ReviewRating.AGAIN)
+                    val hardResult = com.example.flashcards.model.SpacedRepetition.calculateNextReview(currentCard.state, currentCard.interval, currentCard.easeFactor, ReviewRating.HARD)
+                    val goodResult = com.example.flashcards.model.SpacedRepetition.calculateNextReview(currentCard.state, currentCard.interval, currentCard.easeFactor, ReviewRating.GOOD)
+                    val easyResult = com.example.flashcards.model.SpacedRepetition.calculateNextReview(currentCard.state, currentCard.interval, currentCard.easeFactor, ReviewRating.EASY)
+
+                    val formatInterval = { days: Int ->
+                        when (days) {
+                            0 -> "<1p"
+                            else -> "${days}n"
+                        }
+                    }
+
+                    if (isStudyMode) {
+                        AnkiRatingButtons(
+                            onRate = { rating -> 
+                                onCardRated(currentCard, rating.name) 
+                            },
+                            againInterval = formatInterval(againResult.intervalDays),
+                            hardInterval = formatInterval(hardResult.intervalDays),
+                            goodInterval = formatInterval(goodResult.intervalDays),
+                            easyInterval = formatInterval(easyResult.intervalDays)
+                        )
                     }
                 }
             }

@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -171,7 +173,7 @@ fun ProfileScreen(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
-            Text("Profile", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text(stringResource(R.string.ui_text_32), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
         }
 
         item {
@@ -188,7 +190,7 @@ fun ProfileScreen(
                     Text(userEmail.ifEmpty { "No Email" }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp)) {
-                    Text("PRO", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = FlowPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.ui_text_33), modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = FlowPrimary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -203,11 +205,11 @@ fun ProfileScreen(
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("FlowCards Pro", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("Your plan unlocks all features", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primaryContainer)
+                        Text(stringResource(R.string.ui_text_34), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(stringResource(R.string.ui_text_35), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primaryContainer)
                     }
                     TextButton(onClick = { Toast.makeText(context, "Pro features coming soon!", Toast.LENGTH_SHORT).show() }) {
-                        Text("Manage", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.ui_text_36), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -262,6 +264,7 @@ fun ProfileScreen(
             SettingsItemRow(icon = Icons.Default.Person, title = "Personal Information", onClick = onNavigateToPersonalInfo)
             SettingsItemRow(icon = Icons.Default.Lock, title = "Password & Security", onClick = onNavigateToSecurity)
             SettingsItemRow(icon = Icons.Default.Notifications, title = "Notifications", value = if (notificationsEnabled) "On" else "Off", onClick = onNavigateToNotifications)
+            SettingsItemRow(icon = Icons.Default.BarChart, title = "Statistics", onClick = onNavigateToStats)
         }
 
         item {
@@ -273,10 +276,10 @@ fun ProfileScreen(
             ) {
                 // 1. Spaced Repetition Card
                 Card(
-                    onClick = { navController.navigate("spaced_repetition_route") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 72.dp),
+                        .heightIn(min = 72.dp)
+                        .clickable { navController.navigate("spaced_repetition_route") },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -295,8 +298,7 @@ fun ProfileScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "Spaced Repetition",
+                            Text(stringResource(R.string.ui_text_37),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -340,8 +342,7 @@ fun ProfileScreen(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = "Mục tiêu hằng ngày",
+                                Text(stringResource(R.string.ui_text_38),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onBackground
@@ -404,10 +405,10 @@ fun ProfileScreen(
                 // 3. Review Algorithm Card
                 // 3. Review Algorithm Card
                 Card(
-                    onClick = { navController.navigate("learning_preferences") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 72.dp),
+                        .heightIn(min = 72.dp)
+                        .clickable { navController.navigate("learning_preferences") },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
@@ -426,8 +427,7 @@ fun ProfileScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "Review Algorithm",
+                            Text(stringResource(R.string.ui_text_39),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -475,7 +475,7 @@ fun ProfileScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = FlowWarningLight)
             ) {
-                Text("Log Out", color = FlowWarning, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(stringResource(R.string.ui_text_40), color = FlowWarning, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
     }

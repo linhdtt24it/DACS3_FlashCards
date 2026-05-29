@@ -123,6 +123,21 @@ class BattleRepository {
         }
     }
 
+    // Tham gia trận ngẫu nhiên
+    suspend fun joinRandomBattle(setId: String): String? {
+        return try {
+            val snapshot = battlesCollection
+                .whereEqualTo("status", "WAITING")
+                .whereEqualTo("setId", setId)
+                .get()
+                .await()
+            val roomDoc = snapshot.documents.firstOrNull()
+            roomDoc?.id
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     // Cập nhật tiến độ
     suspend fun updateProgress(battleId: String, score: Int, progress: Int) {
         try {

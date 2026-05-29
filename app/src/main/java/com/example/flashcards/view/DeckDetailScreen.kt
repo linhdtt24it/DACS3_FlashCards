@@ -44,7 +44,10 @@ fun DeckDetailScreen(
     onBack: () -> Unit,
     onStudyFlashcards: () -> Unit,
     onQuiz: () -> Unit,
-    onMatch: () -> Unit,
+    onPlayMatchGame: () -> Unit,
+    onPlayBattle: () -> Unit,
+    onJoinBattle: (String) -> Unit = {},
+    onJoinRandomBattle: () -> Unit = {},
     onEditDeck: () -> Unit,
     onDeleteDeck: () -> Unit
 ) {
@@ -62,7 +65,10 @@ fun DeckDetailScreen(
             Toast.makeText(context, "Tính năng Tự luận cho bộ thẻ cá nhân đã đồng bộ!", Toast.LENGTH_SHORT).show()
             onStudyFlashcards() // Tự luận dùng chung flashcard học
         },
-        onMatch = onMatch,
+        onPlayMatchGame = onPlayMatchGame,
+        onPlayBattle = onPlayBattle,
+        onJoinBattle = onJoinBattle,
+        onJoinRandomBattle = onJoinRandomBattle,
         onEditDeck = onEditDeck,
         onDeleteDeck = onDeleteDeck
     )
@@ -80,11 +86,15 @@ fun UserSetDashboardScreen(
     onStudyFlashcards: () -> Unit,
     onQuiz: () -> Unit,
     onEssay: () -> Unit,
-    onMatch: () -> Unit,
+    onPlayMatchGame: () -> Unit,
+    onPlayBattle: () -> Unit,
+    onJoinBattle: (String) -> Unit = {},
+    onJoinRandomBattle: () -> Unit = {},
     onEditDeck: () -> Unit,
     onDeleteDeck: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showGameBottomSheet by remember { mutableStateOf(false) }
     var newCommentText by remember { mutableStateOf("") }
     val isOwner = currentUserId == studySet.creatorId || studySet.creatorId.isEmpty()
 
@@ -382,12 +392,12 @@ fun UserSetDashboardScreen(
                             onClick = onEssay
                         )
                         FeatureGridCard(
-                            title = "Nối Từ (Match)",
-                            description = "Trò chơi ghép từ",
-                            icon = Icons.Default.Extension,
+                            title = "Giải Trí",
+                            description = "Nối từ, Đấu 1vs1",
+                            icon = Icons.Default.VideogameAsset,
                             tintColor = Color(0xFF8B5CF6),
                             modifier = Modifier.weight(1f),
-                            onClick = onMatch
+                            onClick = { showGameBottomSheet = true }
                         )
                     }
                 }
@@ -568,6 +578,29 @@ fun UserSetDashboardScreen(
                 CommentItem(comment)
             }
         }
+    }
+
+    if (showGameBottomSheet) {
+        GameSelectionBottomSheet(
+            hasBattleFeature = true,
+            onDismiss = { showGameBottomSheet = false },
+            onPlayMatch = {
+                showGameBottomSheet = false
+                onPlayMatchGame()
+            },
+            onPlayBattle = {
+                showGameBottomSheet = false
+                onPlayBattle()
+            },
+            onJoinBattle = { code ->
+                showGameBottomSheet = false
+                onJoinBattle(code)
+            },
+            onJoinRandomBattle = {
+                showGameBottomSheet = false
+                onJoinRandomBattle()
+            }
+        )
     }
 }
 

@@ -1,4 +1,4 @@
-﻿package com.example.flashcards.view
+package com.example.flashcards.view
 
 import android.content.Context
 import android.widget.Toast
@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,7 +49,7 @@ fun PersonalInfoScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Personal Information", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
+                title = { Text(stringResource(R.string.ui_text_41), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground) }
                 },
@@ -59,7 +61,7 @@ fun PersonalInfoScreen(onBack: () -> Unit) {
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp).verticalScroll(rememberScrollState())) {
             
             // Email (Read Only)
-            Text("Email", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_text_42), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = userEmail,
@@ -81,13 +83,13 @@ fun PersonalInfoScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Display Name
-            Text("Display Name", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_text_43), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = inputName,
                 onValueChange = { inputName = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Enter your name") },
+                placeholder = { Text(stringResource(R.string.ui_text_44)) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -100,13 +102,13 @@ fun PersonalInfoScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Date of Birth
-            Text("Date of Birth", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_text_45), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = inputDob,
                 onValueChange = { inputDob = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("DD/MM/YYYY") },
+                placeholder = { Text(stringResource(R.string.ui_text_46)) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -119,13 +121,13 @@ fun PersonalInfoScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Phone Number
-            Text("Phone Number", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_text_47), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = inputPhone,
                 onValueChange = { inputPhone = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Enter your phone number") },
+                placeholder = { Text(stringResource(R.string.ui_text_48)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -171,7 +173,7 @@ fun PersonalInfoScreen(onBack: () -> Unit) {
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Save Changes", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                    Text(stringResource(R.string.ui_text_49), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                 }
             }
         }
@@ -198,7 +200,7 @@ fun SecurityScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Password & Security", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
+                title = { Text(stringResource(R.string.ui_text_50), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground) }
                 },
@@ -214,13 +216,13 @@ fun SecurityScreen(onBack: () -> Unit) {
             }
 
             // Old Password
-            Text("Old Password", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_text_51), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = oldPassword,
                 onValueChange = { oldPassword = it; errorMessage = null },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Enter old password") },
+                placeholder = { Text(stringResource(R.string.ui_text_52)) },
                 shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (oldPwdVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -239,13 +241,13 @@ fun SecurityScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // New Password
-            Text("New Password", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_text_53), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = newPassword,
                 onValueChange = { newPassword = it; errorMessage = null },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Enter new password") },
+                placeholder = { Text(stringResource(R.string.ui_text_54)) },
                 shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (newPwdVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -264,13 +266,13 @@ fun SecurityScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Confirm Password
-            Text("Confirm New Password", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_text_55), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it; errorMessage = null },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Confirm new password") },
+                placeholder = { Text(stringResource(R.string.ui_text_56)) },
                 shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (confirmPwdVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -327,7 +329,7 @@ fun SecurityScreen(onBack: () -> Unit) {
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Update Password", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                    Text(stringResource(R.string.ui_text_57), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                 }
             }
         }
@@ -342,11 +344,12 @@ fun LearningPreferencesScreen(onBack: () -> Unit) {
 
     var dailyGoal by remember { mutableStateOf(prefs.getInt("daily_goal", 50).toString()) }
     var reviewAlgorithm by remember { mutableStateOf(prefs.getString("review_algorithm", "Standard") ?: "Standard") }
+    var language by remember { mutableStateOf(prefs.getString("app_language", "en") ?: "en") }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Learning Preferences", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
+                title = { Text(stringResource(R.string.ui_text_58), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground) }
                 },
@@ -357,7 +360,7 @@ fun LearningPreferencesScreen(onBack: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
             // Daily Goal
-            Text("Daily Goal (cards per day)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_text_59), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = dailyGoal,
@@ -373,10 +376,40 @@ fun LearningPreferencesScreen(onBack: () -> Unit) {
                 )
             )
             
+            // Language Setting
+            Text("App Language / Ngôn ngữ", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            val langOptions = listOf("en" to "English", "vi" to "Tiếng Việt")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    langOptions.forEach { (code, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { language = code }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = (code == language),
+                                onClick = { language = code },
+                                colors = RadioButtonDefaults.colors(selectedColor = FlowPrimary)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(label, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
             
             // Review Algorithm
-            Text("Review Algorithm", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_text_39), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             val options = listOf("Standard", "Quick Review", "Strict")
             Card(
@@ -408,19 +441,24 @@ fun LearningPreferencesScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.weight(1f))
             Button(
                 onClick = {
+                    val previousLang = prefs.getString("app_language", "en")
                     val goalInt = dailyGoal.toIntOrNull() ?: 50
                     prefs.edit()
                         .putInt("daily_goal", goalInt)
                         .putString("review_algorithm", reviewAlgorithm)
+                        .putString("app_language", language)
                         .apply()
                     Toast.makeText(context, "Preferences saved", Toast.LENGTH_SHORT).show()
                     onBack()
+                    if (previousLang != language) {
+                        (context as? android.app.Activity)?.recreate()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
             ) {
-                Text("Save Preferences", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                Text(stringResource(R.string.ui_text_60), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
             }
         }
     }
@@ -452,7 +490,7 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notifications", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
+                title = { Text(stringResource(R.string.ui_text_61), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground) }
                 },
@@ -464,7 +502,7 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
             // Master Switch
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Enable Notifications", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.ui_text_62), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
                 Switch(
                     checked = notificationsEnabled, 
                     onCheckedChange = { notificationsEnabled = it },
@@ -477,12 +515,12 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
             // Sub-settings (opacity changes if disabled)
             val alphaValue = if (notificationsEnabled) 1f else 0.5f
             Column(modifier = Modifier.alpha(alphaValue)) {
-                Text("Daily Reminder", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.ui_text_63), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(
                     modifier = Modifier.fillMaxWidth().clickable(enabled = notificationsEnabled) { timePickerDialog.show() }.padding(vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Reminder Time", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.ui_text_64), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
                     val timeText = String.format("%02d:%02d", notifHour, notifMinute)
                     Text(timeText, style = MaterialTheme.typography.bodyLarge, color = FlowPrimary, fontWeight = FontWeight.Bold)
                 }
@@ -491,7 +529,7 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Play Sound", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.ui_text_65), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
                     Switch(
                         checked = soundEnabled, 
                         onCheckedChange = { soundEnabled = it }, 
@@ -504,7 +542,7 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Vibrate", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.ui_text_66), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
                     Switch(
                         checked = vibrateEnabled, 
                         onCheckedChange = { vibrateEnabled = it }, 
@@ -531,7 +569,7 @@ fun NotificationSettingsScreen(onBack: () -> Unit) {
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
             ) {
-                Text("Save Settings", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                Text(stringResource(R.string.ui_text_67), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
             }
         }
     }

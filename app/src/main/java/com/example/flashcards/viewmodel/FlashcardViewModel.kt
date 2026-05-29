@@ -202,6 +202,18 @@ class FlashcardViewModel(
         }
     }
 
+    fun joinRandomBattle(setId: String, onSuccess: (String) -> Unit, onError: () -> Unit) {
+        viewModelScope.launch {
+            val battleId = battleRepository.joinRandomBattle(setId)
+            if (battleId != null) {
+                joinBattle(battleId)
+                onSuccess(battleId)
+            } else {
+                onError()
+            }
+        }
+    }
+
     private fun observeBattle(battleId: String) {
         battleJob?.cancel()
         battleJob = viewModelScope.launch {
