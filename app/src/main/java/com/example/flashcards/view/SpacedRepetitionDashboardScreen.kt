@@ -224,7 +224,7 @@ fun SpacedRepetitionDashboardScreen(
                 contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // 1. Premium Spaced Repetition Header Section
+
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -370,7 +370,7 @@ fun SpacedRepetitionDashboardScreen(
                     }
                 }
 
-                // 3. Tab Title Section
+
                 item {
                     Text(stringResource(R.string.ui_text_85) + totalCardsCount + " từ)",
                         style = MaterialTheme.typography.titleMedium,
@@ -380,7 +380,7 @@ fun SpacedRepetitionDashboardScreen(
                     )
                 }
 
-                // 4. Premium Tab Selector
+
                 item {
                     val tabs = listOf(
                         "HARD" to ("Khó (" + hardVocabList.size + ")"),

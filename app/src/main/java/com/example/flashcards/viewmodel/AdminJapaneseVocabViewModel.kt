@@ -82,7 +82,7 @@ class AdminJapaneseVocabViewModel : ViewModel() {
     fun deleteCategory(id: String) {
         db.collection("japanese_categories").document(id).delete()
     }
-
+// addManualCard và bulkImport() CryptoUtils.encrypt()
     suspend fun addManualCard(category: String, front: String, back: String): Result<Unit> {
         return try {
             val card = mapOf(
@@ -110,7 +110,7 @@ class AdminJapaneseVocabViewModel : ViewModel() {
                     val docRef = db.collection("system_vocabulary").document()
                     batch.set(docRef, mapOf(
                         "category" to category,
-                        "front" to CryptoUtils.encrypt(parts[0]),
+                        "front" to CryptoUtils.encrypt(parts[0]), ///CryptoUtils.encrypt()
                         "back" to CryptoUtils.encrypt(parts[1]),
                         "createdAt" to Timestamp.now()
                     ))
