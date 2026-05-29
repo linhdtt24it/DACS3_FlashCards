@@ -71,6 +71,7 @@ data class Folder(
     val emoji: String = "📁",
     val userId: String = "",
     val setIds: List<String> = emptyList(),
+    val iconName: String = "folder",
     val createdAt: Long = System.currentTimeMillis()
 )
 

@@ -57,6 +57,21 @@ class FolderRepository {
         }
     }
 
+    suspend fun addSetsToFolder(folderId: String, setIds: List<String>) {
+        if (currentUserId.isEmpty()) return
+        try {
+            foldersCollection.document(folderId)
+                .update(
+                    "setIds", com.google.firebase.firestore.FieldValue.arrayUnion(*setIds.toTypedArray()),
+                    "studySetIds", com.google.firebase.firestore.FieldValue.arrayUnion(*setIds.toTypedArray())
+                )
+                .await()
+        } catch (e: Exception) {
+            Log.e("FolderRepository", "Error adding sets to folder", e)
+            throw e
+        }
+    }
+
     suspend fun removeSetFromFolder(folderId: String, setId: String) {
         if (currentUserId.isEmpty()) return
         try {

@@ -144,6 +144,71 @@ class StudySetRepository {
         }
     }
 
+    suspend fun clonePublicDeck(publicDeckId: String, currentUid: String): StudySet {
+        // 1. Fetch the public study set from publicStudySets collection to get base metadata
+        val publicSetDoc = db.collection("publicStudySets").document(publicDeckId).get().await()
+        if (!publicSetDoc.exists()) {
+            throw Exception("Bộ thẻ công khai không tồn tại!")
+        }
+        val publicSet = publicSetDoc.toObject(StudySet::class.java) 
+            ?: throw Exception("Không thể đọc dữ liệu bộ thẻ công khai!")
+        
+        // 2. Generate new deck ID using .document() to avoid duplicate IDs and security rules issues
+        val newDeckRef = studySetsCollection.document()
+        val newDeckId = newDeckRef.id
+        
+        // 3. Clone public deck's child cards from subcollection 'exploreSets/{public_deck_id}/cards'
+        val publicCardsSnap = db.collection("exploreSets").document(publicDeckId).collection("cards").get().await()
+        val cardsList = mutableListOf<Flashcard>()
+        
+        if (!publicCardsSnap.isEmpty) {
+            publicCardsSnap.documents.forEach { doc ->
+                val card = doc.toObject(Flashcard::class.java)
+                if (card != null) {
+                    cardsList.add(card)
+                }
+            }
+        } else {
+            // Fallback to publicSet.cards list if exploreSets collection is empty
+            cardsList.addAll(publicSet.cards)
+        }
+        
+        // 4. Create new cloned StudySet
+        val user = FirebaseAuth.getInstance().currentUser
+        val clonedSet = publicSet.copy(
+            id = newDeckId,
+            isPublic = false,
+            shareCode = null,
+            rating = 0f,
+            ratingCount = 0,
+            creatorId = currentUid,
+            creatorName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User",
+            cards = cardsList
+        )
+        
+        // 5. Save cloned StudySet metadata (Step 1: user studySets doc)
+        newDeckRef.set(clonedSet).await()
+        
+        // 6. Clone cards subcollection: 
+        //    - users/{current_uid}/studySets/{new_deck_id}/cards/{new_card_id}
+        //    - user_decks/{new_deck_id}/cards/{new_card_id} (For real-time sync in detail dashboard)
+        if (cardsList.isNotEmpty()) {
+            val batch = db.batch()
+            val userCardsRef = newDeckRef.collection("cards")
+            val userDecksCardsRef = db.collection("user_decks").document(newDeckId).collection("cards")
+            
+            cardsList.forEach { card ->
+                val newCardId = card.id.ifEmpty { java.util.UUID.randomUUID().toString() }
+                val clonedCard = card.copy(id = newCardId)
+                batch.set(userCardsRef.document(newCardId), clonedCard)
+                batch.set(userDecksCardsRef.document(newCardId), clonedCard)
+            }
+            batch.commit().await()
+        }
+        
+        return clonedSet
+    }
+
     fun getComments(setId: String): Flow<List<Comment>> = callbackFlow {
         val listener = publicStudySetsCollection.document(setId).collection("comments")
             .orderBy("timestamp", Query.Direction.DESCENDING)

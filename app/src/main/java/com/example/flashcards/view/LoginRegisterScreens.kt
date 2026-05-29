@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flashcards.ui.theme.FlowPrimary
@@ -154,8 +155,8 @@ fun AuthScreen(
 
 @Composable
 fun LoginForm(isLoading: Boolean, onLoginClick: (String, String) -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(TextFieldValue("")) }
+    var password by remember { mutableStateOf(TextFieldValue("")) }
     var passwordVisible by remember { mutableStateOf(false) }
 
     Column {
@@ -207,7 +208,7 @@ fun LoginForm(isLoading: Boolean, onLoginClick: (String, String) -> Unit) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { onLoginClick(email, password) },
+            onClick = { onLoginClick(email.text, password.text) },
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(12.dp),
@@ -224,9 +225,9 @@ fun LoginForm(isLoading: Boolean, onLoginClick: (String, String) -> Unit) {
 
 @Composable
 fun RegisterForm(isLoading: Boolean, onRegisterClick: (String, String, String) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(TextFieldValue("")) }
+    var email by remember { mutableStateOf(TextFieldValue("")) }
+    var password by remember { mutableStateOf(TextFieldValue("")) }
 
     Column {
         Text("Full Name", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = Color(0xFF1E293B))
@@ -276,7 +277,7 @@ fun RegisterForm(isLoading: Boolean, onRegisterClick: (String, String, String) -
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { onRegisterClick(name, email, password) },
+            onClick = { onRegisterClick(name.text, email.text, password.text) },
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(12.dp),

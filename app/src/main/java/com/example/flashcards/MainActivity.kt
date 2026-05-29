@@ -28,6 +28,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.flashcards.ui.theme.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
 import com.example.flashcards.view.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -302,12 +304,7 @@ fun AppNavHost(
                             "quiz" -> navController.navigate("user_quiz_selection")
                             "write" -> navController.navigate("user_essay_selection")
                             "match" -> {
-                                if (studySets.isNotEmpty()) {
-                                    viewModel.selectSet(studySets.first())
-                                    navController.navigate("deck_detail")
-                                } else {
-                                    Toast.makeText(context, "Vui lòng tạo bộ thẻ trước !", Toast.LENGTH_SHORT).show()
-                                }
+                                navController.navigate("user_play_match/select")
                             }
                         }
                     },
@@ -359,6 +356,7 @@ fun AppNavHost(
         }
 
         composable("folder_detail") {
+            val scope = rememberCoroutineScope()
             selectedFolder?.let { folder ->
                 FolderDetailScreen(
                     folder = folder,
@@ -368,10 +366,34 @@ fun AppNavHost(
                         viewModel.selectSet(set)
                         navController.navigate("deck_detail")
                     },
-                    onAddSet = { setId -> viewModel.addSetToFolder(folder.id, setId) },
+                    onAddSets = { selectedIds ->
+                        val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                        if (currentUid.isNotEmpty()) {
+                            scope.launch {
+                                try {
+                                    viewModel.addSetsToFolder(folder.id, selectedIds)
+                                    Toast.makeText(context, "Đã thêm bộ thẻ vào thư mục thành công! 🎉", Toast.LENGTH_SHORT).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Lỗi thêm bộ thẻ: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        }
+                    },
                     onRemoveSet = { setId -> viewModel.removeSetFromFolder(folder.id, setId) },
                     onRenameFolder = { n, e -> viewModel.renameFolder(folder.id, n, e) },
-                    onDeleteFolder = { viewModel.deleteFolder(folder.id); navController.popBackStack() }
+                    onDeleteFolder = { viewModel.deleteFolder(folder.id); navController.popBackStack() },
+                    onEditFolder = { navController.navigate("edit_folder/${folder.id}") }
+                )
+            }
+        }
+
+        composable("edit_folder/{folderId}") { backStackEntry ->
+            val folderId = backStackEntry.arguments?.getString("folderId") ?: ""
+            val folder = folders.find { it.id == folderId }
+            if (folder != null) {
+                EditFolderScreen(
+                    folder = folder,
+                    navController = navController
                 )
             }
         }
@@ -384,21 +406,76 @@ fun AppNavHost(
                     }
                 }
             } else {
-                ExploreScreen(
-                    publicDecks = publicStudySets,
-                    onSearch = { viewModel.searchPublicDecks(it) },
-                    onImportDeck = { code ->
-                        viewModel.importDeckByCode(code,
-                            onSuccess = { Toast.makeText(context, "Success", Toast.LENGTH_SHORT).show() },
-                            onError = { Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show() }
-                        )
-                    },
-                    onRateDeck = { id, rating -> viewModel.ratePublicStudySet(id, rating) },
-                    onDeckClick = { set ->
-                        viewModel.selectSet(set)
-                        navController.navigate("deck_detail")
+                var isCloning by remember { mutableStateOf(false) }
+                val scope = rememberCoroutineScope()
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    ExploreScreen(
+                        publicDecks = publicStudySets,
+                        onSearch = { viewModel.searchPublicDecks(it) },
+                        onImportDeck = { publicDeckId ->
+                            scope.launch {
+                                isCloning = true
+                                try {
+                                    viewModel.clonePublicDeck(
+                                        publicDeckId = publicDeckId,
+                                        currentUid = currentUserId,
+                                        onSuccess = { clonedSet ->
+                                            isCloning = false
+                                            Toast.makeText(context, "Sao chép thành công! 🎉", Toast.LENGTH_SHORT).show()
+                                            viewModel.selectSet(clonedSet)
+                                            navController.navigate("deck_detail")
+                                        },
+                                        onError = { error ->
+                                            isCloning = false
+                                            Toast.makeText(context, "Lỗi sao chép: $error", Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                } catch (e: Exception) {
+                                    isCloning = false
+                                    Toast.makeText(context, "Lỗi sao chép: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        },
+                        onRateDeck = { id, rating -> viewModel.ratePublicStudySet(id, rating) },
+                        onDeckClick = { set ->
+                            viewModel.selectSet(set)
+                            navController.navigate("deck_detail")
+                        }
+                    )
+
+                    if (isCloning) {
+                        androidx.compose.ui.window.Dialog(
+                            onDismissRequest = {},
+                            properties = androidx.compose.ui.window.DialogProperties(
+                                dismissOnBackPress = false,
+                                dismissOnClickOutside = false
+                            )
+                        ) {
+                            Card(
+                                modifier = Modifier.wrapContentSize(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    CircularProgressIndicator(color = FlowPrimary)
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = "Đang sao chép bộ thẻ...",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
                     }
-                )
+                }
             }
         }
 
@@ -719,7 +796,7 @@ fun AppNavHost(
 
         composable("user_play_match/{levelId}") { backStackEntry ->
             val levelId = backStackEntry.arguments?.getString("levelId") ?: ""
-            UserPlayMatchScreen(
+            UserMatchGameScreen(
                 navController = navController,
                 levelId = levelId
             )

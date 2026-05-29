@@ -652,7 +652,7 @@ fun getVocabCategoryFromLevelId(levelId: String): String {
 }
 
 // Default fallback list in case Firebase Firestore is empty
-fun getFallbackVocabList(levelId: String): List<VocabCard> {
+private fun getFallbackVocabList(levelId: String): List<VocabCard> {
     return when {
         levelId.startsWith("QUIZ_JA") -> {
             when (levelId) {

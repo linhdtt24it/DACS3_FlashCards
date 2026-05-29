@@ -14,14 +14,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.flashcards.model.Folder
 import com.example.flashcards.model.StudySet
 import com.example.flashcards.ui.theme.*
 
 // ---- Emoji picker options ----
-val FOLDER_EMOJIS = listOf("??","??","??","??","??","??","??","??","??","??","??","??","??","?","??","??")
+val FOLDER_EMOJIS = listOf("📁","📂","📚","⭐","🔥","💡","🎯","📝","🎨","✈️","⚽","🍎","🐶","🚗","🏠","🔑")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,30 +32,18 @@ fun FolderDetailScreen(
     allSets: List<StudySet>,
     onBack: () -> Unit,
     onSetSelected: (StudySet) -> Unit,
-    onAddSet: (String) -> Unit,       // setId
+    onAddSets: (List<String>) -> Unit,  // list of setIds
     onRemoveSet: (String) -> Unit,    // setId
     onRenameFolder: (String, String) -> Unit, // newName, newEmoji
-    onDeleteFolder: () -> Unit
+    onDeleteFolder: () -> Unit,
+    onEditFolder: () -> Unit
 ) {
     var showAddSheet by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
 
     val folderSets = allSets.filter { it.id in folder.setIds }
     val availableSets = allSets.filter { it.id !in folder.setIds }
-
-    if (showEditDialog) {
-        EditFolderDialog(
-            initialName = folder.name,
-            initialEmoji = folder.emoji,
-            onDismiss = { showEditDialog = false },
-            onSave = { name, emoji ->
-                onRenameFolder(name, emoji)
-                showEditDialog = false
-            }
-        )
-    }
 
     if (showDeleteConfirm) {
         AlertDialog(
@@ -76,8 +66,8 @@ fun FolderDetailScreen(
         AddSetsToFolderSheet(
             availableSets = availableSets,
             onDismiss = { showAddSheet = false },
-            onAdd = { setId ->
-                onAddSet(setId)
+            onAddSets = { selectedIds ->
+                onAddSets(selectedIds)
                 showAddSheet = false
             }
         )
@@ -106,9 +96,9 @@ fun FolderDetailScreen(
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(
-                                text = { Text("Rename Folder") },
+                                text = { Text("Chỉnh sửa thư mục") },
                                 leadingIcon = { Icon(Icons.Default.Edit, null) },
-                                onClick = { showMenu = false; showEditDialog = true }
+                                onClick = { showMenu = false; onEditFolder() }
                             )
                             DropdownMenuItem(
                                 text = { Text("Delete Folder", color = FlowWarning) },
@@ -187,7 +177,7 @@ fun FolderSetItem(set: StudySet, onClick: () -> Unit, onRemove: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(set.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Text(
-                    "${set.cards.size} terms  �  ${if (set.isPublic) "Public" else "Private"}",
+                    "${set.cards.size} terms     ${if (set.isPublic) "Public" else "Private"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -204,36 +194,87 @@ fun FolderSetItem(set: StudySet, onClick: () -> Unit, onRemove: () -> Unit) {
 fun AddSetsToFolderSheet(
     availableSets: List<StudySet>,
     onDismiss: () -> Unit,
-    onAdd: (String) -> Unit
+    onAddSets: (List<String>) -> Unit
 ) {
+    val selectedSetIds = remember { mutableStateListOf<String>() }
+    
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 32.dp)) {
-            Text("Add Sets to Folder", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Thêm bộ thẻ vào thư mục", 
+                    style = MaterialTheme.typography.titleLarge, 
+                    fontWeight = FontWeight.Bold, 
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = {
+                        if (selectedSetIds.isNotEmpty()) {
+                            onAddSets(selectedSetIds.toList())
+                        }
+                    },
+                    enabled = selectedSetIds.isNotEmpty()
+                ) {
+                    Text(
+                        text = "Lưu 💾", 
+                        fontWeight = FontWeight.Bold, 
+                        color = if (selectedSetIds.isNotEmpty()) FlowPrimary else Color.Gray,
+                        fontSize = 16.sp
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
             if (availableSets.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("All your sets are already in this folder", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Mọi bộ thẻ đều đã nằm trong thư mục này", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
-                availableSets.forEach { set ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable { onAdd(set.id) }.padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
+                LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
+                    items(availableSets) { set ->
+                        val isChecked = selectedSetIds.contains(set.id)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (isChecked) {
+                                        selectedSetIds.remove(set.id)
+                                    } else {
+                                        selectedSetIds.add(set.id)
+                                    }
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Style, contentDescription = null, tint = FlowPrimary, modifier = Modifier.size(20.dp))
+                            Box(
+                                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Style, contentDescription = null, tint = FlowPrimary, modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(set.title, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                                Text("${set.cards.size} học phần", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Checkbox(
+                                checked = isChecked,
+                                onCheckedChange = { checked ->
+                                    if (checked == true) {
+                                        selectedSetIds.add(set.id)
+                                    } else {
+                                        selectedSetIds.remove(set.id)
+                                    }
+                                },
+                                colors = CheckboxDefaults.colors(checkedColor = FlowPrimary)
+                            )
                         }
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(set.title, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
-                            Text("${set.cards.size} terms", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Icon(Icons.Default.Add, contentDescription = "Add", tint = FlowPrimary)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.background)
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.background)
                 }
             }
         }

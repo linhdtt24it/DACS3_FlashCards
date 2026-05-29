@@ -75,7 +75,7 @@ fun ExploreScreen(
                 PublicDeckCard(
                     set = set,
                     onClick = { onDeckClick(set) },
-                    onImportClick = { onImportDeck(set.shareCode ?: "") },
+                    onImportClick = { onImportDeck(set.id) },
                     onRateClick = { rating -> onRateDeck(set.id, rating) }
                 )
             }

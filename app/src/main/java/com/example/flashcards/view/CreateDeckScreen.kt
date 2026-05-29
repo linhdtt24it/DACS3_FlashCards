@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.example.flashcards.model.Flashcard
 import com.example.flashcards.ui.theme.FlowPrimary
 import com.example.flashcards.ui.theme.FlowTextSecondary
+import androidx.compose.ui.text.input.TextFieldValue
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,8 +33,8 @@ fun CreateDeckScreen(
     onBack: () -> Unit,
     onSave: (String, String, Boolean, List<Flashcard>) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf(TextFieldValue("")) }
+    var description by remember { mutableStateOf(TextFieldValue("")) }
     var isPublic by remember { mutableStateOf(false) }
 
     val cardsList = remember {
@@ -55,7 +56,7 @@ fun CreateDeckScreen(
                 actions = {
                     IconButton(onClick = {
                         val validCards = cardsList.filter { it.question.isNotBlank() || it.answer.isNotBlank() }
-                        onSave(title, description, isPublic, validCards)
+                        onSave(title.text, description.text, isPublic, validCards)
                     }) {
                         Icon(Icons.Default.Check, contentDescription = "Save", tint = FlowPrimary)
                     }
@@ -163,70 +164,14 @@ fun CreateDeckScreen(
             }
 
             itemsIndexed(cardsList) { index, card ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "THẺ #${index + 1}",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = FlowPrimary
-                            )
-                            IconButton(
-                                onClick = {
-                                    cardsList.removeAt(index)
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete Card",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedTextField(
-                            value = card.question,
-                            onValueChange = { newQ ->
-                                cardsList[index] = cardsList[index].copy(question = newQ)
-                            },
-                            label = { Text("Mặt trước (Thuật ngữ)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = FlowPrimary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        OutlinedTextField(
-                            value = card.answer,
-                            onValueChange = { newA ->
-                                cardsList[index] = cardsList[index].copy(answer = newA)
-                            },
-                            label = { Text("Mặt sau (Định nghĩa)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = FlowPrimary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
+                CardInputRow(
+                    index = index,
+                    card = card,
+                    onDelete = { cardsList.removeAt(index) },
+                    onCardChange = { newQ, newA ->
+                        cardsList[index] = cardsList[index].copy(question = newQ, answer = newA)
                     }
-                }
+                )
             }
         }
     }
@@ -248,7 +193,7 @@ fun BulkImportDialog(
     onDismiss: () -> Unit,
     onImport: (List<Pair<String, String>>) -> Unit
 ) {
-    var importText by remember { mutableStateOf("") }
+    var importText by remember { mutableStateOf(TextFieldValue("")) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -286,7 +231,7 @@ fun BulkImportDialog(
             Button(
                 onClick = {
                     val parsed = mutableListOf<Pair<String, String>>()
-                    val lines = importText.split("\n")
+                    val lines = importText.text.split("\n")
                     lines.forEach { line ->
                         if (line.contains("|")) {
                             val parts = line.split("|")
@@ -300,7 +245,7 @@ fun BulkImportDialog(
                         }
                     }
                     onImport(parsed)
-                    importText = ""
+                    importText = TextFieldValue("")
                     onDismiss()
                 },
                 shape = RoundedCornerShape(12.dp),
@@ -317,4 +262,91 @@ fun BulkImportDialog(
         shape = RoundedCornerShape(20.dp),
         containerColor = MaterialTheme.colorScheme.surface
     )
+}
+
+@Composable
+fun CardInputRow(
+    index: Int,
+    card: Flashcard,
+    onDelete: () -> Unit,
+    onCardChange: (String, String) -> Unit
+) {
+    var frontVal by remember { mutableStateOf(TextFieldValue(card.question)) }
+    var backVal by remember { mutableStateOf(TextFieldValue(card.answer)) }
+
+    // Bidirectional sync for external updates (e.g. Bulk Import or initial load)
+    LaunchedEffect(card.question) {
+        if (card.question != frontVal.text) {
+            frontVal = frontVal.copy(text = card.question)
+        }
+    }
+
+    LaunchedEffect(card.answer) {
+        if (card.answer != backVal.text) {
+            backVal = backVal.copy(text = card.answer)
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "THẺ #${index + 1}",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = FlowPrimary
+                )
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Card",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = frontVal,
+                onValueChange = { newValue ->
+                    frontVal = newValue
+                    onCardChange(newValue.text, backVal.text)
+                },
+                label = { Text("Mặt trước (Thuật ngữ)") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = FlowPrimary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = backVal,
+                onValueChange = { newValue ->
+                    backVal = newValue
+                    onCardChange(frontVal.text, newValue.text)
+                },
+                label = { Text("Mặt sau (Định nghĩa)") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = FlowPrimary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+        }
+    }
 }

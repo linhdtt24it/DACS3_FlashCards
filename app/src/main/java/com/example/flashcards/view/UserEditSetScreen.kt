@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.example.flashcards.model.Flashcard
 import com.example.flashcards.model.StudySet
 import com.example.flashcards.ui.theme.FlowPrimary
+import androidx.compose.ui.text.input.TextFieldValue
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,8 +32,8 @@ fun UserEditSetScreen(
     onSave: (StudySet) -> Unit,
     onBack: () -> Unit
 ) {
-    var title by remember { mutableStateOf(studySet.title) }
-    var description by remember { mutableStateOf(studySet.description) }
+    var title by remember { mutableStateOf(TextFieldValue(studySet.title)) }
+    var description by remember { mutableStateOf(TextFieldValue(studySet.description)) }
     var isPublic by remember { mutableStateOf(studySet.isPublic) }
     val cardsList = remember { studySet.cards.toMutableStateList() }
     var showImportDialog by remember { mutableStateOf(false) }
@@ -70,17 +71,17 @@ fun UserEditSetScreen(
                 ) {
                     Button(
                         onClick = {
-                            if (title.isNotBlank()) {
+                            if (title.text.isNotBlank()) {
                                 onSave(studySet.copy(
-                                    title = title,
-                                    description = description,
+                                    title = title.text,
+                                    description = description.text,
                                     cards = cardsList.filter { it.question.isNotBlank() || it.answer.isNotBlank() },
                                     isPublic = isPublic
                                 ))
                                 onBack()
                             }
                         },
-                        enabled = title.isNotBlank(),
+                        enabled = title.text.isNotBlank(),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary),
                         modifier = Modifier
@@ -180,70 +181,14 @@ fun UserEditSetScreen(
             }
 
             itemsIndexed(cardsList) { index, card ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "THẺ #${index + 1}",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = FlowPrimary
-                            )
-                            IconButton(
-                                onClick = {
-                                    cardsList.removeAt(index)
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete Card",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedTextField(
-                            value = card.question,
-                            onValueChange = { newQ ->
-                                cardsList[index] = cardsList[index].copy(question = newQ)
-                            },
-                            label = { Text("Mặt trước (Thuật ngữ)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = FlowPrimary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        OutlinedTextField(
-                            value = card.answer,
-                            onValueChange = { newA ->
-                                cardsList[index] = cardsList[index].copy(answer = newA)
-                            },
-                            label = { Text("Mặt sau (Định nghĩa)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = FlowPrimary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
+                CardInputRow(
+                    index = index,
+                    card = card,
+                    onDelete = { cardsList.removeAt(index) },
+                    onCardChange = { newQ, newA ->
+                        cardsList[index] = cardsList[index].copy(question = newQ, answer = newA)
                     }
-                }
+                )
             }
         }
     }

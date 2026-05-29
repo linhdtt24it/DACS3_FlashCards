@@ -151,6 +151,23 @@ class FlashcardViewModel(
         }
     }
 
+    fun clonePublicDeck(
+        publicDeckId: String,
+        currentUid: String,
+        onSuccess: (StudySet) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val clonedSet = repository.clonePublicDeck(publicDeckId, currentUid)
+                loadData()
+                onSuccess(clonedSet)
+            } catch (e: Exception) {
+                onError(e.message ?: "Lỗi không xác định")
+            }
+        }
+    }
+
     fun ratePublicStudySet(setId: String, rating: Float) {
         viewModelScope.launch {
             repository.ratePublicStudySet(setId, rating)
@@ -373,6 +390,13 @@ class FlashcardViewModel(
 
     fun addSetToFolder(f: String, s: String) {
         viewModelScope.launch { folderRepository.addSetToFolder(f, s) }
+    }
+
+    fun addSetsToFolder(folderId: String, setIds: List<String>) {
+        viewModelScope.launch {
+            folderRepository.addSetsToFolder(folderId, setIds)
+            loadFolders()
+        }
     }
 
     fun removeSetFromFolder(f: String, s: String) {

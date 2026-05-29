@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.ui.text.input.TextFieldValue
 import com.example.flashcards.ui.theme.FlowPrimary
 import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.firestore.FirebaseFirestore
@@ -345,7 +346,7 @@ fun UserPlayEssayScreen(
 
     var currentIndex by remember { mutableIntStateOf(0) }
     var score by remember { mutableIntStateOf(0) }
-    var userAnswer by remember { mutableStateOf("") }
+    var userAnswer by remember { mutableStateOf(TextFieldValue("")) }
     var isAnswerChecked by remember { mutableStateOf(false) }
     var showWishDialog by remember { mutableStateOf(true) }
 
@@ -471,7 +472,7 @@ fun UserPlayEssayScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Trạng thái kiểm tra câu trả lời
-                val isCorrect = checkAnswerCorrect(userAnswer, expectedAnswer)
+                val isCorrect = checkAnswerCorrect(userAnswer.text, expectedAnswer)
 
                 // Thiết lập màu sắc viền dựa trên kết quả
                 val borderStrokeColor = when {
@@ -545,7 +546,7 @@ fun UserPlayEssayScreen(
                         onClick = {
                             if (isCorrect) score++
                             currentIndex++
-                            userAnswer = ""
+                            userAnswer = TextFieldValue("")
                             isAnswerChecked = false
                         },
                         modifier = Modifier
@@ -566,11 +567,11 @@ fun UserPlayEssayScreen(
                     // Check button
                     Button(
                         onClick = {
-                            if (userAnswer.isNotBlank()) {
+                            if (userAnswer.text.isNotBlank()) {
                                 isAnswerChecked = true
                             }
                         },
-                        enabled = userAnswer.isNotBlank(),
+                        enabled = userAnswer.text.isNotBlank(),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
