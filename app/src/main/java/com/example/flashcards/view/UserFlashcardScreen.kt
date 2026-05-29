@@ -28,9 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.flashcards.utils.CryptoUtils
 import com.example.flashcards.ui.theme.*
 import androidx.compose.material.icons.filled.*
-import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Star
@@ -208,7 +208,12 @@ fun UserFlashcardScreen(
                                                                 val question = cardMap["question"] as? String
                                                                 val answer = cardMap["answer"] as? String
                                                                 if (id != null && question != null && answer != null) {
-                                                                    userCardsMap[id] = VocabCard(id, question, answer, sDoc.id)
+                                                                    userCardsMap[id] = VocabCard(
+                                                                        id,
+                                                                        CryptoUtils.decrypt(question),
+                                                                        CryptoUtils.decrypt(answer),
+                                                                        sDoc.id
+                                                                    )
                                                                 }
                                                             }
                                                         }

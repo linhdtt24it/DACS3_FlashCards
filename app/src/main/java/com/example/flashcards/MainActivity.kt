@@ -982,8 +982,8 @@ fun AppNavHost(
                                                                         if (id != null && question != null && answer != null) {
                                                                             userCardsMap[id] = com.example.flashcards.model.Flashcard(
                                                                                 id = id,
-                                                                                question = question,
-                                                                                answer = answer
+                                                                                question = com.example.flashcards.utils.CryptoUtils.decrypt(question),
+                                                                                answer = com.example.flashcards.utils.CryptoUtils.decrypt(answer)
                                                                             )
                                                                         }
                                                                     }

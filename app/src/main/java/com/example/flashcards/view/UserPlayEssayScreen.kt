@@ -168,8 +168,10 @@ fun UserPlayEssayScreen(
                                                                     val front = cardMap["question"] as? String
                                                                     val back = cardMap["answer"] as? String
                                                                     if (id != null && front != null && back != null) {
-                                                                        val questionText = if (playMode == "1") front else back
-                                                                        val answerText = if (playMode == "1") back else front
+                                                                        val decFront = CryptoUtils.decrypt(front)
+                                                                        val decBack = CryptoUtils.decrypt(back)
+                                                                        val questionText = if (playMode == "1") decFront else decBack
+                                                                        val answerText = if (playMode == "1") decBack else decFront
                                                                         userCardsMap[id] = EssayQuestion(id, questionText, answerText)
                                                                     }
                                                                 }
