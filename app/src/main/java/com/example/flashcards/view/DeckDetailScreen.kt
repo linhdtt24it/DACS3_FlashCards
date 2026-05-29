@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.flashcards.model.Flashcard
 import com.example.flashcards.model.StudySet
+import com.example.flashcards.utils.CryptoUtils
 import com.example.flashcards.ui.theme.*
 import com.example.flashcards.utils.ImageUtils
 import com.google.firebase.auth.FirebaseAuth
@@ -113,7 +114,12 @@ fun UserSetDashboardScreen(
                 if (snapshot != null && !snapshot.isEmpty) {
                     val list = snapshot.documents.mapNotNull { doc ->
                         try {
-                            doc.toObject(Flashcard::class.java)?.copy(id = doc.id)
+                            val card = doc.toObject(Flashcard::class.java)?.copy(id = doc.id)
+                            card?.copy(
+                                question = CryptoUtils.decrypt(card.question),
+                                answer = CryptoUtils.decrypt(card.answer),
+                                explanation = CryptoUtils.decrypt(card.explanation)
+                            )
                         } catch (e: Exception) {
                             null
                         }

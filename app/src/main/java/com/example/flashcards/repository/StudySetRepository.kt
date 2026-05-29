@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.flashcards.model.Flashcard
 import com.example.flashcards.model.StudySet
 import com.example.flashcards.model.Comment
+import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -20,6 +21,38 @@ class StudySetRepository {
     private val studySetsCollection get() = db.collection("users").document(auth.currentUser?.uid ?: "anonymous").collection("studySets")
     private val publicStudySetsCollection = db.collection("publicStudySets")
 
+    private fun encryptStudySet(set: StudySet): StudySet {
+        return set.copy(
+            title = CryptoUtils.encrypt(set.title),
+            description = CryptoUtils.encrypt(set.description),
+            cards = set.cards.map { encryptFlashcard(it) }
+        )
+    }
+
+    private fun decryptStudySet(set: StudySet): StudySet {
+        return set.copy(
+            title = CryptoUtils.decrypt(set.title),
+            description = CryptoUtils.decrypt(set.description),
+            cards = set.cards.map { decryptFlashcard(it) }
+        )
+    }
+
+    private fun encryptFlashcard(card: Flashcard): Flashcard {
+        return card.copy(
+            question = CryptoUtils.encrypt(card.question),
+            answer = CryptoUtils.encrypt(card.answer),
+            explanation = CryptoUtils.encrypt(card.explanation)
+        )
+    }
+
+    private fun decryptFlashcard(card: Flashcard): Flashcard {
+        return card.copy(
+            question = CryptoUtils.decrypt(card.question),
+            answer = CryptoUtils.decrypt(card.answer),
+            explanation = CryptoUtils.decrypt(card.explanation)
+        )
+    }
+
     fun getStudySets(): Flow<List<StudySet>> = callbackFlow {
         val listener = studySetsCollection.addSnapshotListener { snapshot, error ->
             if (error != null) {
@@ -29,7 +62,7 @@ class StudySetRepository {
             }
 
             if (snapshot != null) {
-                val sets = snapshot.toObjects(StudySet::class.java)
+                val sets = snapshot.toObjects(StudySet::class.java).map { decryptStudySet(it) }
                 trySend(sets)
             } else {
                 trySend(emptyList())
@@ -43,20 +76,21 @@ class StudySetRepository {
 
     suspend fun saveStudySet(studySet: StudySet) {
         try {
+            val encryptedSet = encryptStudySet(studySet)
             val batch = db.batch()
             val userSetRef = studySetsCollection.document(studySet.id)
             val publicSetRef = publicStudySetsCollection.document(studySet.id)
             
-            batch.set(userSetRef, studySet)
+            batch.set(userSetRef, encryptedSet)
             if (studySet.isPublic) {
-                batch.set(publicSetRef, studySet)
+                batch.set(publicSetRef, encryptedSet)
             } else {
                 batch.delete(publicSetRef)
             }
             
             // Sync cards to user_decks -> deckId -> cards sub-collection
             val userDecksCardsRef = db.collection("user_decks").document(studySet.id).collection("cards")
-            studySet.cards.forEach { card ->
+            encryptedSet.cards.forEach { card ->
                 batch.set(userDecksCardsRef.document(card.id), card)
             }
             
@@ -92,7 +126,8 @@ class StudySetRepository {
 
         for (set in initialSets) {
             try {
-                studySetsCollection.document(set.id).set(set).await()
+                val encrypted = encryptStudySet(set)
+                studySetsCollection.document(set.id).set(encrypted).await()
             } catch (e: Exception) {
                 Log.w("StudySetRepository", "Error writing document", e)
             }
@@ -102,7 +137,7 @@ class StudySetRepository {
     suspend fun getPublicStudySets(): List<StudySet> {
         return try {
             val snapshot = publicStudySetsCollection.get().await()
-            snapshot.toObjects(StudySet::class.java)
+            snapshot.toObjects(StudySet::class.java).map { decryptStudySet(it) }
         } catch (e: Exception) {
             Log.e("StudySetRepository", "Error getting public study sets", e)
             emptyList()
@@ -113,7 +148,7 @@ class StudySetRepository {
         return try {
             val snapshot = publicStudySetsCollection.whereEqualTo("shareCode", code).get().await()
             if (!snapshot.isEmpty) {
-                snapshot.documents[0].toObject(StudySet::class.java)
+                snapshot.documents[0].toObject(StudySet::class.java)?.let { decryptStudySet(it) }
             } else {
                 null
             }
@@ -153,6 +188,8 @@ class StudySetRepository {
         val publicSet = publicSetDoc.toObject(StudySet::class.java) 
             ?: throw Exception("Không thể đọc dữ liệu bộ thẻ công khai!")
         
+        val decryptedPublicSet = decryptStudySet(publicSet)
+        
         // 2. Generate new deck ID using .document() to avoid duplicate IDs and security rules issues
         val newDeckRef = studySetsCollection.document()
         val newDeckId = newDeckRef.id
@@ -163,19 +200,19 @@ class StudySetRepository {
         
         if (!publicCardsSnap.isEmpty) {
             publicCardsSnap.documents.forEach { doc ->
-                val card = doc.toObject(Flashcard::class.java)
+                val card = doc.toObject(Flashcard::class.java)?.let { decryptFlashcard(it) }
                 if (card != null) {
                     cardsList.add(card)
                 }
             }
         } else {
             // Fallback to publicSet.cards list if exploreSets collection is empty
-            cardsList.addAll(publicSet.cards)
+            cardsList.addAll(decryptedPublicSet.cards)
         }
         
         // 4. Create new cloned StudySet
         val user = FirebaseAuth.getInstance().currentUser
-        val clonedSet = publicSet.copy(
+        val clonedSet = decryptedPublicSet.copy(
             id = newDeckId,
             isPublic = false,
             shareCode = null,
@@ -187,7 +224,8 @@ class StudySetRepository {
         )
         
         // 5. Save cloned StudySet metadata (Step 1: user studySets doc)
-        newDeckRef.set(clonedSet).await()
+        val encryptedClonedSet = encryptStudySet(clonedSet)
+        newDeckRef.set(encryptedClonedSet).await()
         
         // 6. Clone cards subcollection: 
         //    - users/{current_uid}/studySets/{new_deck_id}/cards/{new_card_id}
@@ -200,8 +238,9 @@ class StudySetRepository {
             cardsList.forEach { card ->
                 val newCardId = card.id.ifEmpty { java.util.UUID.randomUUID().toString() }
                 val clonedCard = card.copy(id = newCardId)
-                batch.set(userCardsRef.document(newCardId), clonedCard)
-                batch.set(userDecksCardsRef.document(newCardId), clonedCard)
+                val encryptedCard = encryptFlashcard(clonedCard)
+                batch.set(userCardsRef.document(newCardId), encryptedCard)
+                batch.set(userDecksCardsRef.document(newCardId), encryptedCard)
             }
             batch.commit().await()
         }

@@ -2,6 +2,7 @@ package com.example.flashcards.repository
 
 import android.util.Log
 import com.example.flashcards.model.Folder
+import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
@@ -17,13 +18,26 @@ class FolderRepository {
     private val foldersCollection get() =
         db.collection("users").document(currentUserId).collection("folders")
 
+    private fun encryptFolder(folder: Folder): Folder {
+        return folder.copy(
+            name = CryptoUtils.encrypt(folder.name)
+        )
+    }
+
+    private fun decryptFolder(folder: Folder): Folder {
+        return folder.copy(
+            name = CryptoUtils.decrypt(folder.name)
+        )
+    }
+
     fun getFolders(): Flow<List<Folder>> = callbackFlow {
         if (currentUserId.isEmpty()) { trySend(emptyList()); return@callbackFlow }
         val listener = foldersCollection
             .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) { close(error); return@addSnapshotListener }
-                trySend(snapshot?.toObjects(Folder::class.java) ?: emptyList())
+                val list = (snapshot?.toObjects(Folder::class.java) ?: emptyList()).map { decryptFolder(it) }
+                trySend(list)
             }
         awaitClose { listener.remove() }
     }
@@ -31,7 +45,8 @@ class FolderRepository {
     suspend fun saveFolder(folder: Folder) {
         if (currentUserId.isEmpty()) return
         try {
-            foldersCollection.document(folder.id).set(folder).await()
+            val encryptedFolder = encryptFolder(folder)
+            foldersCollection.document(folder.id).set(encryptedFolder).await()
         } catch (e: Exception) {
             Log.e("FolderRepository", "Error saving folder", e)
         }

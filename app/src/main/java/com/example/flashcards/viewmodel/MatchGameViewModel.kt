@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.flashcards.view.MatchCardItem
 import com.example.flashcards.view.VocabCard
+import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +43,50 @@ class MatchGameViewModel : ViewModel() {
 
     private val _p1Items = MutableStateFlow<List<MatchCardItem>>(emptyList())
     val p1Items: StateFlow<List<MatchCardItem>> = _p1Items.asStateFlow()
+
+    private fun encryptRoom(room: MatchOnlineRoom): Map<String, Any> {
+        return mapOf(
+            "roomId" to CryptoUtils.encrypt(room.roomId),
+            "levelId" to CryptoUtils.encrypt(room.levelId),
+            "gridSize" to room.gridSize,
+            "player1Id" to CryptoUtils.encrypt(room.player1Id),
+            "player1Name" to CryptoUtils.encrypt(room.player1Name),
+            "player2Id" to CryptoUtils.encrypt(room.player2Id),
+            "player2Name" to CryptoUtils.encrypt(room.player2Name),
+            "status" to CryptoUtils.encrypt(room.status),
+            "player1Score" to CryptoUtils.encrypt(room.player1Score.toString()),
+            "player2Score" to CryptoUtils.encrypt(room.player2Score.toString()),
+            "gameData" to room.gameData.map { item ->
+                item.mapValues { (key, value) ->
+                    if (key == "text" && value is String) CryptoUtils.encrypt(value) else value
+                }
+            },
+            "winnerId" to CryptoUtils.encrypt(room.winnerId),
+            "createdAt" to room.createdAt
+        )
+    }
+
+    private fun decryptRoom(map: Map<String, Any>): MatchOnlineRoom {
+        return MatchOnlineRoom(
+            roomId = CryptoUtils.decrypt(map["roomId"] as? String),
+            levelId = CryptoUtils.decrypt(map["levelId"] as? String),
+            gridSize = (map["gridSize"] as? Long)?.toInt() ?: 5,
+            player1Id = CryptoUtils.decrypt(map["player1Id"] as? String),
+            player1Name = CryptoUtils.decrypt(map["player1Name"] as? String),
+            player2Id = CryptoUtils.decrypt(map["player2Id"] as? String),
+            player2Name = CryptoUtils.decrypt(map["player2Name"] as? String),
+            status = CryptoUtils.decrypt(map["status"] as? String).ifBlank { "WAITING" },
+            player1Score = CryptoUtils.decrypt(map["player1Score"] as? String).toLongOrNull() ?: -1L,
+            player2Score = CryptoUtils.decrypt(map["player2Score"] as? String).toLongOrNull() ?: -1L,
+            gameData = (map["gameData"] as? List<Map<String, Any>> ?: emptyList()).map { item ->
+                item.mapValues { (key, value) ->
+                    if (key == "text" && value is String) CryptoUtils.decrypt(value) else value
+                }
+            },
+            winnerId = CryptoUtils.decrypt(map["winnerId"] as? String),
+            createdAt = map["createdAt"] as? Long ?: System.currentTimeMillis()
+        )
+    }
 
     fun createRoomCode(
         userId: String,
@@ -85,7 +130,10 @@ class MatchGameViewModel : ViewModel() {
             createdAt = System.currentTimeMillis()
         )
 
-        db.collection("game_rooms").document(roomId).set(room)
+        val encryptedDocId = CryptoUtils.encrypt(roomId)
+        val encryptedRoomMap = encryptRoom(room)
+
+        db.collection("game_rooms").document(encryptedDocId).set(encryptedRoomMap)
             .addOnSuccessListener {
                 listenToRoom(roomId, userId)
             }
@@ -102,19 +150,21 @@ class MatchGameViewModel : ViewModel() {
         _roomState.value = null
         _p1Items.value = emptyList()
 
-        val roomRef = db.collection("game_rooms").document(roomId)
+        val encryptedDocId = CryptoUtils.encrypt(roomId)
+        val roomRef = db.collection("game_rooms").document(encryptedDocId)
         
         roomRef.get().addOnSuccessListener { doc ->
             if (doc.exists()) {
-                val currentStatus = doc.getString("status") ?: "WAITING"
-                val currentP2 = doc.getString("player2Id") ?: ""
+                val data = doc.data ?: emptyMap()
+                val currentStatus = CryptoUtils.decrypt(data["status"] as? String).ifBlank { "WAITING" }
+                val currentP2 = CryptoUtils.decrypt(data["player2Id"] as? String)
                 
                 if (currentStatus == "WAITING" && currentP2.isEmpty()) {
                     db.runTransaction { transaction ->
                         transaction.update(roomRef, mapOf(
-                            "player2Id" to userId,
-                            "player2Name" to userName,
-                            "status" to "PLAYING"
+                            "player2Id" to CryptoUtils.encrypt(userId),
+                            "player2Name" to CryptoUtils.encrypt(userName),
+                            "status" to CryptoUtils.encrypt("PLAYING")
                         ))
                         null
                     }.addOnSuccessListener {
@@ -142,7 +192,8 @@ class MatchGameViewModel : ViewModel() {
 
     private fun listenToRoom(roomId: String, currentUserId: String) {
         roomListener?.remove()
-        roomListener = db.collection("game_rooms").document(roomId)
+        val encryptedDocId = CryptoUtils.encrypt(roomId)
+        roomListener = db.collection("game_rooms").document(encryptedDocId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.e("MatchGameViewModel", "Snapshot listener failed.", error)
@@ -150,7 +201,8 @@ class MatchGameViewModel : ViewModel() {
                 }
 
                 if (snapshot != null && snapshot.exists()) {
-                    val room = snapshot.toObject(MatchOnlineRoom::class.java)
+                    val data = snapshot.data ?: return@addSnapshotListener
+                    val room = decryptRoom(data)
                     _roomState.value = room
 
                     if (room != null) {
@@ -185,10 +237,10 @@ class MatchGameViewModel : ViewModel() {
                                 p2Score < p1Score -> room.player2Id
                                 else -> "DRAW"
                             }
-                            db.collection("game_rooms").document(roomId).update(
+                            db.collection("game_rooms").document(encryptedDocId).update(
                                 mapOf(
-                                    "status" to "FINISHED",
-                                    "winnerId" to winnerId
+                                    "status" to CryptoUtils.encrypt("FINISHED"),
+                                    "winnerId" to CryptoUtils.encrypt(winnerId)
                                 )
                             )
                         }
@@ -201,9 +253,10 @@ class MatchGameViewModel : ViewModel() {
         val room = _roomState.value ?: return
         val isPlayer1 = currentUserId == room.player1Id
         val scoreField = if (isPlayer1) "player1Score" else "player2Score"
+        val encryptedDocId = CryptoUtils.encrypt(room.roomId)
 
-        db.collection("game_rooms").document(room.roomId)
-            .update(scoreField, timeMs)
+        db.collection("game_rooms").document(encryptedDocId)
+            .update(scoreField, CryptoUtils.encrypt(timeMs.toString()))
             .addOnSuccessListener {
                 Log.d("MatchGameViewModel", "Đã gửi thời gian: $timeMs ms")
             }
@@ -221,7 +274,8 @@ class MatchGameViewModel : ViewModel() {
         roomListener = null
         val room = _roomState.value
         if (room != null && room.status == "WAITING") {
-            db.collection("game_rooms").document(room.roomId).delete()
+            val encryptedDocId = CryptoUtils.encrypt(room.roomId)
+            db.collection("game_rooms").document(encryptedDocId).delete()
         }
         _roomState.value = null
         _matchmakingStatus.value = "IDLE"
@@ -233,19 +287,20 @@ class MatchGameViewModel : ViewModel() {
         roomListener = null
         val room = _roomState.value
         if (room != null) {
+            val encryptedDocId = CryptoUtils.encrypt(room.roomId)
             if (room.status == "PLAYING") {
                 // Forfeit: The other player wins instantly!
                 val winnerId = if (currentUserId == room.player1Id) room.player2Id else room.player1Id
-                db.collection("game_rooms").document(room.roomId).update(
+                db.collection("game_rooms").document(encryptedDocId).update(
                     mapOf(
-                        "status" to "FINISHED",
-                        "winnerId" to winnerId,
+                        "status" to CryptoUtils.encrypt("FINISHED"),
+                        "winnerId" to CryptoUtils.encrypt(winnerId),
                         // Set the forfeiting player's time to a very high score so UI displays correctly
-                        (if (currentUserId == room.player1Id) "player1Score" else "player2Score") to 999999L
+                        (if (currentUserId == room.player1Id) "player1Score" else "player2Score") to CryptoUtils.encrypt("999999")
                     )
                 )
             } else if (room.status == "WAITING") {
-                db.collection("game_rooms").document(room.roomId).delete()
+                db.collection("game_rooms").document(encryptedDocId).delete()
             }
         }
         _roomState.value = null

@@ -1,6 +1,7 @@
 package com.example.flashcards.view
 
 import android.widget.Toast
+import com.example.flashcards.utils.CryptoUtils
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -159,9 +160,10 @@ fun EditFolderScreen(
                     
                     scope.launch {
                         try {
+                            val encryptedName = CryptoUtils.encrypt(folderTitleState.text)
                             val updateData = mapOf(
-                                "name" to folderTitleState.text,
-                                "title" to folderTitleState.text,
+                                "name" to encryptedName,
+                                "title" to encryptedName,
                                 "iconName" to selectedIconName,
                                 "emoji" to when(selectedIconName) {
                                     "folder" -> "📁"
