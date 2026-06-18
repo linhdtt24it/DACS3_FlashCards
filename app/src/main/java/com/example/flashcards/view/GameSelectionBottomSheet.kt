@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,10 +33,10 @@ fun GameSelectionBottomSheet(
     if (showBattleDialog) {
         AlertDialog(
             onDismissRequest = { showBattleDialog = false },
-            title = { Text("Trận Đấu 1vs1", fontWeight = FontWeight.Bold, color = Color(0xFFEAB308)) },
+            title = { Text(ContextUtils.getString(R.string.ui_text_305), fontWeight = FontWeight.Bold, color = Color(0xFFEAB308)) },
             text = {
                 Column {
-                    Text("Tạo phòng mới để mời bạn bè, tìm trận ngẫu nhiên, hoặc nhập mã để vào phòng đã có.")
+                    Text(ContextUtils.getString(R.string.ui_text_306))
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
@@ -45,7 +47,7 @@ fun GameSelectionBottomSheet(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEAB308))
                     ) {
-                        Text("Tạo Phòng Mới", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(ContextUtils.getString(R.string.ui_text_307), fontWeight = FontWeight.Bold, color = Color.White)
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Button(
@@ -57,17 +59,17 @@ fun GameSelectionBottomSheet(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5CF6))
                     ) {
-                        Text("Tìm Trận Ngẫu Nhiên", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(ContextUtils.getString(R.string.ui_text_308), fontWeight = FontWeight.Bold, color = Color.White)
                     }
                     Spacer(modifier = Modifier.height(24.dp))
                     Divider()
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Hoặc nhập mã phòng:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(ContextUtils.getString(R.string.ui_text_309), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = joinCode,
                         onValueChange = { if (it.length <= 6) joinCode = it.uppercase() },
-                        label = { Text("Mã PIN (6 ký tự)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_310)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -84,12 +86,12 @@ fun GameSelectionBottomSheet(
                     enabled = joinCode.length == 6,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEAB308))
                 ) {
-                    Text("Vào Phòng")
+                    Text(ContextUtils.getString(R.string.ui_text_311))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showBattleDialog = false }) {
-                    Text("Hủy", color = Color.Gray)
+                    Text(ContextUtils.getString(R.string.ui_text_21), color = Color.Gray)
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -110,14 +112,14 @@ fun GameSelectionBottomSheet(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Giải Trí (Minigames)",
+                text = ContextUtils.getString(R.string.ui_text_312),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Chọn chế độ trò chơi bạn muốn tham gia",
+                text = ContextUtils.getString(R.string.ui_text_313),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -125,8 +127,8 @@ fun GameSelectionBottomSheet(
             Spacer(modifier = Modifier.height(24.dp))
             
             GameOptionItem(
-                title = "Nối Từ (Match)",
-                description = "Trò chơi ghép thẻ luyện nhớ",
+                title = ContextUtils.getString(R.string.ui_text_314),
+                description = ContextUtils.getString(R.string.ui_text_315),
                 icon = Icons.Default.Extension,
                 iconTint = Color(0xFF8B5CF6),
                 onClick = onPlayMatch
@@ -135,8 +137,8 @@ fun GameSelectionBottomSheet(
             if (hasBattleFeature) {
                 Spacer(modifier = Modifier.height(16.dp))
                 GameOptionItem(
-                    title = "Trận Đấu 1vs1",
-                    description = "Thi đấu trắc nghiệm đối kháng",
+                    title = ContextUtils.getString(R.string.ui_text_305),
+                    description = ContextUtils.getString(R.string.ui_text_316),
                     icon = Icons.Default.Group,
                     iconTint = Color(0xFFEAB308),
                     onClick = { showBattleDialog = true }

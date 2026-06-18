@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -102,7 +104,7 @@ fun AdminCardListScreen(
                 title = { 
                     Column {
                         Text(
-                            text = if (isQuizMode) "Danh sách Câu hỏi" else "Danh sách Thẻ từ", 
+                            text = if (isQuizMode) ContextUtils.getString(R.string.ui_text_87) else ContextUtils.getString(R.string.ui_text_88), 
                             fontWeight = FontWeight.Bold, 
                             fontSize = 18.sp
                         )
@@ -133,7 +135,7 @@ fun AdminCardListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                placeholder = { Text(if (isQuizMode) "Tìm kiếm câu hỏi..." else "Tìm kiếm thẻ...") },
+                placeholder = { Text(if (isQuizMode) ContextUtils.getString(R.string.ui_text_89) else ContextUtils.getString(R.string.ui_text_90)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -153,7 +155,7 @@ fun AdminCardListScreen(
                     val isEmpty = if (isQuizMode) filteredQuizzes.isEmpty() else filteredVocabs.isEmpty()
                     if (isEmpty) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Không có dữ liệu hiển thị", color = Color.Gray)
+                            Text(ContextUtils.getString(R.string.ui_text_91), color = Color.Gray)
                         }
                     } else {
                         LazyColumn(

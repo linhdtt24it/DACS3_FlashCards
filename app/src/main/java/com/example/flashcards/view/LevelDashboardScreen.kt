@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -47,7 +49,7 @@ fun LevelDashboardScreen(
         if (levelId.startsWith("QUIZ_")) levelId else {
             when (language.uppercase()) {
                 "JAPANESE" -> {
-                    val clean = levelId.replace("Cấp độ ", "").replace("Cáp độ ", "").trim()
+                    val clean = levelId.replace(ContextUtils.getString(R.string.ui_text_344), "").replace(ContextUtils.getString(R.string.ui_text_345), "").trim()
                     "QUIZ_JA_$clean"
                 }
                 "ENGLISH" -> {
@@ -67,27 +69,27 @@ fun LevelDashboardScreen(
     }
 
     val prettyLang = when (language.uppercase()) {
-        "JAPANESE" -> "Tiếng Nhật"
-        "ENGLISH" -> "Tiếng Anh"
-        "CHINESE" -> "Tiếng Trung"
-        "PALI" -> "Tiếng Pali"
+        "JAPANESE" -> ContextUtils.getString(R.string.ui_text_208)
+        "ENGLISH" -> ContextUtils.getString(R.string.ui_text_209)
+        "CHINESE" -> ContextUtils.getString(R.string.ui_text_210)
+        "PALI" -> ContextUtils.getString(R.string.ui_text_211)
         else -> language
     }
 
     val prettyLevel = when (normalizedLevelId) {
-        "QUIZ_JA_N5" -> "Cấp độ N5"
-        "QUIZ_JA_N4" -> "Cấp độ N4"
-        "QUIZ_JA_N3" -> "Cấp độ N3"
-        "QUIZ_JA_N2" -> "Cấp độ N2"
-        "QUIZ_JA_N1" -> "Cấp độ N1"
+        "QUIZ_JA_N5" -> ContextUtils.getString(R.string.ui_text_327)
+        "QUIZ_JA_N4" -> ContextUtils.getString(R.string.ui_text_328)
+        "QUIZ_JA_N3" -> ContextUtils.getString(R.string.ui_text_329)
+        "QUIZ_JA_N2" -> ContextUtils.getString(R.string.ui_text_330)
+        "QUIZ_JA_N1" -> ContextUtils.getString(R.string.ui_text_331)
         "QUIZ_TOEIC_450" -> "TOEIC 450+"
         "QUIZ_TOEIC_650" -> "TOEIC 650+"
         "QUIZ_TOEIC_800" -> "TOEIC 800+"
         "QUIZ_IELTS_55" -> "IELTS Band 5.5"
         "QUIZ_IELTS_65" -> "IELTS Band 6.5"
         "QUIZ_IELTS_75" -> "IELTS Band 7.5+"
-        "QUIZ_ZH_BASIC" -> "Trung Cơ Bản"
-        "QUIZ_PA_INTRO" -> "Pali Sơ Cấp"
+        "QUIZ_ZH_BASIC" -> ContextUtils.getString(R.string.ui_text_339)
+        "QUIZ_PA_INTRO" -> ContextUtils.getString(R.string.ui_text_340)
         else -> normalizedLevelId.replace("QUIZ_", "").replace("_", " ")
     }
 
@@ -201,7 +203,7 @@ fun LevelDashboardScreen(
                 title = { Text("Level Dashboard", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại", tint = MaterialTheme.colorScheme.onBackground)
+                        Icon(Icons.Default.ArrowBack, contentDescription = ContextUtils.getString(R.string.ui_text_27), tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -240,7 +242,7 @@ fun LevelDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "CẤP ĐỘ HỆ THỐNG",
+                                    text = ContextUtils.getString(R.string.ui_text_346),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White.copy(alpha = 0.8f)
@@ -318,7 +320,7 @@ fun LevelDashboardScreen(
                     ) {
                         LevelFeatureCard(
                             title = "Flashcard",
-                            description = "Học thẻ ghi nhớ",
+                            description = ContextUtils.getString(R.string.ui_text_294),
                             icon = Icons.Default.Style,
                             tintColor = Color(0xFF2563EB),
                             modifier = Modifier.weight(1f),
@@ -327,8 +329,8 @@ fun LevelDashboardScreen(
                             }
                         )
                         LevelFeatureCard(
-                            title = "Trắc Nghiệm",
-                            description = "Luyện trắc nghiệm",
+                            title = ContextUtils.getString(R.string.ui_text_295),
+                            description = ContextUtils.getString(R.string.ui_text_296),
                             icon = Icons.Default.Quiz,
                             tintColor = Color(0xFFF97316),
                             modifier = Modifier.weight(1f),
@@ -342,8 +344,8 @@ fun LevelDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         LevelFeatureCard(
-                            title = "Tự Luận",
-                            description = "Viết câu trả lời",
+                            title = ContextUtils.getString(R.string.ui_text_297),
+                            description = ContextUtils.getString(R.string.ui_text_298),
                             icon = Icons.Default.EditNote,
                             tintColor = Color(0xFF10B981),
                             modifier = Modifier.weight(1f),
@@ -352,8 +354,8 @@ fun LevelDashboardScreen(
                             }
                         )
                         LevelFeatureCard(
-                            title = "Giải Trí",
-                            description = "Nối từ, Minigames",
+                            title = ContextUtils.getString(R.string.ui_text_299),
+                            description = ContextUtils.getString(R.string.ui_text_319),
                             icon = Icons.Default.VideogameAsset,
                             tintColor = Color(0xFF8B5CF6),
                             modifier = Modifier.weight(1f),
@@ -456,7 +458,7 @@ fun LevelDashboardScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.VolumeUp,
-                                    contentDescription = "Phát âm",
+                                    contentDescription = ContextUtils.getString(R.string.ui_text_301),
                                     tint = FlowPrimary,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -487,7 +489,7 @@ fun LevelDashboardScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Star,
-                                    contentDescription = "Đánh dấu sao",
+                                    contentDescription = ContextUtils.getString(R.string.ui_text_302),
                                     tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -626,35 +628,35 @@ fun getFallbackCount(levelId: String): Int {
 fun getFallbackDashboardVocabList(levelId: String): List<VocabItem> {
     return when {
         levelId.contains("JA") || levelId == "QUIZ_JA_N5" -> listOf(
-            VocabItem("fb_1", "食べる (taberu)", "Ăn"),
-            VocabItem("fb_2", "飲む (nomu)", "Uống"),
-            VocabItem("fb_3", "行く (iku)", "Đi"),
-            VocabItem("fb_4", "見る (miru)", "Xem / Nhìn"),
-            VocabItem("fb_5", "先生 (sensei)", "Giáo viên"),
-            VocabItem("fb_6", "学校 (gakko)", "Trường học"),
-            VocabItem("fb_7", "本 (hon)", "Sách"),
-            VocabItem("fb_8", "水 (mizu)", "Nước"),
-            VocabItem("fb_9", "猫 (neko)", "Con mèo"),
-            VocabItem("fb_10", "犬 (inu)", "Con chó")
+            VocabItem("fb_1", "食べる (taberu)", ContextUtils.getString(R.string.ui_text_347)),
+            VocabItem("fb_2", "飲む (nomu)", ContextUtils.getString(R.string.ui_text_348)),
+            VocabItem("fb_3", "行く (iku)", ContextUtils.getString(R.string.ui_text_349)),
+            VocabItem("fb_4", "見る (miru)", ContextUtils.getString(R.string.ui_text_350)),
+            VocabItem("fb_5", "先生 (sensei)", ContextUtils.getString(R.string.ui_text_351)),
+            VocabItem("fb_6", "学校 (gakko)", ContextUtils.getString(R.string.ui_text_352)),
+            VocabItem("fb_7", "本 (hon)", ContextUtils.getString(R.string.ui_text_353)),
+            VocabItem("fb_8", "水 (mizu)", ContextUtils.getString(R.string.ui_text_354)),
+            VocabItem("fb_9", "猫 (neko)", ContextUtils.getString(R.string.ui_text_355)),
+            VocabItem("fb_10", "犬 (inu)", ContextUtils.getString(R.string.ui_text_356))
         )
         levelId.contains("TOEIC") || levelId.contains("IELTS") -> listOf(
-            VocabItem("fb_11", "Abandon (v)", "Từ bỏ / Ruồng bỏ"),
-            VocabItem("fb_12", "Accumulate (v)", "Tích lũy / Gom góp"),
-            VocabItem("fb_13", "Beneficial (adj)", "Có lợi / Có ích"),
-            VocabItem("fb_14", "Collaborate (v)", "Hợp tác / Cộng tác"),
-            VocabItem("fb_15", "Diverse (adj)", "Đa dạng / Phong phú"),
-            VocabItem("fb_16", "Evaluate (v)", "Đánh giá / Định giá"),
-            VocabItem("fb_17", "Fluctuate (v)", "Dao động / Biến động"),
-            VocabItem("fb_18", "Guarantee (n/v)", "Cam kết / Bảo hành"),
-            VocabItem("fb_19", "Hinder (v)", "Cản trở / Gây trở ngại"),
-            VocabItem("fb_20", "Implement (v)", "Triển khai / Thực thi")
+            VocabItem("fb_11", "Abandon (v)", ContextUtils.getString(R.string.ui_text_357)),
+            VocabItem("fb_12", "Accumulate (v)", ContextUtils.getString(R.string.ui_text_358)),
+            VocabItem("fb_13", "Beneficial (adj)", ContextUtils.getString(R.string.ui_text_359)),
+            VocabItem("fb_14", "Collaborate (v)", ContextUtils.getString(R.string.ui_text_360)),
+            VocabItem("fb_15", "Diverse (adj)", ContextUtils.getString(R.string.ui_text_361)),
+            VocabItem("fb_16", "Evaluate (v)", ContextUtils.getString(R.string.ui_text_362)),
+            VocabItem("fb_17", "Fluctuate (v)", ContextUtils.getString(R.string.ui_text_363)),
+            VocabItem("fb_18", "Guarantee (n/v)", ContextUtils.getString(R.string.ui_text_364)),
+            VocabItem("fb_19", "Hinder (v)", ContextUtils.getString(R.string.ui_text_365)),
+            VocabItem("fb_20", "Implement (v)", ContextUtils.getString(R.string.ui_text_366))
         )
         else -> listOf(
-            VocabItem("fb_21", "Hello", "Xin chào"),
-            VocabItem("fb_22", "Thank you", "Cảm ơn"),
-            VocabItem("fb_23", "Goodbye", "Tạm biệt"),
-            VocabItem("fb_24", "Please", "Làm ơn"),
-            VocabItem("fb_25", "Sorry", "Xin lỗi")
+            VocabItem("fb_21", "Hello", ContextUtils.getString(R.string.ui_text_367)),
+            VocabItem("fb_22", "Thank you", ContextUtils.getString(R.string.ui_text_368)),
+            VocabItem("fb_23", "Goodbye", ContextUtils.getString(R.string.ui_text_369)),
+            VocabItem("fb_24", "Please", ContextUtils.getString(R.string.ui_text_370)),
+            VocabItem("fb_25", "Sorry", ContextUtils.getString(R.string.ui_text_371))
         )
     }
 }

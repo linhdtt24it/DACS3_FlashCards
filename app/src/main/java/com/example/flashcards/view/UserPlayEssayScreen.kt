@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -29,7 +31,7 @@ import java.util.UUID
 data class EssayQuestion(
     val id: String,
     val question: String, // original word, e.g. "食べる"
-    val correctAnswer: String, // translation, e.g. "Ăn"
+    val correctAnswer: String, // translation, e.g. ContextUtils.getString(R.string.ui_text_347)
     val explanation: String = ""
 )
 
@@ -353,20 +355,20 @@ fun UserPlayEssayScreen(
     val progress = if (questions.isNotEmpty()) (currentIndex.toFloat() / questions.size) else 0f
 
     val title = when (categoryId) {
-        "QUIZ_JA_N5" -> "Tự luận Tiếng Nhật N5"
-        "QUIZ_JA_N4" -> "Tự luận Tiếng Nhật N4"
-        "QUIZ_JA_N3" -> "Tự luận Tiếng Nhật N3"
-        "QUIZ_JA_N2" -> "Tự luận Tiếng Nhật N2"
-        "QUIZ_JA_N1" -> "Tự luận Tiếng Nhật N1"
-        "QUIZ_TOEIC_450" -> "Tự luận TOEIC 450+"
-        "QUIZ_TOEIC_650" -> "Tự luận TOEIC 650+"
-        "QUIZ_TOEIC_800" -> "Tự luận TOEIC 800+"
-        "QUIZ_IELTS_55" -> "Tự luận IELTS Band 5.5"
-        "QUIZ_IELTS_65" -> "Tự luận IELTS Band 6.5"
-        "QUIZ_IELTS_75" -> "Tự luận IELTS Band 7.5+"
-        "QUIZ_ZH_BASIC" -> "Tự luận HSK Trung Cơ Bản"
-        "QUIZ_PA_INTRO" -> "Tự luận Pali Sơ Cấp"
-        else -> "Tự luận Ôn tập"
+        "QUIZ_JA_N5" -> ContextUtils.getString(R.string.ui_text_519)
+        "QUIZ_JA_N4" -> ContextUtils.getString(R.string.ui_text_520)
+        "QUIZ_JA_N3" -> ContextUtils.getString(R.string.ui_text_521)
+        "QUIZ_JA_N2" -> ContextUtils.getString(R.string.ui_text_522)
+        "QUIZ_JA_N1" -> ContextUtils.getString(R.string.ui_text_523)
+        "QUIZ_TOEIC_450" -> ContextUtils.getString(R.string.ui_text_469)
+        "QUIZ_TOEIC_650" -> ContextUtils.getString(R.string.ui_text_471)
+        "QUIZ_TOEIC_800" -> ContextUtils.getString(R.string.ui_text_473)
+        "QUIZ_IELTS_55" -> ContextUtils.getString(R.string.ui_text_524)
+        "QUIZ_IELTS_65" -> ContextUtils.getString(R.string.ui_text_525)
+        "QUIZ_IELTS_75" -> ContextUtils.getString(R.string.ui_text_526)
+        "QUIZ_ZH_BASIC" -> ContextUtils.getString(R.string.ui_text_527)
+        "QUIZ_PA_INTRO" -> ContextUtils.getString(R.string.ui_text_483)
+        else -> ContextUtils.getString(R.string.ui_text_528)
     }
 
     Scaffold(
@@ -408,10 +410,10 @@ fun UserPlayEssayScreen(
             } else if (questions.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Mục này hiện chưa có câu hỏi tự luận.", color = Color.Gray)
+                        Text(ContextUtils.getString(R.string.ui_text_529), color = Color.Gray)
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { navController.popBackStack() }) {
-                            Text("Quay lại")
+                            Text(ContextUtils.getString(R.string.ui_text_27))
                         }
                     }
                 }
@@ -451,7 +453,7 @@ fun UserPlayEssayScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = if (playMode == "1") "Gõ nghĩa Tiếng Việt của từ sau:" else "Gõ từ vựng gốc có nghĩa sau:",
+                            text = if (playMode == "1") ContextUtils.getString(R.string.ui_text_530) else ContextUtils.getString(R.string.ui_text_531),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
@@ -483,7 +485,7 @@ fun UserPlayEssayScreen(
                 OutlinedTextField(
                     value = userAnswer,
                     onValueChange = { if (!isAnswerChecked) userAnswer = it },
-                    placeholder = { Text("Nhập câu trả lời của bạn tại đây...") },
+                    placeholder = { Text(ContextUtils.getString(R.string.ui_text_532)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
@@ -522,7 +524,7 @@ fun UserPlayEssayScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = if (isCorrect) "Chính xác tuyệt vời!" else "Chưa chính xác!",
+                                    text = if (isCorrect) ContextUtils.getString(R.string.ui_text_533) else ContextUtils.getString(R.string.ui_text_534),
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = if (isCorrect) Color(0xFF065F46) else Color(0xFF991B1B)
@@ -557,7 +559,7 @@ fun UserPlayEssayScreen(
                         )
                     ) {
                         Text(
-                            text = if (currentIndex == questions.size - 1) "Hoàn thành" else "Tiếp theo",
+                            text = if (currentIndex == questions.size - 1) ContextUtils.getString(R.string.ui_text_453) else ContextUtils.getString(R.string.ui_text_454),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
@@ -577,7 +579,7 @@ fun UserPlayEssayScreen(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
                     ) {
-                        Text("Kiểm tra đáp án", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(ContextUtils.getString(R.string.ui_text_535), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             } else {
@@ -588,7 +590,7 @@ fun UserPlayEssayScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Hoàn Thành Tự Luận!",
+                        text = ContextUtils.getString(R.string.ui_text_536),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -630,7 +632,7 @@ fun UserPlayEssayScreen(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
                     ) {
-                        Text("Quay lại thư viện", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(ContextUtils.getString(R.string.ui_text_537), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }
@@ -650,63 +652,63 @@ fun getFallbackEssayQuestions(categoryId: String): List<EssayQuestion> {
         categoryId.startsWith("QUIZ_JA") -> {
             when (categoryId) {
                 "QUIZ_JA_N5" -> listOf(
-                    EssayQuestion(UUID.randomUUID().toString(), "食べる (taberu)", "Ăn"),
-                    EssayQuestion(UUID.randomUUID().toString(), "飲む (nomu)", "Uống"),
-                    EssayQuestion(UUID.randomUUID().toString(), "行く (iku)", "Đi"),
-                    EssayQuestion(UUID.randomUUID().toString(), "見る (miru)", "Xem / Nhìn"),
-                    EssayQuestion(UUID.randomUUID().toString(), "先生 (sensei)", "Giáo viên")
+                    EssayQuestion(UUID.randomUUID().toString(), "食べる (taberu)", ContextUtils.getString(R.string.ui_text_347)),
+                    EssayQuestion(UUID.randomUUID().toString(), "飲む (nomu)", ContextUtils.getString(R.string.ui_text_348)),
+                    EssayQuestion(UUID.randomUUID().toString(), "行く (iku)", ContextUtils.getString(R.string.ui_text_349)),
+                    EssayQuestion(UUID.randomUUID().toString(), "見る (miru)", ContextUtils.getString(R.string.ui_text_350)),
+                    EssayQuestion(UUID.randomUUID().toString(), "先生 (sensei)", ContextUtils.getString(R.string.ui_text_351))
                 )
                 "QUIZ_JA_N4" -> listOf(
-                    EssayQuestion(UUID.randomUUID().toString(), "覚える (oboyeru)", "Nhớ / Ghi nhớ"),
-                    EssayQuestion(UUID.randomUUID().toString(), "簡単 (kantan)", "Đơn giản / Dễ dàng"),
-                    EssayQuestion(UUID.randomUUID().toString(), "重i (omoi)", "Nặng"),
-                    EssayQuestion(UUID.randomUUID().toString(), "軽い (karui)", "Nhẹ")
+                    EssayQuestion(UUID.randomUUID().toString(), "覚える (oboyeru)", ContextUtils.getString(R.string.ui_text_499)),
+                    EssayQuestion(UUID.randomUUID().toString(), "簡単 (kantan)", ContextUtils.getString(R.string.ui_text_500)),
+                    EssayQuestion(UUID.randomUUID().toString(), "重i (omoi)", ContextUtils.getString(R.string.ui_text_501)),
+                    EssayQuestion(UUID.randomUUID().toString(), "軽い (karui)", ContextUtils.getString(R.string.ui_text_502))
                 )
                 else -> listOf(
-                    EssayQuestion(UUID.randomUUID().toString(), "一生懸命 (isshoukenmei)", "Nỗ lực hết sức"),
-                    EssayQuestion(UUID.randomUUID().toString(), "調査 (chousa)", "Điều tra / Khảo sát"),
-                    EssayQuestion(UUID.randomUUID().toString(), "緊張 (kinchou)", "Căng thẳng / Hồi hộp")
+                    EssayQuestion(UUID.randomUUID().toString(), "一生懸命 (isshoukenmei)", ContextUtils.getString(R.string.ui_text_503)),
+                    EssayQuestion(UUID.randomUUID().toString(), "調査 (chousa)", ContextUtils.getString(R.string.ui_text_504)),
+                    EssayQuestion(UUID.randomUUID().toString(), "緊張 (kinchou)", ContextUtils.getString(R.string.ui_text_505))
                 )
             }
         }
         categoryId.startsWith("QUIZ_TOEIC") -> {
             when (categoryId) {
                 "QUIZ_TOEIC_450" -> listOf(
-                    EssayQuestion(UUID.randomUUID().toString(), "Confirm", "Xác nhận"),
-                    EssayQuestion(UUID.randomUUID().toString(), "Submit", "Nộp / Trình"),
-                    EssayQuestion(UUID.randomUUID().toString(), "Delay", "Trì hoãn")
+                    EssayQuestion(UUID.randomUUID().toString(), "Confirm", ContextUtils.getString(R.string.ui_text_157)),
+                    EssayQuestion(UUID.randomUUID().toString(), "Submit", ContextUtils.getString(R.string.ui_text_506)),
+                    EssayQuestion(UUID.randomUUID().toString(), "Delay", ContextUtils.getString(R.string.ui_text_507))
                 )
                 else -> listOf(
-                    EssayQuestion(UUID.randomUUID().toString(), "Negotiate", "Thương lượng / Đàm phán"),
-                    EssayQuestion(UUID.randomUUID().toString(), "Implement", "Thi hành / Thực hiện"),
-                    EssayQuestion(UUID.randomUUID().toString(), "Collaborate", "Hợp tác")
+                    EssayQuestion(UUID.randomUUID().toString(), "Negotiate", ContextUtils.getString(R.string.ui_text_508)),
+                    EssayQuestion(UUID.randomUUID().toString(), "Implement", ContextUtils.getString(R.string.ui_text_509)),
+                    EssayQuestion(UUID.randomUUID().toString(), "Collaborate", ContextUtils.getString(R.string.ui_text_510))
                 )
             }
         }
         categoryId.startsWith("QUIZ_IELTS") -> {
             listOf(
-                EssayQuestion(UUID.randomUUID().toString(), "Analyze", "Phân tích"),
-                EssayQuestion(UUID.randomUUID().toString(), "Synthesize", "Tổng hợp"),
-                EssayQuestion(UUID.randomUUID().toString(), "Hypothesis", "Giả thuyết")
+                EssayQuestion(UUID.randomUUID().toString(), "Analyze", ContextUtils.getString(R.string.ui_text_511)),
+                EssayQuestion(UUID.randomUUID().toString(), "Synthesize", ContextUtils.getString(R.string.ui_text_512)),
+                EssayQuestion(UUID.randomUUID().toString(), "Hypothesis", ContextUtils.getString(R.string.ui_text_513))
             )
         }
         categoryId == "QUIZ_ZH_BASIC" -> {
             listOf(
-                EssayQuestion(UUID.randomUUID().toString(), "你好 (nǐ hǎo)", "Xin chào"),
-                EssayQuestion(UUID.randomUUID().toString(), "谢谢 (xièxie)", "Cảm ơn"),
-                EssayQuestion(UUID.randomUUID().toString(), "再见 (zàijiàn)", "Tạm biệt")
+                EssayQuestion(UUID.randomUUID().toString(), "你好 (nǐ hǎo)", ContextUtils.getString(R.string.ui_text_367)),
+                EssayQuestion(UUID.randomUUID().toString(), ContextUtils.getString(R.string.ui_text_514), ContextUtils.getString(R.string.ui_text_368)),
+                EssayQuestion(UUID.randomUUID().toString(), ContextUtils.getString(R.string.ui_text_515), ContextUtils.getString(R.string.ui_text_369))
             )
         }
         categoryId == "QUIZ_PA_INTRO" -> {
             listOf(
-                EssayQuestion(UUID.randomUUID().toString(), "Buddha", "Đức Phật / Bậc Giác Ngộ"),
-                EssayQuestion(UUID.randomUUID().toString(), "Dhamma", "Giáo Pháp"),
-                EssayQuestion(UUID.randomUUID().toString(), "Sangha", "Tăng Đoàn")
+                EssayQuestion(UUID.randomUUID().toString(), "Buddha", ContextUtils.getString(R.string.ui_text_516)),
+                EssayQuestion(UUID.randomUUID().toString(), "Dhamma", ContextUtils.getString(R.string.ui_text_517)),
+                EssayQuestion(UUID.randomUUID().toString(), "Sangha", ContextUtils.getString(R.string.ui_text_518))
             )
         }
         else -> {
             listOf(
-                EssayQuestion(UUID.randomUUID().toString(), "Hello", "Xin chào")
+                EssayQuestion(UUID.randomUUID().toString(), "Hello", ContextUtils.getString(R.string.ui_text_367))
             )
         }
     }
@@ -738,7 +740,7 @@ fun checkAnswerCorrect(user: String, expected: String): Boolean {
         }
     }
     
-    // 4. Khớp các phương án thay thế cách nhau bởi dấu gạch chéo "/" (ví dụ: "Xem / Nhìn" -> khớp "xem" hoặc "nhìn")
+    // 4. Khớp các phương án thay thế cách nhau bởi dấu gạch chéo "/" (ví dụ: ContextUtils.getString(R.string.ui_text_350) -> khớp "xem" hoặc ContextUtils.getString(R.string.ui_text_538))
     if (expected.contains("/")) {
         val alternatives = expected.split("/").map { it.trim() }
         for (alt in alternatives) {

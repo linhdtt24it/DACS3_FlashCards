@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -69,14 +71,14 @@ fun StudyFlashcard(
             if (rotationState <= 90f) {
                 // MẶT TRƯỚC
                 FlashcardFace(
-                    label = "MẶT TRƯỚC",
+                    label = ContextUtils.getString(R.string.ui_text_442),
                     text = frontText,
                     imageUrl = imageUrl,
                     explanation = null,
                     isStarred = isStarred,
                     onToggleStar = onToggleStar,
                     onPlayTts = { onPlayTts(frontText) },
-                    hint = "Bấm vào thẻ để lật mặt sau"
+                    hint = ContextUtils.getString(R.string.ui_text_443)
                 )
             } else {
                 // MẶT SAU (Phải xoay ngược 180 độ theo trục Y để chữ không bị ngược)
@@ -86,14 +88,14 @@ fun StudyFlashcard(
                         .graphicsLayer { rotationY = 180f }
                 ) {
                     FlashcardFace(
-                        label = "MẶT SAU",
+                        label = ContextUtils.getString(R.string.ui_text_444),
                         text = backText,
                         imageUrl = null,
                         explanation = explanation,
                         isStarred = isStarred,
                         onToggleStar = onToggleStar,
                         onPlayTts = { onPlayTts(backText) },
-                        hint = "Đánh giá mức độ nhớ của bạn bên dưới"
+                        hint = ContextUtils.getString(R.string.ui_text_445)
                     )
                 }
             }
@@ -140,7 +142,7 @@ private fun FlashcardFace(
                 IconButton(onClick = onToggleStar) {
                     Icon(
                         imageVector = Icons.Default.Star,
-                        contentDescription = "Đánh dấu sao",
+                        contentDescription = ContextUtils.getString(R.string.ui_text_302),
                         tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
                         modifier = Modifier.size(28.dp)
                     )
@@ -151,7 +153,7 @@ private fun FlashcardFace(
                 IconButton(onClick = onPlayTts) {
                     Icon(
                         imageVector = Icons.Default.VolumeUp,
-                        contentDescription = "Phát âm",
+                        contentDescription = ContextUtils.getString(R.string.ui_text_301),
                         tint = FlowPrimary,
                         modifier = Modifier.size(28.dp)
                     )
@@ -231,25 +233,25 @@ fun AnkiRatingButtons(
         verticalAlignment = Alignment.CenterVertically
     ) {
         RatingButton(
-            label = "Quên",
+            label = ContextUtils.getString(R.string.ui_text_446),
             interval = againInterval,
             color = Color(0xFFE53935),
             onClick = { onRate(ReviewRating.AGAIN) }
         )
         RatingButton(
-            label = "Khó",
+            label = ContextUtils.getString(R.string.ui_text_447),
             interval = hardInterval,
             color = Color(0xFFFB8C00),
             onClick = { onRate(ReviewRating.HARD) }
         )
         RatingButton(
-            label = "Tốt",
+            label = ContextUtils.getString(R.string.ui_text_448),
             interval = goodInterval,
             color = Color(0xFF43A047),
             onClick = { onRate(ReviewRating.GOOD) }
         )
         RatingButton(
-            label = "Dễ",
+            label = ContextUtils.getString(R.string.ui_text_449),
             interval = easyInterval,
             color = Color(0xFF1E88E5),
             onClick = { onRate(ReviewRating.EASY) }

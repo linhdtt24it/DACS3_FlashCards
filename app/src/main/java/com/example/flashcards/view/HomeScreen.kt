@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -17,7 +19,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
-import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -271,15 +272,15 @@ fun HomeScreen(
                 ) {
                     FeatureCard(
                         title = "Flashcard",
-                        description = "Học thẻ ghi nhớ",
+                        description = ContextUtils.getString(R.string.ui_text_294),
                         icon = Icons.Default.Style,
                         gradientColors = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)),
                         modifier = Modifier.weight(1f),
                         onClick = { onFeatureClick("flashcard") }
                     )
                     FeatureCard(
-                        title = "Trắc nghiệm",
-                        description = "Quiz trắc nghiệm",
+                        title = ContextUtils.getString(R.string.ui_text_186),
+                        description = ContextUtils.getString(R.string.ui_text_317),
                         icon = Icons.Default.Quiz,
                         gradientColors = listOf(Color(0xFFF97316), Color(0xFFEA580C)),
                         modifier = Modifier.weight(1f),
@@ -292,16 +293,16 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     FeatureCard(
-                        title = "Tự luận",
-                        description = "Tự viết câu trả lời",
+                        title = ContextUtils.getString(R.string.ui_text_187),
+                        description = ContextUtils.getString(R.string.ui_text_318),
                         icon = Icons.Default.EditNote,
                         gradientColors = listOf(Color(0xFF10B981), Color(0xFF059669)),
                         modifier = Modifier.weight(1f),
                         onClick = { onFeatureClick("write") }
                     )
                     FeatureCard(
-                        title = "Giải Trí",
-                        description = "Nối từ, Minigames",
+                        title = ContextUtils.getString(R.string.ui_text_299),
+                        description = ContextUtils.getString(R.string.ui_text_319),
                         icon = Icons.Default.VideogameAsset,
                         gradientColors = listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED)),
                         modifier = Modifier.weight(1f),
@@ -321,7 +322,7 @@ fun HomeScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 if (studySets.isEmpty()) {
-                    EmptyRowPlaceholder("Chưa có học phần nào gần đây.")
+                    EmptyRowPlaceholder(ContextUtils.getString(R.string.ui_text_320))
                 } else {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -352,13 +353,13 @@ fun HomeScreen(
                         onClick = { showAddDialog = true },
                         colors = IconButtonDefaults.iconButtonColors(contentColor = FlowPrimary)
                     ) {
-                        Icon(Icons.Default.AddCircle, contentDescription = "Tạo mới", modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.AddCircle, contentDescription = ContextUtils.getString(R.string.ui_text_321), modifier = Modifier.size(28.dp))
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 val userCustomDecks = studySets.filter { it.creatorId == FirebaseAuth.getInstance().currentUser?.uid }
                 if (userCustomDecks.isEmpty()) {
-                    EmptyRowPlaceholder("Bấm [+] để tạo bộ thẻ cá nhân của riêng bạn!")
+                    EmptyRowPlaceholder(ContextUtils.getString(R.string.ui_text_322))
                 } else {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -387,25 +388,25 @@ fun HomeScreen(
                 ) {
                     // Danh mục Tiếng Nhật (cuộn tới index 7)
                     item {
-                        LanguageChip("🇯🇵 Tiếng Nhật", Color(0xFFFEE2E2), Color(0xFF991B1B)) {
+                        LanguageChip(ContextUtils.getString(R.string.ui_text_323), Color(0xFFFEE2E2), Color(0xFF991B1B)) {
                             coroutineScope.launch { listState.animateScrollToItem(7) }
                         }
                     }
                     // Danh mục Tiếng Anh (cuộn tới index 8)
                     item {
-                        LanguageChip("🇬🇧 Tiếng Anh", Color(0xFFE0F2FE), Color(0xFF075985)) {
+                        LanguageChip(ContextUtils.getString(R.string.ui_text_324), Color(0xFFE0F2FE), Color(0xFF075985)) {
                             coroutineScope.launch { listState.animateScrollToItem(8) }
                         }
                     }
                     // Danh mục Tiếng Trung (cuộn tới index 11)
                     item {
-                        LanguageChip("🇨🇳 Tiếng Trung", Color(0xFFFEF3C7), Color(0xFF92400E)) {
+                        LanguageChip(ContextUtils.getString(R.string.ui_text_325), Color(0xFFFEF3C7), Color(0xFF92400E)) {
                             coroutineScope.launch { listState.animateScrollToItem(11) }
                         }
                     }
                     // Danh mục Tiếng Pali (cuộn tới index 11)
                     item {
-                        LanguageChip("☸️ Tiếng Pali", Color(0xFFF3E8FF), Color(0xFF6B21A8)) {
+                        LanguageChip(ContextUtils.getString(R.string.ui_text_326), Color(0xFFF3E8FF), Color(0xFF6B21A8)) {
                             coroutineScope.launch { listState.animateScrollToItem(11) }
                         }
                     }
@@ -416,23 +417,23 @@ fun HomeScreen(
         // --- 7. MỤC TIẾNG NHẬT (Index 7) ---
         item {
             val levels = listOf(
-                LevelItem("Cấp độ N5", "FREE"),
-                LevelItem("Cấp độ N4", "VIP_JAPANESE"),
-                LevelItem("Cấp độ N3", "VIP_JAPANESE"),
-                LevelItem("Cấp độ N2", "VIP_JAPANESE"),
-                LevelItem("Cấp độ N1", "VIP_JAPANESE")
+                LevelItem(ContextUtils.getString(R.string.ui_text_327), "FREE"),
+                LevelItem(ContextUtils.getString(R.string.ui_text_328), "VIP_JAPANESE"),
+                LevelItem(ContextUtils.getString(R.string.ui_text_329), "VIP_JAPANESE"),
+                LevelItem(ContextUtils.getString(R.string.ui_text_330), "VIP_JAPANESE"),
+                LevelItem(ContextUtils.getString(R.string.ui_text_331), "VIP_JAPANESE")
             )
             LanguageCourseRow(
-                title = "Tiếng Nhật Luyện Thi",
+                title = ContextUtils.getString(R.string.ui_text_332),
                 items = levels,
                 subscribedPackages = subscribedPackages,
                 onItemClick = { item ->
                     val levelId = when (item.name) {
-                        "Cấp độ N5" -> "QUIZ_JA_N5"
-                        "Cấp độ N4" -> "QUIZ_JA_N4"
-                        "Cấp độ N3" -> "QUIZ_JA_N3"
-                        "Cấp độ N2" -> "QUIZ_JA_N2"
-                        "Cấp độ N1" -> "QUIZ_JA_N1"
+                        ContextUtils.getString(R.string.ui_text_327) -> "QUIZ_JA_N5"
+                        ContextUtils.getString(R.string.ui_text_328) -> "QUIZ_JA_N4"
+                        ContextUtils.getString(R.string.ui_text_329) -> "QUIZ_JA_N3"
+                        ContextUtils.getString(R.string.ui_text_330) -> "QUIZ_JA_N2"
+                        ContextUtils.getString(R.string.ui_text_331) -> "QUIZ_JA_N1"
                         else -> item.name
                     }
                     onLevelClick("JAPANESE", levelId)
@@ -444,12 +445,12 @@ fun HomeScreen(
         // --- 8. MỤC TIẾNG ANH TỔNG HỢP (Index 8) ---
         item {
             val englishTopics = listOf(
-                LevelItem("Giao tiếp Cơ bản", "FREE"),
-                LevelItem("Thành ngữ English", "FREE"),
-                LevelItem("Cụm động từ cơ bản", "FREE")
+                LevelItem(ContextUtils.getString(R.string.ui_text_333), "FREE"),
+                LevelItem(ContextUtils.getString(R.string.ui_text_334), "FREE"),
+                LevelItem(ContextUtils.getString(R.string.ui_text_335), "FREE")
             )
             LanguageCourseRow(
-                title = "Tiếng Anh Tổng Hợp",
+                title = ContextUtils.getString(R.string.ui_text_336),
                 items = englishTopics,
                 subscribedPackages = subscribedPackages,
                 onItemClick = { item ->
@@ -467,7 +468,7 @@ fun HomeScreen(
                 LevelItem("TOEIC 800+", "VIP_ENGLISH")
             )
             LanguageCourseRow(
-                title = "Chứng chỉ TOEIC",
+                title = ContextUtils.getString(R.string.ui_text_337),
                 items = toeicLevels,
                 subscribedPackages = subscribedPackages,
                 onItemClick = { item ->
@@ -491,7 +492,7 @@ fun HomeScreen(
                 LevelItem("IELTS Band 7.5+", "VIP_ENGLISH")
             )
             LanguageCourseRow(
-                title = "Chứng chỉ IELTS",
+                title = ContextUtils.getString(R.string.ui_text_338),
                 items = ieltsBands,
                 subscribedPackages = subscribedPackages,
                 onItemClick = { item ->
@@ -510,8 +511,8 @@ fun HomeScreen(
         // --- 11. MỤC TIẾNG TRUNG & TIẾNG PALI (Index 11) ---
         item {
             val otherLangs = listOf(
-                LevelItem("Trung Cơ Bản", "VIP_CHINESE"),
-                LevelItem("Pali Sơ Cấp", "VIP_PALI")
+                LevelItem(ContextUtils.getString(R.string.ui_text_339), "VIP_CHINESE"),
+                LevelItem(ContextUtils.getString(R.string.ui_text_340), "VIP_PALI")
             )
             LanguageCourseRow(
                 title = "Tiếng Trung & Tiếng Pali",
@@ -520,8 +521,8 @@ fun HomeScreen(
                 onItemClick = { item ->
                     val lang = if (item.name.contains("Trung")) "CHINESE" else "PALI"
                     val levelId = when (item.name) {
-                        "Trung Cơ Bản" -> "QUIZ_ZH_BASIC"
-                        "Pali Sơ Cấp" -> "QUIZ_PA_INTRO"
+                        ContextUtils.getString(R.string.ui_text_339) -> "QUIZ_ZH_BASIC"
+                        ContextUtils.getString(R.string.ui_text_340) -> "QUIZ_PA_INTRO"
                         else -> item.name
                     }
                     onLevelClick(lang, levelId)
@@ -719,7 +720,7 @@ fun LanguageCourseRow(
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
-                                text = if (isUnlocked) "Sẵn sàng" else "Khóa VIP",
+                                text = if (isUnlocked) ContextUtils.getString(R.string.ui_text_342) else ContextUtils.getString(R.string.ui_text_343),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = if (isUnlocked) Color(0xFF059669) else Color(0xFFE11D48)
                             )

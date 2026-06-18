@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,14 +40,14 @@ fun AdminManageSystemDecksScreen(navController: NavController) {
     // Danh sách toàn bộ các danh mục từ vựng hệ thống
     val categories = remember {
         listOf(
-            SystemCategoryItem("JA_NEW", "Tiếng Nhật cho người mới bắt đầu", "TIẾNG NHẬT", "Bảng chữ cái Hiragana, Katakana và giao tiếp cơ bản"),
-            SystemCategoryItem("JA_N5", "Từ vựng JLPT N5", "TIẾNG NHẬT", "Cấp độ sơ cấp 1 - Các từ vựng căn bản hàng ngày"),
-            SystemCategoryItem("JA_N4", "Từ vựng JLPT N4", "TIẾNG NHẬT", "Cấp độ sơ cấp 2 - Giao tiếp và ngữ pháp cơ bản"),
-            SystemCategoryItem("JA_N3", "Từ vựng JLPT N3", "TIẾNG NHẬT", "Cấp độ trung cấp - Bắt đầu đọc hiểu đời sống"),
-            SystemCategoryItem("JA_N2", "Từ vựng JLPT N2", "TIẾNG NHẬT", "Cấp độ trung cao - Phục vụ làm việc công sở"),
-            SystemCategoryItem("JA_N1", "Từ vựng JLPT N1", "TIẾNG NHẬT", "Cấp độ cao cấp - Thông thạo như người bản xứ"),
-            SystemCategoryItem("EN_TOEIC", "Từ vựng chuyên mục TOEIC", "TIẾNG ANH", "Từ vựng thương mại, văn phòng phục vụ thi chứng chỉ"),
-            SystemCategoryItem("EN_IELTS", "Từ vựng chuyên mục IELTS", "TIẾNG ANH", "Từ vựng học thuật chuyên sâu 4 kỹ năng")
+            SystemCategoryItem("JA_NEW", ContextUtils.getString(R.string.ui_text_132), ContextUtils.getString(R.string.ui_text_133), ContextUtils.getString(R.string.ui_text_134)),
+            SystemCategoryItem("JA_N5", ContextUtils.getString(R.string.ui_text_135), ContextUtils.getString(R.string.ui_text_133), ContextUtils.getString(R.string.ui_text_136)),
+            SystemCategoryItem("JA_N4", ContextUtils.getString(R.string.ui_text_137), ContextUtils.getString(R.string.ui_text_133), ContextUtils.getString(R.string.ui_text_138)),
+            SystemCategoryItem("JA_N3", ContextUtils.getString(R.string.ui_text_139), ContextUtils.getString(R.string.ui_text_133), ContextUtils.getString(R.string.ui_text_140)),
+            SystemCategoryItem("JA_N2", ContextUtils.getString(R.string.ui_text_141), ContextUtils.getString(R.string.ui_text_133), ContextUtils.getString(R.string.ui_text_142)),
+            SystemCategoryItem("JA_N1", ContextUtils.getString(R.string.ui_text_143), ContextUtils.getString(R.string.ui_text_133), ContextUtils.getString(R.string.ui_text_144)),
+            SystemCategoryItem("EN_TOEIC", ContextUtils.getString(R.string.ui_text_145), ContextUtils.getString(R.string.ui_text_146), ContextUtils.getString(R.string.ui_text_147)),
+            SystemCategoryItem("EN_IELTS", ContextUtils.getString(R.string.ui_text_148), ContextUtils.getString(R.string.ui_text_146), ContextUtils.getString(R.string.ui_text_149))
         )
     }
 
@@ -57,7 +59,7 @@ fun AdminManageSystemDecksScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Kho từ vựng hệ thống", fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_150), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")

@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
@@ -60,7 +62,7 @@ fun UserQuizSelectionScreen(
             .addSnapshotListener { snapshot, error ->
                 isLoadingFirestore = false
                 if (error != null) {
-                    Log.e("UserQuizSelectionScreen", "Lỗi đồng bộ danh mục từ Firestore: ", error)
+                    Log.e("UserQuizSelectionScreen", ContextUtils.getString(R.string.ui_text_457), error)
                     return@addSnapshotListener
                 }
                 if (snapshot != null && !snapshot.isEmpty) {
@@ -70,7 +72,7 @@ fun UserQuizSelectionScreen(
                             val rawName = doc.getString("name") ?: ""
                             val name = CryptoUtils.decrypt(rawName)
                             val rawDesc = doc.getString("description") ?: ""
-                            val description = if (rawDesc.isNotEmpty()) CryptoUtils.decrypt(rawDesc) else "Trắc nghiệm trực tuyến"
+                            val description = if (rawDesc.isNotEmpty()) CryptoUtils.decrypt(rawDesc) else ContextUtils.getString(R.string.ui_text_563)
                             val requiredPackage = doc.getString("requiredPackage") ?: when {
                                 id.contains("N5") || id.contains("450") -> "FREE"
                                 id.contains("JA") -> "VIP_JAPANESE"
@@ -100,7 +102,7 @@ fun UserQuizSelectionScreen(
                                         val rawName = doc.getString("categoryName") ?: doc.getString("name") ?: ""
                                         val name = CryptoUtils.decrypt(rawName)
                                         val rawDesc = doc.getString("description") ?: ""
-                                        val description = if (rawDesc.isNotEmpty()) CryptoUtils.decrypt(rawDesc) else "Trắc nghiệm trực tuyến"
+                                        val description = if (rawDesc.isNotEmpty()) CryptoUtils.decrypt(rawDesc) else ContextUtils.getString(R.string.ui_text_563)
                                         val requiredPackage = doc.getString("requiredPackage") ?: "FREE"
                                         if (id.isNotEmpty() && name.isNotEmpty()) {
                                             QuizCategoryItem(id, name, description, requiredPackage)
@@ -123,28 +125,28 @@ fun UserQuizSelectionScreen(
 
     // Định nghĩa bộ danh mục mặc định (sẽ đồng bộ đè khi có Firestore)
     val defaultJapaneseQuizzes = listOf(
-        QuizCategoryItem("QUIZ_JA_N5", "Trắc nghiệm N5", "Học tiếng Nhật nhập môn N5", "FREE"),
-        QuizCategoryItem("QUIZ_JA_N4", "Trắc nghiệm N4", "Ôn luyện từ vựng ngữ pháp N4", "VIP_JAPANESE"),
-        QuizCategoryItem("QUIZ_JA_N3", "Trắc nghiệm N3", "Cấp độ trung cấp N3 nâng cao", "VIP_JAPANESE"),
-        QuizCategoryItem("QUIZ_JA_N2", "Trắc nghiệm N2", "Đọc hiểu và từ vựng N2", "VIP_JAPANESE"),
-        QuizCategoryItem("QUIZ_JA_N1", "Trắc nghiệm N1", "Chinh phục đỉnh cao N1 thượng đẳng", "VIP_JAPANESE")
+        QuizCategoryItem("QUIZ_JA_N5", ContextUtils.getString(R.string.ui_text_564), ContextUtils.getString(R.string.ui_text_565), "FREE"),
+        QuizCategoryItem("QUIZ_JA_N4", ContextUtils.getString(R.string.ui_text_566), ContextUtils.getString(R.string.ui_text_567), "VIP_JAPANESE"),
+        QuizCategoryItem("QUIZ_JA_N3", ContextUtils.getString(R.string.ui_text_568), ContextUtils.getString(R.string.ui_text_569), "VIP_JAPANESE"),
+        QuizCategoryItem("QUIZ_JA_N2", ContextUtils.getString(R.string.ui_text_570), ContextUtils.getString(R.string.ui_text_571), "VIP_JAPANESE"),
+        QuizCategoryItem("QUIZ_JA_N1", ContextUtils.getString(R.string.ui_text_572), ContextUtils.getString(R.string.ui_text_573), "VIP_JAPANESE")
     )
 
     val defaultToeicQuizzes = listOf(
         QuizCategoryItem("QUIZ_TOEIC_450", "TOEIC 450+", "Từ vựng & ngữ pháp cơ bản", "FREE"),
-        QuizCategoryItem("QUIZ_TOEIC_650", "TOEIC 650+", "Chiến thuật nâng điểm 650+", "VIP_ENGLISH"),
-        QuizCategoryItem("QUIZ_TOEIC_800", "TOEIC 800+", "Chinh phục điểm số cao 800+", "VIP_ENGLISH")
+        QuizCategoryItem("QUIZ_TOEIC_650", "TOEIC 650+", ContextUtils.getString(R.string.ui_text_575), "VIP_ENGLISH"),
+        QuizCategoryItem("QUIZ_TOEIC_800", "TOEIC 800+", ContextUtils.getString(R.string.ui_text_576), "VIP_ENGLISH")
     )
 
     val defaultIeltsQuizzes = listOf(
-        QuizCategoryItem("QUIZ_IELTS_55", "IELTS Band 5.5", "Từ vựng cốt lõi cho mục tiêu 5.5", "VIP_ENGLISH"),
-        QuizCategoryItem("QUIZ_IELTS_65", "IELTS Band 6.5", "Từ vựng học thuật nâng cao 6.5", "VIP_ENGLISH"),
-        QuizCategoryItem("QUIZ_IELTS_75", "IELTS Band 7.5+", "Chinh phục từ vựng đỉnh cao 7.5+", "VIP_ENGLISH")
+        QuizCategoryItem("QUIZ_IELTS_55", "IELTS Band 5.5", ContextUtils.getString(R.string.ui_text_577), "VIP_ENGLISH"),
+        QuizCategoryItem("QUIZ_IELTS_65", "IELTS Band 6.5", ContextUtils.getString(R.string.ui_text_578), "VIP_ENGLISH"),
+        QuizCategoryItem("QUIZ_IELTS_75", "IELTS Band 7.5+", ContextUtils.getString(R.string.ui_text_579), "VIP_ENGLISH")
     )
 
     val defaultOtherQuizzes = listOf(
-        QuizCategoryItem("QUIZ_ZH_BASIC", "Trung Cơ Bản", "Học phát âm và từ vựng HSK 1-2", "VIP_CHINESE"),
-        QuizCategoryItem("QUIZ_PA_INTRO", "Pali Sơ Cấp", "Từ vựng kinh điển Pali sơ cấp", "VIP_PALI")
+        QuizCategoryItem("QUIZ_ZH_BASIC", ContextUtils.getString(R.string.ui_text_339), ContextUtils.getString(R.string.ui_text_580), "VIP_CHINESE"),
+        QuizCategoryItem("QUIZ_PA_INTRO", ContextUtils.getString(R.string.ui_text_340), ContextUtils.getString(R.string.ui_text_581), "VIP_PALI")
     )
 
     // Đồng bộ an toàn và bảo vệ dữ liệu null-safety
@@ -223,10 +225,10 @@ fun UserQuizSelectionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Luyện thi trắc nghiệm", fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_582), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.Default.ArrowBack, contentDescription = ContextUtils.getString(R.string.ui_text_27))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -245,7 +247,7 @@ fun UserQuizSelectionScreen(
             // THANH NGANG 1: TRẮC NGHIỆM TIẾNG NHẬT
             item {
                 QuizGroupRow(
-                    title = "Trắc nghiệm Tiếng Nhật",
+                    title = ContextUtils.getString(R.string.ui_text_583),
                     items = japaneseQuizzes,
                     subscribedPackages = subscribedPackages,
                     onItemClick = { item ->
@@ -258,7 +260,7 @@ fun UserQuizSelectionScreen(
             // THANH NGANG 2: TRẮC NGHIỆM TOEIC
             item {
                 QuizGroupRow(
-                    title = "Trắc nghiệm chứng chỉ TOEIC",
+                    title = ContextUtils.getString(R.string.ui_text_584),
                     items = toeicQuizzes,
                     subscribedPackages = subscribedPackages,
                     onItemClick = { item ->
@@ -271,7 +273,7 @@ fun UserQuizSelectionScreen(
             // THANH NGANG 3: TRẮC NGHIỆM IELTS
             item {
                 QuizGroupRow(
-                    title = "Trắc nghiệm chứng chỉ IELTS",
+                    title = ContextUtils.getString(R.string.ui_text_585),
                     items = ieltsQuizzes,
                     subscribedPackages = subscribedPackages,
                     onItemClick = { item ->
@@ -298,7 +300,7 @@ fun UserQuizSelectionScreen(
             if (unmappedQuizzes.isNotEmpty()) {
                 item {
                     QuizGroupRow(
-                        title = "Bộ trắc nghiệm mở rộng",
+                        title = ContextUtils.getString(R.string.ui_text_587),
                         items = unmappedQuizzes,
                         subscribedPackages = subscribedPackages,
                         onItemClick = { item ->
@@ -390,7 +392,7 @@ fun QuizGroupRow(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = if (isUnlocked) "Sẵn sàng" else "Yêu cầu VIP",
+                                text = if (isUnlocked) ContextUtils.getString(R.string.ui_text_342) else ContextUtils.getString(R.string.ui_text_491),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isUnlocked) Color(0xFF059669) else Color(0xFFE11D48)

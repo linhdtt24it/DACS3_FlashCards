@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -75,7 +77,7 @@ fun AdminJapaneseCardEditorScreen(
                     }) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
-                        Text("Xem danh sách")
+                        Text(ContextUtils.getString(R.string.ui_text_100))
                     }
                     
                     Button(
@@ -85,7 +87,7 @@ fun AdminJapaneseCardEditorScreen(
                                 val result = viewModel.clearCategoryCards(categoryCode)
                                 isProcessing = false
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Đã xóa sạch thẻ trong mục này!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_101), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -95,7 +97,7 @@ fun AdminJapaneseCardEditorScreen(
                     ) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = Color.White)
                         Spacer(Modifier.width(4.dp))
-                        Text("Xóa sạch", color = Color.White)
+                        Text(ContextUtils.getString(R.string.ui_text_102), color = Color.White)
                     }
                 }
             }
@@ -108,10 +110,10 @@ fun AdminJapaneseCardEditorScreen(
         ) {
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                    Text("NHẬP THỦ CÔNG", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
+                    Text(ContextUtils.getString(R.string.ui_text_103), modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
                 }
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                    Text("IMPORT HÀNG LOẠT", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
+                    Text(ContextUtils.getString(R.string.ui_text_104), modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -124,12 +126,12 @@ fun AdminJapaneseCardEditorScreen(
             ) {
                 if (selectedTab == 0) {
                     // Manual Input Section
-                    Text("Thêm thẻ mới vào kho hệ thống", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(ContextUtils.getString(R.string.ui_text_105), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     
                     OutlinedTextField(
                         value = frontText,
                         onValueChange = { frontText = it },
-                        label = { Text("Mặt trước (Từ gốc / Kanji / Chữ cái)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_121)) },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isProcessing
                     )
@@ -137,7 +139,7 @@ fun AdminJapaneseCardEditorScreen(
                     OutlinedTextField(
                         value = backText,
                         onValueChange = { backText = it },
-                        label = { Text("Mặt sau (Ý nghĩa / Cách đọc / Ví dụ)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_122)) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 3,
                         enabled = !isProcessing
@@ -151,7 +153,7 @@ fun AdminJapaneseCardEditorScreen(
                                     val result = viewModel.addManualCard(categoryCode, frontText, backText)
                                     isProcessing = false
                                     if (result.isSuccess) {
-                                        Toast.makeText(context, "Đã thêm thẻ thành công!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, ContextUtils.getString(R.string.ui_text_108), Toast.LENGTH_SHORT).show()
                                         frontText = ""
                                         backText = ""
                                     }
@@ -164,11 +166,11 @@ fun AdminJapaneseCardEditorScreen(
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Thêm vào kho hệ thống")
+                        Text(ContextUtils.getString(R.string.ui_text_109))
                     }
                 } else {
                     // Bulk Import Section
-                    Text("Import từ vựng từ văn bản (Excel/Notion)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(ContextUtils.getString(R.string.ui_text_123), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -185,7 +187,7 @@ fun AdminJapaneseCardEditorScreen(
                     OutlinedTextField(
                         value = bulkText,
                         onValueChange = { bulkText = it },
-                        label = { Text("Dán dữ liệu tại đây...") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_177)) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 10,
                         placeholder = { Text("Ví dụ:\n私 | Tôi (Watashi)\n猫 | Con mèo (Neko)") },

@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -48,7 +50,7 @@ fun CreateDeckScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tạo bộ thẻ tự tạo", fontWeight = FontWeight.Bold, fontSize = 20.sp) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_281), fontWeight = FontWeight.Bold, fontSize = 20.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 },
@@ -90,8 +92,8 @@ fun CreateDeckScreen(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Tên bộ thẻ") },
-                    placeholder = { Text("Nhập tên bộ thẻ...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    label = { Text(ContextUtils.getString(R.string.ui_text_69)) },
+                    placeholder = { Text(ContextUtils.getString(R.string.ui_text_283), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -105,8 +107,8 @@ fun CreateDeckScreen(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Mô tả ngắn") },
-                    placeholder = { Text("Nhập mô tả bộ thẻ...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    label = { Text(ContextUtils.getString(R.string.ui_text_284)) },
+                    placeholder = { Text(ContextUtils.getString(R.string.ui_text_285), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -125,8 +127,8 @@ fun CreateDeckScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("Bộ thẻ công khai", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                        Text("Mọi người đều có thể tìm thấy và học bộ thẻ này", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(ContextUtils.getString(R.string.ui_text_286), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text(ContextUtils.getString(R.string.ui_text_287), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Switch(
                         checked = isPublic,
@@ -157,7 +159,7 @@ fun CreateDeckScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Text("Nhập hàng loạt bằng văn bản 📋", color = FlowPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(ContextUtils.getString(R.string.ui_text_288), color = FlowPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
@@ -201,7 +203,7 @@ fun CreateDeckScreen(
                             onValueChange = { newQ ->
                                 cardsList[index] = cardsList[index].copy(question = newQ)
                             },
-                            label = { Text("Mặt trước (Thuật ngữ)") },
+                            label = { Text(ContextUtils.getString(R.string.ui_text_289)) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -217,7 +219,7 @@ fun CreateDeckScreen(
                             onValueChange = { newA ->
                                 cardsList[index] = cardsList[index].copy(answer = newA)
                             },
-                            label = { Text("Mặt sau (Định nghĩa)") },
+                            label = { Text(ContextUtils.getString(R.string.ui_text_290)) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -253,7 +255,7 @@ fun BulkImportDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Nhập hàng loạt bằng văn bản 📋",
+                text = ContextUtils.getString(R.string.ui_text_288),
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 color = MaterialTheme.colorScheme.onBackground
@@ -311,7 +313,7 @@ fun BulkImportDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Hủy", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(ContextUtils.getString(R.string.ui_text_21), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         shape = RoundedCornerShape(20.dp),

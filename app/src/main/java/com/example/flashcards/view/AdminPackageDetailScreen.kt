@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,8 +45,8 @@ fun AdminPackageDetailScreen(
             TopAppBar(
                 title = { 
                     Column {
-                        Text("Kích hoạt VIP", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text("Phân quyền học viên", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        Text(ContextUtils.getString(R.string.ui_text_161), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text(ContextUtils.getString(R.string.ui_text_162), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                     }
                 },
                 navigationIcon = {
@@ -57,7 +59,7 @@ fun AdminPackageDetailScreen(
     ) { paddingValues ->
         if (filteredUsers.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text("Chưa có tài khoản người dùng nào.", color = Color.Gray)
+                Text(ContextUtils.getString(R.string.ui_text_163), color = Color.Gray)
             }
         } else {
             LazyColumn(
@@ -68,7 +70,7 @@ fun AdminPackageDetailScreen(
                 items(filteredUsers) { userData ->
                     val uid = userData["uid"] as? String ?: ""
                     val email = CryptoUtils.decrypt(userData["email"] as? String) ?: "no-email"
-                    val name = CryptoUtils.decrypt(userData["name"] as? String)?.ifBlank { "Học viên" } ?: "Học viên"
+                    val name = CryptoUtils.decrypt(userData["name"] as? String)?.ifBlank { ContextUtils.getString(R.string.ui_text_164) } ?: ContextUtils.getString(R.string.ui_text_164)
                     val subscribedPackages = userData["subscribedPackages"] as? List<String> ?: listOf("FREE")
 
                     UserMultiPackageCard(
@@ -106,7 +108,7 @@ fun UserMultiPackageCard(
             Text(email, color = Color.Gray, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text("Gói sở hữu:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(ContextUtils.getString(R.string.ui_text_165), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             // SỬA LỖI: Thay FlowRow bằng Row + Scroll để tránh crash NoSuchMethodError
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 4.dp),
@@ -137,7 +139,7 @@ fun UserMultiPackageCard(
                         contentPadding = PaddingValues(horizontal = 8.dp),
                         modifier = Modifier.height(28.dp)
                     ) {
-                        Text(if (isSubscribed) "Gỡ gói" else "Kích hoạt", fontSize = 11.sp)
+                        Text(if (isSubscribed) ContextUtils.getString(R.string.ui_text_166) else ContextUtils.getString(R.string.ui_text_167), fontSize = 11.sp)
                     }
                 }
             }

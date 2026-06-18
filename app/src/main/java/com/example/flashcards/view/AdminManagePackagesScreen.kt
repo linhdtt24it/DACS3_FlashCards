@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,7 +38,7 @@ fun AdminManagePackagesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý gói học", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_94), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -59,7 +61,7 @@ fun AdminManagePackagesScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm gói")
+                        Text(ContextUtils.getString(R.string.ui_text_128))
                     }
 
                     Button(
@@ -74,7 +76,7 @@ fun AdminManagePackagesScreen(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Xóa", color = Color.White)
+                        Text(ContextUtils.getString(R.string.ui_text_20), color = Color.White)
                     }
                 }
             }
@@ -123,7 +125,7 @@ fun AdminManagePackagesScreen(
                             modifier = Modifier.weight(1f)
                         )
                         if (isSelected) {
-                            Text("Nhấn lần nữa để mở", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                            Text(ContextUtils.getString(R.string.ui_text_129), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -135,12 +137,12 @@ fun AdminManagePackagesScreen(
         var newPackageName by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Thêm gói học mới", fontWeight = FontWeight.Bold) },
+            title = { Text(ContextUtils.getString(R.string.ui_text_130), fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
                     value = newPackageName,
                     onValueChange = { newPackageName = it },
-                    label = { Text("Tên gói học") },
+                    label = { Text(ContextUtils.getString(R.string.ui_text_131)) },
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -150,10 +152,10 @@ fun AdminManagePackagesScreen(
                         viewModel.addPackage(newPackageName)
                         showAddDialog = false
                     }
-                }) { Text("Thêm") }
+                }) { Text(ContextUtils.getString(R.string.ui_text_112)) }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) { Text("Hủy") }
+                TextButton(onClick = { showAddDialog = false }) { Text(ContextUtils.getString(R.string.ui_text_21)) }
             }
         )
     }

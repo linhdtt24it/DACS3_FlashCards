@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -16,7 +18,6 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
-import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -377,9 +378,9 @@ fun LearningPreferencesScreen(onBack: () -> Unit) {
             )
             
             // Language Setting
-            Text("App Language / Ngôn ngữ", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+            Text(ContextUtils.getString(R.string.ui_text_399), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            val langOptions = listOf("en" to "English", "vi" to "Tiếng Việt")
+            val langOptions = listOf("en" to "English", "vi" to ContextUtils.getString(R.string.ui_text_400))
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),

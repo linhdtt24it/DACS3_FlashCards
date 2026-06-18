@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -17,7 +19,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
-import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -246,13 +247,13 @@ fun StudySessionScreen(
                 title = { Text("Thẻ ghi nhớ: ${studySet.title}", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.Close, contentDescription = "Đóng", tint = MaterialTheme.colorScheme.onBackground)
+                        Icon(Icons.Default.Close, contentDescription = ContextUtils.getString(R.string.ui_text_80), tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 actions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = if (isStudyMode) "Học" else "Duyệt",
+                            text = if (isStudyMode) ContextUtils.getString(R.string.ui_text_450) else ContextUtils.getString(R.string.ui_text_451),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = if (isStudyMode) FlowPrimary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -271,7 +272,7 @@ fun StudySessionScreen(
                             isFlipped = false
                             shuffleTrigger++
                         }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Học lại", tint = MaterialTheme.colorScheme.onBackground)
+                            Icon(Icons.Default.Refresh, contentDescription = ContextUtils.getString(R.string.ui_text_452), tint = MaterialTheme.colorScheme.onBackground)
                         }
                     }
                 },
@@ -433,7 +434,7 @@ fun StudySessionScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text(if (currentIndex == sessionCards.size - 1) "Hoàn thành" else "Tiếp theo", fontWeight = FontWeight.Bold)
+                                Text(if (currentIndex == sessionCards.size - 1) ContextUtils.getString(R.string.ui_text_453) else ContextUtils.getString(R.string.ui_text_454), fontWeight = FontWeight.Bold)
                             }
                         }
                     }

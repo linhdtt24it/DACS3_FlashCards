@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -16,7 +18,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
-import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -234,7 +235,7 @@ fun ProfileScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.LocalFireDepartment,
-                            contentDescription = "Chuỗi ngày học liên tục",
+                            contentDescription = ContextUtils.getString(R.string.ui_text_395),
                             tint = Color(0xFFFF5722),
                             modifier = Modifier.size(28.dp)
                         )
@@ -351,7 +352,7 @@ fun ProfileScreen(
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Icon(
                                         imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Hoàn thành mục tiêu",
+                                        contentDescription = ContextUtils.getString(R.string.ui_text_396),
                                         tint = Color(0xFF4CAF50),
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -364,7 +365,7 @@ fun ProfileScreen(
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text(
-                                        text = if (isGoalCompleted) "HOÀN THÀNH" else "ĐANG HỌC",
+                                        text = if (isGoalCompleted) ContextUtils.getString(R.string.ui_text_397) else ContextUtils.getString(R.string.ui_text_398),
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         color = if (isGoalCompleted) Color(0xFF2E7D32) else FlowPrimary,
                                         fontWeight = FontWeight.Bold,

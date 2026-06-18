@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -44,7 +46,7 @@ fun AdminDashboardScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "HỆ THỐNG QUẢN TRỊ ADMIN",
+                        text = ContextUtils.getString(R.string.ui_text_92),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -68,37 +70,37 @@ fun AdminDashboardScreen(
 
             AdminMenuItem(
                 icon = Icons.Default.People,
-                label = "Quản lý tài khoản",
+                label = ContextUtils.getString(R.string.ui_text_93),
                 onClick = { navigateSafe(navController, "manage_users") }
             )
 
             AdminMenuItem(
                 icon = Icons.Default.CardMembership,
-                label = "Quản lý gói học",
+                label = ContextUtils.getString(R.string.ui_text_94),
                 onClick = { navigateSafe(navController, "manage_packages") }
             )
 
             AdminMenuItem(
                 icon = Icons.Default.Translate,
-                label = "Từ vựng Tiếng Nhật",
+                label = ContextUtils.getString(R.string.ui_text_95),
                 onClick = { navigateSafe(navController, "vocab_japanese") }
             )
 
             AdminMenuItem(
                 icon = Icons.Default.Language,
-                label = "Từ vựng Tiếng Anh",
+                label = ContextUtils.getString(R.string.ui_text_96),
                 onClick = { navigateSafe(navController, "vocab_english") }
             )
 
             AdminMenuItem(
                 icon = Icons.Default.Quiz,
-                label = "Quản lý Câu hỏi",
+                label = ContextUtils.getString(R.string.ui_text_97),
                 onClick = { navigateSafe(navController, "admin_quiz_menu") }
             )
 
             AdminMenuItem(
                 icon = Icons.Default.Campaign,
-                label = "Quản lý Lời chúc",
+                label = ContextUtils.getString(R.string.ui_text_98),
                 onClick = { navigateSafe(navController, "admin_wishes") }
             )
 
@@ -113,7 +115,7 @@ fun AdminDashboardScreen(
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
-                Text("ĐĂNG XUẤT", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(ContextUtils.getString(R.string.ui_text_99), color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
     }

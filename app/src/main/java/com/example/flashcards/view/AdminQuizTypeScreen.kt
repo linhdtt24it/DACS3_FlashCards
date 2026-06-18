@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -47,19 +49,19 @@ fun AdminQuizTypeScreen(
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Thêm loại câu hỏi mới", fontWeight = FontWeight.Bold) },
+            title = { Text(ContextUtils.getString(R.string.ui_text_237), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = typeIdInput,
                         onValueChange = { typeIdInput = it },
-                        label = { Text("Mã Loại (e.g. multiple_choice)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_238)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = typeNameInput,
                         onValueChange = { typeNameInput = it },
-                        label = { Text("Tên Loại (e.g. Trắc nghiệm)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_239)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -71,7 +73,7 @@ fun AdminQuizTypeScreen(
                             scope.launch {
                                 val result = viewModel.addQuizType(typeIdInput.trim(), typeNameInput.trim())
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Đã thêm loại câu hỏi!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_240), Toast.LENGTH_SHORT).show()
                                     showAddDialog = false
                                     typeIdInput = ""
                                     typeNameInput = ""
@@ -80,16 +82,16 @@ fun AdminQuizTypeScreen(
                                 }
                             }
                         } else {
-                            Toast.makeText(context, "Vui lòng nhập đầy đủ!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_241), Toast.LENGTH_SHORT).show()
                         }
                     }
                 ) {
-                    Text("Thêm")
+                    Text(ContextUtils.getString(R.string.ui_text_112))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddDialog = false }) {
-                    Text("Hủy")
+                    Text(ContextUtils.getString(R.string.ui_text_21))
                 }
             }
         )
@@ -99,12 +101,12 @@ fun AdminQuizTypeScreen(
         var expanded by remember { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Xóa loại câu hỏi", fontWeight = FontWeight.Bold) },
+            title = { Text(ContextUtils.getString(R.string.ui_text_242), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Chọn loại câu hỏi muốn xóa:")
+                    Text(ContextUtils.getString(R.string.ui_text_243))
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        val currentSelectionName = quizTypes.find { it.id == selectedTypeToDelete }?.name ?: "Chọn loại câu hỏi"
+                        val currentSelectionName = quizTypes.find { it.id == selectedTypeToDelete }?.name ?: ContextUtils.getString(R.string.ui_text_244)
                         Button(
                             onClick = { expanded = true },
                             modifier = Modifier.fillMaxWidth()
@@ -136,7 +138,7 @@ fun AdminQuizTypeScreen(
                             scope.launch {
                                 val result = viewModel.deleteQuizType(selectedTypeToDelete)
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Đã xóa loại câu hỏi!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_245), Toast.LENGTH_SHORT).show()
                                     showDeleteDialog = false
                                     selectedTypeToDelete = ""
                                 } else {
@@ -144,17 +146,17 @@ fun AdminQuizTypeScreen(
                                 }
                             }
                         } else {
-                            Toast.makeText(context, "Vui lòng chọn loại để xóa!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_246), Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Xóa")
+                    Text(ContextUtils.getString(R.string.ui_text_20))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Hủy")
+                    Text(ContextUtils.getString(R.string.ui_text_21))
                 }
             }
         )
@@ -163,7 +165,7 @@ fun AdminQuizTypeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Câu hỏi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_97), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -172,9 +174,9 @@ fun AdminQuizTypeScreen(
                 actions = {
                     IconButton(onClick = {
                         viewModel.initializeDefaultQuizSystem()
-                        Toast.makeText(context, "Đang khởi tạo dữ liệu mẫu toàn hệ thống...", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, ContextUtils.getString(R.string.ui_text_247), Toast.LENGTH_SHORT).show()
                     }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Khởi tạo hệ thống")
+                        Icon(Icons.Default.Refresh, contentDescription = ContextUtils.getString(R.string.ui_text_248))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -196,7 +198,7 @@ fun AdminQuizTypeScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm loại")
+                        Text(ContextUtils.getString(R.string.ui_text_249))
                     }
                     Button(
                         onClick = { showDeleteDialog = true },
@@ -206,7 +208,7 @@ fun AdminQuizTypeScreen(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Xóa loại")
+                        Text(ContextUtils.getString(R.string.ui_text_250))
                     }
                 }
             }
@@ -278,12 +280,12 @@ fun AdminQuizTypeScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Chưa có danh mục loại câu hỏi.", color = Color.Gray)
+                                    Text(ContextUtils.getString(R.string.ui_text_251), color = Color.Gray)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Button(onClick = { viewModel.initializeDefaultQuizSystem() }) {
                                         Icon(Icons.Default.Refresh, contentDescription = null)
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Khởi tạo hệ thống tự động")
+                                        Text(ContextUtils.getString(R.string.ui_text_252))
                                     }
                                 }
                             }

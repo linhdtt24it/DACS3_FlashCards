@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -112,7 +114,7 @@ fun AssessmentButton(label: String, color: Color, modifier: Modifier, onClick: (
 }
 
 @Composable
-fun LoadingStateView(message: String = "Đang tải dữ liệu...") {
+fun LoadingStateView(message: String = ContextUtils.getString(R.string.ui_text_280)) {
     Box(
         modifier = Modifier
             .fillMaxSize()

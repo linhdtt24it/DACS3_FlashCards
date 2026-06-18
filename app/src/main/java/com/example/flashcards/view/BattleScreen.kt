@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -44,10 +46,10 @@ fun BattleScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator()
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Đang tải phòng đấu...")
+                Text(ContextUtils.getString(R.string.ui_text_258))
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = onBack) {
-                    Text("Quay lại")
+                    Text(ContextUtils.getString(R.string.ui_text_27))
                 }
             }
         }
@@ -90,13 +92,13 @@ fun BattleScreen(
                 title = { Text("Battle 1vs1", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { handleBackPressed() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.Default.ArrowBack, contentDescription = ContextUtils.getString(R.string.ui_text_27))
                     }
                 },
                 actions = {
                     if (battleRoom.status == "WAITING") {
                         IconButton(onClick = { showExitDialog = true }) {
-                            Icon(Icons.Default.Logout, contentDescription = "Rời phòng")
+                            Icon(Icons.Default.Logout, contentDescription = ContextUtils.getString(R.string.ui_text_260))
                         }
                     }
                 },
@@ -133,7 +135,7 @@ fun BattleScreen(
                             onAnswerSelected = onAnswerSelected
                         )
                     } else {
-                        Text("Không tìm thấy thông tin người chơi")
+                        Text(ContextUtils.getString(R.string.ui_text_261))
                     }
                 }
                 "FINISHED" -> BattleResults(
@@ -154,12 +156,12 @@ fun BattleScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFF9800))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Rời phòng?")
+                    Text(ContextUtils.getString(R.string.ui_text_262))
                 }
             },
             text = {
                 Text(
-                    "Nếu bạn rời khỏi phòng này, phòng sẽ bị xóa ngay lập tức.",
+                    ContextUtils.getString(R.string.ui_text_263),
                     color = Color.Gray
                 )
             },
@@ -171,12 +173,12 @@ fun BattleScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
                 ) {
-                    Text("Rời phòng")
+                    Text(ContextUtils.getString(R.string.ui_text_260))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showExitDialog = false }) {
-                    Text("Ở lại")
+                    Text(ContextUtils.getString(R.string.ui_text_264))
                 }
             },
             shape = RoundedCornerShape(16.dp),
@@ -194,7 +196,7 @@ fun WaitingLobby(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Default.Group, null, modifier = Modifier.size(80.dp), tint = FlowPrimary.copy(alpha = 0.5f))
-        Text("Sảnh chờ đấu 1vs1", style = MaterialTheme.typography.titleMedium)
+        Text(ContextUtils.getString(R.string.ui_text_265), style = MaterialTheme.typography.titleMedium)
 
         Surface(
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -202,7 +204,7 @@ fun WaitingLobby(
             modifier = Modifier.padding(16.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("MÃ PIN PHÒNG", style = MaterialTheme.typography.labelSmall)
+                Text(ContextUtils.getString(R.string.ui_text_266), style = MaterialTheme.typography.labelSmall)
                 Text(
                     battleRoom.id.takeLast(6).uppercase(),
                     fontSize = 32.sp,
@@ -212,7 +214,7 @@ fun WaitingLobby(
             }
         }
 
-        Text("Gửi mã này cho đối thủ để tham gia", style = MaterialTheme.typography.bodySmall)
+        Text(ContextUtils.getString(R.string.ui_text_267), style = MaterialTheme.typography.bodySmall)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -223,10 +225,10 @@ fun WaitingLobby(
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("BẮT ĐẦU TRẬN ĐẤU")
+                Text(ContextUtils.getString(R.string.ui_text_268))
             }
         } else {
-            Text("Đang chờ chủ phòng bắt đầu...", color = Color.Gray)
+            Text(ContextUtils.getString(R.string.ui_text_269), color = Color.Gray)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -239,7 +241,7 @@ fun WaitingLobby(
         ) {
             Icon(Icons.Default.ExitToApp, null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Rời phòng")
+            Text(ContextUtils.getString(R.string.ui_text_260))
         }
     }
 }
@@ -255,7 +257,7 @@ fun BattleQuiz(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator()
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Đã xong! Chờ đối thủ...", fontWeight = FontWeight.Bold)
+            Text(ContextUtils.getString(R.string.ui_text_270), fontWeight = FontWeight.Bold)
         }
         return
     }
@@ -306,9 +308,9 @@ fun BattleResults(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             when {
-                isWin -> "CHIẾN THẮNG! 🎉"
-                isDraw -> "HÒA! 🤝"
-                else -> "CỐ GẮNG LẦN SAU! ✌️"
+                isWin -> ContextUtils.getString(R.string.ui_text_271)
+                isDraw -> ContextUtils.getString(R.string.ui_text_272)
+                else -> ContextUtils.getString(R.string.ui_text_273)
             },
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Black,
@@ -321,8 +323,8 @@ fun BattleResults(
         Spacer(modifier = Modifier.height(32.dp))
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ResultItem("Bạn", me?.score ?: 0)
-            ResultItem("Đối thủ", opponent?.score ?: 0)
+            ResultItem(ContextUtils.getString(R.string.ui_text_274), me?.score ?: 0)
+            ResultItem(ContextUtils.getString(R.string.ui_text_275), opponent?.score ?: 0)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -338,7 +340,7 @@ fun BattleResults(
             ) {
                 Icon(Icons.Default.Refresh, null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("THI LẠI")
+                Text(ContextUtils.getString(R.string.ui_text_276))
             }
 
             Button(
@@ -349,7 +351,7 @@ fun BattleResults(
             ) {
                 Icon(Icons.Default.ExitToApp, null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("THOÁT")
+                Text(ContextUtils.getString(R.string.ui_text_277))
             }
         }
     }
@@ -389,7 +391,7 @@ fun PlayerInfo(player: BattlePlayer?, isMe: Boolean) {
         ) {
             Text(player?.name?.take(1)?.uppercase() ?: "?", color = Color.White, fontWeight = FontWeight.Bold)
         }
-        Text(if (isMe) "Bạn" else player?.name ?: "Đang chờ...", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Text(if (isMe) ContextUtils.getString(R.string.ui_text_274) else player?.name ?: ContextUtils.getString(R.string.ui_text_278), fontWeight = FontWeight.Bold, fontSize = 14.sp)
         Text("Điểm: ${player?.score ?: 0}", color = FlowPrimary, fontWeight = FontWeight.Medium)
     }
 }
@@ -399,6 +401,6 @@ fun ResultItem(label: String, score: Int) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelLarge)
         Text(score.toString(), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
-        Text("điểm")
+        Text(ContextUtils.getString(R.string.ui_text_279))
     }
 }

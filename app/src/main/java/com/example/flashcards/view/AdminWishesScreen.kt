@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
@@ -70,7 +72,7 @@ fun AdminWishesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Lời chúc", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_98), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -95,7 +97,7 @@ fun AdminWishesScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm")
+                        Text(ContextUtils.getString(R.string.ui_text_112))
                     }
                     Button(
                         onClick = {
@@ -104,11 +106,11 @@ fun AdminWishesScreen(
                                     .document(id)
                                     .delete()
                                     .addOnSuccessListener {
-                                        Toast.makeText(context, "Xóa lời chúc thành công!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, ContextUtils.getString(R.string.ui_text_253), Toast.LENGTH_SHORT).show()
                                         selectedWishId = null
                                     }
                                     .addOnFailureListener {
-                                        Toast.makeText(context, "Lỗi khi xóa lời chúc!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, ContextUtils.getString(R.string.ui_text_254), Toast.LENGTH_SHORT).show()
                                     }
                             }
                         },
@@ -119,7 +121,7 @@ fun AdminWishesScreen(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Xóa", color = Color.White)
+                        Text(ContextUtils.getString(R.string.ui_text_20), color = Color.White)
                     }
                 }
             }
@@ -135,7 +137,7 @@ fun AdminWishesScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (wishesList.isEmpty()) {
                 Text(
-                    text = "Chưa có lời chúc nào. Hãy bấm Thêm để nhập!",
+                    text = ContextUtils.getString(R.string.ui_text_255),
                     color = Color.Gray,
                     modifier = Modifier.align(Alignment.Center)
                 )
@@ -188,11 +190,11 @@ fun AdminWishesScreen(
 
         AlertDialog(
             onDismissRequest = { if (!isSaving) showAddDialog = false },
-            title = { Text("Thêm lời chúc mới", fontWeight = FontWeight.Bold) },
+            title = { Text(ContextUtils.getString(R.string.ui_text_256), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Nhập mỗi lời chúc trên một dòng khác nhau để Import hàng loạt cùng lúc.",
+                        text = ContextUtils.getString(R.string.ui_text_257),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
@@ -253,7 +255,7 @@ fun AdminWishesScreen(
                     onClick = { showAddDialog = false },
                     enabled = !isSaving
                 ) {
-                    Text("Hủy")
+                    Text(ContextUtils.getString(R.string.ui_text_21))
                 }
             }
         )

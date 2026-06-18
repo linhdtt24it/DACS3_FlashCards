@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -56,8 +58,8 @@ fun AdminQuizFinalEditorScreen(
     var textBulkText by remember { mutableStateOf("") }
 
     val displayQuizTypeName = when(quizType) {
-        "multiple_choice" -> "Trắc nghiệm"
-        "text_input" -> "Tự luận"
+        "multiple_choice" -> ContextUtils.getString(R.string.ui_text_186)
+        "text_input" -> ContextUtils.getString(R.string.ui_text_187)
         else -> quizType
     }
 
@@ -94,7 +96,7 @@ fun AdminQuizFinalEditorScreen(
                     ) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
-                        Text("Xem danh sách")
+                        Text(ContextUtils.getString(R.string.ui_text_100))
                     }
                     
                     Button(
@@ -104,9 +106,9 @@ fun AdminQuizFinalEditorScreen(
                                 val result = viewModel.clearLevelQuizzes(levelCode)
                                 isProcessing = false
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Đã xóa sạch câu hỏi trong mục này!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_168), Toast.LENGTH_SHORT).show()
                                 } else {
-                                    Toast.makeText(context, "Lỗi khi xóa câu hỏi!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_188), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -117,7 +119,7 @@ fun AdminQuizFinalEditorScreen(
                     ) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = Color.White)
                         Spacer(Modifier.width(4.dp))
-                        Text("Xóa sạch", color = Color.White)
+                        Text(ContextUtils.getString(R.string.ui_text_102), color = Color.White)
                     }
                 }
             }
@@ -139,12 +141,12 @@ fun AdminQuizFinalEditorScreen(
                 Spacer(modifier = Modifier.height(4.dp))
                 if (quizType == "multiple_choice") {
                     // --- GIAO DIỆN TRẮC NGHIỆM ---
-                    Text("Thêm câu hỏi trắc nghiệm mới", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(ContextUtils.getString(R.string.ui_text_171), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     
                     OutlinedTextField(
                         value = mcQuestion,
                         onValueChange = { mcQuestion = it },
-                        label = { Text("Nội dung câu hỏi (Dùng ___ cho chỗ trống)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_172)) },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isProcessing,
                         shape = RoundedCornerShape(16.dp)
@@ -190,14 +192,14 @@ fun AdminQuizFinalEditorScreen(
                                     val result = viewModel.addMultipleChoiceQuiz(levelCode, mcQuestion, ansA, ansB, ansC, ansD, correctAnswer)
                                     isProcessing = false
                                     if (result.isSuccess) {
-                                        Toast.makeText(context, "Đã lưu câu hỏi trắc nghiệm!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, ContextUtils.getString(R.string.ui_text_189), Toast.LENGTH_SHORT).show()
                                         mcQuestion = ""; ansA = ""; ansB = ""; ansC = ""; ansD = ""
                                     } else {
                                         Toast.makeText(context, "Thất bại: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             } else {
-                                Toast.makeText(context, "Vui lòng nhập câu hỏi và ít nhất 2 đáp án!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, ContextUtils.getString(R.string.ui_text_190), Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -206,18 +208,18 @@ fun AdminQuizFinalEditorScreen(
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Lưu câu hỏi trắc nghiệm")
+                        Text(ContextUtils.getString(R.string.ui_text_174))
                     }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     
-                    Text("Import hàng loạt (Trắc nghiệm)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text("Định dạng: Câu hỏi | A | B | C | D | Đáp án đúng (A/B/C/D)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(ContextUtils.getString(R.string.ui_text_175), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(ContextUtils.getString(R.string.ui_text_176), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
                     OutlinedTextField(
                         value = mcBulkText,
                         onValueChange = { mcBulkText = it },
-                        label = { Text("Dán dữ liệu phân tách dấu '|' tại đây...") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_191)) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 4,
                         enabled = !isProcessing,
@@ -247,17 +249,17 @@ fun AdminQuizFinalEditorScreen(
                     ) {
                         Icon(Icons.Default.CloudUpload, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Xử lý Import Trắc nghiệm")
+                        Text(ContextUtils.getString(R.string.ui_text_178))
                     }
 
                 } else {
                     // --- GIAO DIỆN TỰ LUẬN ---
-                    Text("Thêm câu hỏi tự luận mới", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(ContextUtils.getString(R.string.ui_text_179), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     
                     OutlinedTextField(
                         value = textQuestion,
                         onValueChange = { textQuestion = it },
-                        label = { Text("Nội dung/Từ vựng gợi ý hiển thị") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_180)) },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isProcessing,
                         shape = RoundedCornerShape(16.dp)
@@ -266,7 +268,7 @@ fun AdminQuizFinalEditorScreen(
                     OutlinedTextField(
                         value = textCorrectAnswer,
                         onValueChange = { textCorrectAnswer = it },
-                        label = { Text("Đáp án chữ bắt buộc nhập đúng") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_181)) },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isProcessing,
                         shape = RoundedCornerShape(16.dp)
@@ -280,14 +282,14 @@ fun AdminQuizFinalEditorScreen(
                                     val result = viewModel.addTextInputQuiz(levelCode, textQuestion, textCorrectAnswer)
                                     isProcessing = false
                                     if (result.isSuccess) {
-                                        Toast.makeText(context, "Đã lưu câu hỏi tự luận!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, ContextUtils.getString(R.string.ui_text_192), Toast.LENGTH_SHORT).show()
                                         textQuestion = ""; textCorrectAnswer = ""
                                     } else {
                                         Toast.makeText(context, "Thất bại: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             } else {
-                                Toast.makeText(context, "Vui lòng điền đầy đủ câu hỏi và đáp án!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, ContextUtils.getString(R.string.ui_text_193), Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -296,18 +298,18 @@ fun AdminQuizFinalEditorScreen(
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Lưu câu hỏi tự luận")
+                        Text(ContextUtils.getString(R.string.ui_text_182))
                     }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     
-                    Text("Import hàng loạt (Tự luận)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text("Định dạng: Câu hỏi/Từ vựng | Đáp án đúng", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(ContextUtils.getString(R.string.ui_text_183), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(ContextUtils.getString(R.string.ui_text_194), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
                     OutlinedTextField(
                         value = textBulkText,
                         onValueChange = { textBulkText = it },
-                        label = { Text("Dán dữ liệu phân tách dấu '|' tại đây...") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_191)) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 4,
                         enabled = !isProcessing,
@@ -337,7 +339,7 @@ fun AdminQuizFinalEditorScreen(
                     ) {
                         Icon(Icons.Default.CloudUpload, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Xử lý Import Tự luận")
+                        Text(ContextUtils.getString(R.string.ui_text_185))
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))

@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -67,7 +69,7 @@ fun AdminQuizEditorScreen(
                     }) {
                         Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
-                        Text("Xem danh sách")
+                        Text(ContextUtils.getString(R.string.ui_text_100))
                     }
                     
                     Button(
@@ -77,7 +79,7 @@ fun AdminQuizEditorScreen(
                                 val result = viewModel.clearLevelQuizzes(levelCode)
                                 isProcessing = false
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Đã xóa sạch câu hỏi trong mục này!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_168), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -87,7 +89,7 @@ fun AdminQuizEditorScreen(
                     ) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = Color.White)
                         Spacer(Modifier.width(4.dp))
-                        Text("Xóa sạch", color = Color.White)
+                        Text(ContextUtils.getString(R.string.ui_text_102), color = Color.White)
                     }
                 }
             }
@@ -100,10 +102,10 @@ fun AdminQuizEditorScreen(
         ) {
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                    Text("TRẮC NGHIỆM", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
+                    Text(ContextUtils.getString(R.string.ui_text_169), modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
                 }
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                    Text("TỰ LUẬN", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
+                    Text(ContextUtils.getString(R.string.ui_text_170), modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -148,12 +150,12 @@ fun MultipleChoiceTab(
     var correctAnswer by remember { mutableStateOf("A") }
     var bulkText by remember { mutableStateOf("") }
 
-    Text("Thêm câu hỏi trắc nghiệm mới", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    Text(ContextUtils.getString(R.string.ui_text_171), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
     
     OutlinedTextField(
         value = question,
         onValueChange = { question = it },
-        label = { Text("Nội dung câu hỏi (Dùng ___ cho chỗ trống)") },
+        label = { Text(ContextUtils.getString(R.string.ui_text_172)) },
         modifier = Modifier.fillMaxWidth(),
         enabled = !isProcessing
     )
@@ -197,7 +199,7 @@ fun MultipleChoiceTab(
                     val result = viewModel.addMultipleChoiceQuiz(levelCode, question, ansA, ansB, ansC, ansD, correctAnswer)
                     onProcessingChange(false)
                     if (result.isSuccess) {
-                        Toast.makeText(context, "Đã lưu câu hỏi!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, ContextUtils.getString(R.string.ui_text_173), Toast.LENGTH_SHORT).show()
                         question = ""; ansA = ""; ansB = ""; ansC = ""; ansD = ""
                     }
                 }
@@ -209,18 +211,18 @@ fun MultipleChoiceTab(
     ) {
         Icon(Icons.Default.Save, contentDescription = null)
         Spacer(Modifier.width(8.dp))
-        Text("Lưu câu hỏi trắc nghiệm")
+        Text(ContextUtils.getString(R.string.ui_text_174))
     }
 
     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
     
-    Text("Import hàng loạt (Trắc nghiệm)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-    Text("Định dạng: Câu hỏi | A | B | C | D | Đáp án đúng (A/B/C/D)", fontSize = 12.sp)
+    Text(ContextUtils.getString(R.string.ui_text_175), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    Text(ContextUtils.getString(R.string.ui_text_176), fontSize = 12.sp)
     
     OutlinedTextField(
         value = bulkText,
         onValueChange = { bulkText = it },
-        label = { Text("Dán dữ liệu tại đây...") },
+        label = { Text(ContextUtils.getString(R.string.ui_text_177)) },
         modifier = Modifier.fillMaxWidth(),
         minLines = 5,
         enabled = !isProcessing
@@ -247,7 +249,7 @@ fun MultipleChoiceTab(
     ) {
         Icon(Icons.Default.CloudUpload, contentDescription = null)
         Spacer(Modifier.width(8.dp))
-        Text("Xử lý Import Trắc nghiệm")
+        Text(ContextUtils.getString(R.string.ui_text_178))
     }
 }
 
@@ -265,12 +267,12 @@ fun TextInputTab(
     var correct by remember { mutableStateOf("") }
     var bulkText by remember { mutableStateOf("") }
 
-    Text("Thêm câu hỏi tự luận mới", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    Text(ContextUtils.getString(R.string.ui_text_179), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
     
     OutlinedTextField(
         value = question,
         onValueChange = { question = it },
-        label = { Text("Nội dung/Từ vựng gợi ý hiển thị") },
+        label = { Text(ContextUtils.getString(R.string.ui_text_180)) },
         modifier = Modifier.fillMaxWidth(),
         enabled = !isProcessing
     )
@@ -278,7 +280,7 @@ fun TextInputTab(
     OutlinedTextField(
         value = correct,
         onValueChange = { correct = it },
-        label = { Text("Đáp án chữ bắt buộc nhập đúng") },
+        label = { Text(ContextUtils.getString(R.string.ui_text_181)) },
         modifier = Modifier.fillMaxWidth(),
         enabled = !isProcessing
     )
@@ -291,7 +293,7 @@ fun TextInputTab(
                     val result = viewModel.addTextInputQuiz(levelCode, question, correct)
                     onProcessingChange(false)
                     if (result.isSuccess) {
-                        Toast.makeText(context, "Đã lưu câu hỏi!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, ContextUtils.getString(R.string.ui_text_173), Toast.LENGTH_SHORT).show()
                         question = ""; correct = ""
                     }
                 }
@@ -303,18 +305,18 @@ fun TextInputTab(
     ) {
         Icon(Icons.Default.Save, contentDescription = null)
         Spacer(Modifier.width(8.dp))
-        Text("Lưu câu hỏi tự luận")
+        Text(ContextUtils.getString(R.string.ui_text_182))
     }
 
     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
     
-    Text("Import hàng loạt (Tự luận)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-    Text("Định dạng: Câu hỏi | Đáp án đúng", fontSize = 12.sp)
+    Text(ContextUtils.getString(R.string.ui_text_183), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    Text(ContextUtils.getString(R.string.ui_text_184), fontSize = 12.sp)
     
     OutlinedTextField(
         value = bulkText,
         onValueChange = { bulkText = it },
-        label = { Text("Dán dữ liệu tại đây...") },
+        label = { Text(ContextUtils.getString(R.string.ui_text_177)) },
         modifier = Modifier.fillMaxWidth(),
         minLines = 5,
         enabled = !isProcessing
@@ -341,6 +343,6 @@ fun TextInputTab(
     ) {
         Icon(Icons.Default.CloudUpload, contentDescription = null)
         Spacer(Modifier.width(8.dp))
-        Text("Xử lý Import Tự luận")
+        Text(ContextUtils.getString(R.string.ui_text_185))
     }
 }

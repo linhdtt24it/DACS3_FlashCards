@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -62,7 +64,7 @@ fun DeckDetailScreen(
         onStudyFlashcards = onStudyFlashcards,
         onQuiz = onQuiz,
         onEssay = {
-            Toast.makeText(context, "Tính năng Tự luận cho bộ thẻ cá nhân đã đồng bộ!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_291), Toast.LENGTH_SHORT).show()
             onStudyFlashcards() // Tự luận dùng chung flashcard học
         },
         onPlayMatchGame = onPlayMatchGame,
@@ -216,12 +218,12 @@ fun UserSetDashboardScreen(
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Sửa bộ thẻ") },
+                                    text = { Text(ContextUtils.getString(R.string.ui_text_292)) },
                                     onClick = { showMenu = false; onEditDeck() },
                                     leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Xóa bộ thẻ", color = FlowWarning) },
+                                    text = { Text(ContextUtils.getString(R.string.ui_text_293), color = FlowWarning) },
                                     onClick = { showMenu = false; onDeleteDeck() },
                                     leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = FlowWarning) }
                                 )
@@ -364,15 +366,15 @@ fun UserSetDashboardScreen(
                     ) {
                         FeatureGridCard(
                             title = "Flashcard",
-                            description = "Học thẻ ghi nhớ",
+                            description = ContextUtils.getString(R.string.ui_text_294),
                             icon = Icons.Default.Style,
                             tintColor = Color(0xFF2563EB),
                             modifier = Modifier.weight(1f),
                             onClick = onStudyFlashcards
                         )
                         FeatureGridCard(
-                            title = "Trắc Nghiệm",
-                            description = "Luyện trắc nghiệm",
+                            title = ContextUtils.getString(R.string.ui_text_295),
+                            description = ContextUtils.getString(R.string.ui_text_296),
                             icon = Icons.Default.Quiz,
                             tintColor = Color(0xFFF97316),
                             modifier = Modifier.weight(1f),
@@ -384,16 +386,16 @@ fun UserSetDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         FeatureGridCard(
-                            title = "Tự Luận",
-                            description = "Viết câu trả lời",
+                            title = ContextUtils.getString(R.string.ui_text_297),
+                            description = ContextUtils.getString(R.string.ui_text_298),
                             icon = Icons.Default.EditNote,
                             tintColor = Color(0xFF10B981),
                             modifier = Modifier.weight(1f),
                             onClick = onEssay
                         )
                         FeatureGridCard(
-                            title = "Giải Trí",
-                            description = "Nối từ, Đấu 1vs1",
+                            title = ContextUtils.getString(R.string.ui_text_299),
+                            description = ContextUtils.getString(R.string.ui_text_300),
                             icon = Icons.Default.VideogameAsset,
                             tintColor = Color(0xFF8B5CF6),
                             modifier = Modifier.weight(1f),
@@ -489,7 +491,7 @@ fun UserSetDashboardScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.VolumeUp,
-                                    contentDescription = "Phát âm",
+                                    contentDescription = ContextUtils.getString(R.string.ui_text_301),
                                     tint = FlowPrimary,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -520,7 +522,7 @@ fun UserSetDashboardScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Star,
-                                    contentDescription = "Đánh dấu sao",
+                                    contentDescription = ContextUtils.getString(R.string.ui_text_302),
                                     tint = if (isStarred) Color(0xFFFFD700) else Color.Gray,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -549,7 +551,7 @@ fun UserSetDashboardScreen(
                     OutlinedTextField(
                         value = newCommentText,
                         onValueChange = { newCommentText = it },
-                        placeholder = { Text("Thêm bình luận...") },
+                        placeholder = { Text(ContextUtils.getString(R.string.ui_text_303)) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(24.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -568,7 +570,7 @@ fun UserSetDashboardScreen(
                         },
                         modifier = Modifier.background(FlowPrimary, CircleShape)
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "Gửi", tint = Color.White)
+                        Icon(Icons.Default.Send, contentDescription = ContextUtils.getString(R.string.ui_text_304), tint = Color.White)
                     }
                 }
             }

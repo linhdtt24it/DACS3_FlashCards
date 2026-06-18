@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,7 +39,7 @@ fun AdminJapaneseVocabMenuScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Tiếng Nhật", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_124), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -60,7 +62,7 @@ fun AdminJapaneseVocabMenuScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm")
+                        Text(ContextUtils.getString(R.string.ui_text_112))
                     }
                     Button(
                         onClick = { 
@@ -74,7 +76,7 @@ fun AdminJapaneseVocabMenuScreen(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Xóa", color = Color.White)
+                        Text(ContextUtils.getString(R.string.ui_text_20), color = Color.White)
                     }
                 }
             }
@@ -142,18 +144,18 @@ fun AdminJapaneseVocabMenuScreen(
         var code by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Thêm danh mục tiếng Nhật", fontWeight = FontWeight.Bold) },
+            title = { Text(ContextUtils.getString(R.string.ui_text_125), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Tên danh mục (e.g. N5)") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = code, onValueChange = { code = it }, label = { Text("Mã danh mục (e.g. n5)") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(ContextUtils.getString(R.string.ui_text_126)) }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = code, onValueChange = { code = it }, label = { Text(ContextUtils.getString(R.string.ui_text_127)) }, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
-                Button(onClick = { if(name.isNotBlank()) { viewModel.addCategory(name, code); showAddDialog = false } }) { Text("Thêm") }
+                Button(onClick = { if(name.isNotBlank()) { viewModel.addCategory(name, code); showAddDialog = false } }) { Text(ContextUtils.getString(R.string.ui_text_112)) }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) { Text("Hủy") }
+                TextButton(onClick = { showAddDialog = false }) { Text(ContextUtils.getString(R.string.ui_text_21)) }
             }
         )
     }

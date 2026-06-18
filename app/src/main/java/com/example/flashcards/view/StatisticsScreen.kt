@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -17,7 +19,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
-import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -100,12 +101,12 @@ fun StatisticsScreen(
 
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        StatCard("Chuỗi Ngày", "${userStats.streakDays} ngày", Icons.Default.LocalFireDepartment, Modifier.weight(1f), Color(0xFFFF5722))
-                        StatCard("Độ Chính Xác", "$accuracy%", Icons.Default.CheckCircle, Modifier.weight(1f), FlowSuccess)
+                        StatCard(ContextUtils.getString(R.string.ui_text_438), "${userStats.streakDays} ngày", Icons.Default.LocalFireDepartment, Modifier.weight(1f), Color(0xFFFF5722))
+                        StatCard(ContextUtils.getString(R.string.ui_text_439), "$accuracy%", Icons.Default.CheckCircle, Modifier.weight(1f), FlowSuccess)
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        StatCard("Đã Học Hôm Nay", "$cardsStudiedToday thẻ", Icons.Default.Flag, Modifier.weight(1f), FlowPrimary)
-                        StatCard("Tổng Thẻ", "$totalCards thẻ", Icons.Default.LibraryBooks, Modifier.weight(1f), MaterialTheme.colorScheme.onSurfaceVariant)
+                        StatCard(ContextUtils.getString(R.string.ui_text_440), "$cardsStudiedToday thẻ", Icons.Default.Flag, Modifier.weight(1f), FlowPrimary)
+                        StatCard(ContextUtils.getString(R.string.ui_text_441), "$totalCards thẻ", Icons.Default.LibraryBooks, Modifier.weight(1f), MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

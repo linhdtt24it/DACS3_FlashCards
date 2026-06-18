@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -17,7 +19,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
-import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -130,7 +131,7 @@ fun LibraryScreen(
     if (showCreateFolder) {
         EditFolderDialog(
             initialName = "",
-            initialEmoji = "📁",
+            initialEmoji = ContextUtils.getString(R.string.ui_text_13),
             onDismiss = { showCreateFolder = false },
             onSave = { name, emoji ->
                 onCreateFolder(name, emoji)
@@ -162,22 +163,22 @@ fun LibraryScreen(
     }
 
     val vipSets = listOf(
-        SystemSetItem("Tiếng Nhật N4", "Luyện thi năng lực Nhật ngữ N4", "JAPANESE", "QUIZ_JA_N4", "VIP_JAPANESE", "🇯🇵"),
-        SystemSetItem("Tiếng Nhật N3", "Luyện thi năng lực Nhật ngữ N3", "JAPANESE", "QUIZ_JA_N3", "VIP_JAPANESE", "🇯🇵"),
-        SystemSetItem("Tiếng Nhật N2", "Luyện thi năng lực Nhật ngữ N2", "JAPANESE", "QUIZ_JA_N2", "VIP_JAPANESE", "🇯🇵"),
-        SystemSetItem("Tiếng Nhật N1", "Luyện thi năng lực Nhật ngữ N1", "JAPANESE", "QUIZ_JA_N1", "VIP_JAPANESE", "🇯🇵"),
-        SystemSetItem("TOEIC 650+", "Từ vựng TOEIC mục tiêu 650+", "ENGLISH", "QUIZ_TOEIC_650", "VIP_ENGLISH", "🇬🇧"),
-        SystemSetItem("TOEIC 800+", "Từ vựng TOEIC mục tiêu 800+", "ENGLISH", "QUIZ_TOEIC_800", "VIP_ENGLISH", "🇬🇧"),
-        SystemSetItem("IELTS Band 5.5", "Từ vựng IELTS mục tiêu 5.5", "ENGLISH", "QUIZ_IELTS_55", "VIP_ENGLISH", "🇬🇧"),
-        SystemSetItem("IELTS Band 6.5", "Từ vựng IELTS mục tiêu 6.5", "ENGLISH", "QUIZ_IELTS_65", "VIP_ENGLISH", "🇬🇧"),
-        SystemSetItem("IELTS Band 7.5+", "Từ vựng IELTS mục tiêu 7.5+", "ENGLISH", "QUIZ_IELTS_75", "VIP_ENGLISH", "🇬🇧"),
-        SystemSetItem("Trung Cơ Bản", "Học giao tiếp tiếng Trung cơ bản", "CHINESE", "QUIZ_ZH_BASIC", "VIP_CHINESE", "🇨🇳"),
-        SystemSetItem("Pali Sơ Cấp", "Tìm hiểu ngôn ngữ Pali Phật học", "PALI", "QUIZ_PA_INTRO", "VIP_PALI", "☸️")
+        SystemSetItem(ContextUtils.getString(R.string.ui_text_372), ContextUtils.getString(R.string.ui_text_373), "JAPANESE", "QUIZ_JA_N4", "VIP_JAPANESE", "🇯🇵"),
+        SystemSetItem(ContextUtils.getString(R.string.ui_text_374), ContextUtils.getString(R.string.ui_text_375), "JAPANESE", "QUIZ_JA_N3", "VIP_JAPANESE", "🇯🇵"),
+        SystemSetItem(ContextUtils.getString(R.string.ui_text_376), ContextUtils.getString(R.string.ui_text_377), "JAPANESE", "QUIZ_JA_N2", "VIP_JAPANESE", "🇯🇵"),
+        SystemSetItem(ContextUtils.getString(R.string.ui_text_378), ContextUtils.getString(R.string.ui_text_379), "JAPANESE", "QUIZ_JA_N1", "VIP_JAPANESE", "🇯🇵"),
+        SystemSetItem("TOEIC 650+", ContextUtils.getString(R.string.ui_text_380), "ENGLISH", "QUIZ_TOEIC_650", "VIP_ENGLISH", "🇬🇧"),
+        SystemSetItem("TOEIC 800+", ContextUtils.getString(R.string.ui_text_381), "ENGLISH", "QUIZ_TOEIC_800", "VIP_ENGLISH", "🇬🇧"),
+        SystemSetItem("IELTS Band 5.5", ContextUtils.getString(R.string.ui_text_382), "ENGLISH", "QUIZ_IELTS_55", "VIP_ENGLISH", "🇬🇧"),
+        SystemSetItem("IELTS Band 6.5", ContextUtils.getString(R.string.ui_text_383), "ENGLISH", "QUIZ_IELTS_65", "VIP_ENGLISH", "🇬🇧"),
+        SystemSetItem("IELTS Band 7.5+", ContextUtils.getString(R.string.ui_text_384), "ENGLISH", "QUIZ_IELTS_75", "VIP_ENGLISH", "🇬🇧"),
+        SystemSetItem(ContextUtils.getString(R.string.ui_text_339), ContextUtils.getString(R.string.ui_text_385), "CHINESE", "QUIZ_ZH_BASIC", "VIP_CHINESE", "🇨🇳"),
+        SystemSetItem(ContextUtils.getString(R.string.ui_text_340), ContextUtils.getString(R.string.ui_text_386), "PALI", "QUIZ_PA_INTRO", "VIP_PALI", "☸️")
     )
 
     val freeSets = listOf(
-        SystemSetItem("Tiếng Nhật N5", "Luyện thi năng lực Nhật ngữ N5", "JAPANESE", "QUIZ_JA_N5", "FREE", "🇯🇵"),
-        SystemSetItem("TOEIC 450+", "Từ vựng TOEIC mục tiêu 450+", "ENGLISH", "QUIZ_TOEIC_450", "FREE", "🇬🇧")
+        SystemSetItem(ContextUtils.getString(R.string.ui_text_387), ContextUtils.getString(R.string.ui_text_388), "JAPANESE", "QUIZ_JA_N5", "FREE", "🇯🇵"),
+        SystemSetItem("TOEIC 450+", ContextUtils.getString(R.string.ui_text_389), "ENGLISH", "QUIZ_TOEIC_450", "FREE", "🇬🇧")
     )
 
     Column(
@@ -201,10 +202,10 @@ fun LibraryScreen(
             )
             Row {
                 IconButton(onClick = { showCreateFolder = true }) {
-                    Icon(Icons.Default.CreateNewFolder, contentDescription = "Thư mục mới", tint = FlowPrimary)
+                    Icon(Icons.Default.CreateNewFolder, contentDescription = ContextUtils.getString(R.string.ui_text_390), tint = FlowPrimary)
                 }
                 IconButton(onClick = { showImportDialog = true }) {
-                    Icon(Icons.Default.Download, contentDescription = "Nhập bộ thẻ", tint = MaterialTheme.colorScheme.onBackground)
+                    Icon(Icons.Default.Download, contentDescription = ContextUtils.getString(R.string.ui_text_72), tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
         }
@@ -285,7 +286,7 @@ fun LibraryScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     if (studySets.isEmpty()) {
-                        EmptySectionPlaceholder("Chưa có bộ thẻ tự tạo nào.")
+                        EmptySectionPlaceholder(ContextUtils.getString(R.string.ui_text_392))
                     } else {
                         studySets.forEach { set ->
                             Card(
@@ -320,7 +321,7 @@ fun LibraryScreen(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = set.title.ifBlank { "Chưa đặt tên" },
+                                                text = set.title.ifBlank { ContextUtils.getString(R.string.ui_text_393) },
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onBackground
@@ -361,7 +362,7 @@ fun LibraryScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     if (folders.isEmpty()) {
-                        EmptySectionPlaceholder("Chưa có thư mục nào.")
+                        EmptySectionPlaceholder(ContextUtils.getString(R.string.ui_text_394))
                     } else {
                         folders.forEach { folder ->
                             Card(

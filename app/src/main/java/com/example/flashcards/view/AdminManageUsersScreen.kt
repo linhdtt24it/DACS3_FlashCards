@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -43,7 +45,7 @@ fun AdminManageUsersScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý tài khoản", fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_93), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -65,7 +67,7 @@ fun AdminManageUsersScreen(
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(Modifier.width(4.dp))
-                            Text("Thêm tài khoản")
+                            Text(ContextUtils.getString(R.string.ui_text_151))
                         }
 
                         Button(
@@ -76,7 +78,7 @@ fun AdminManageUsersScreen(
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                             Spacer(Modifier.width(4.dp))
-                            Text("Xóa", color = Color.White)
+                            Text(ContextUtils.getString(R.string.ui_text_20), color = Color.White)
                         }
                     }
                 }
@@ -142,20 +144,20 @@ fun AdminManageUsersScreen(
 
         AlertDialog(
             onDismissRequest = { if (!isProcessing) showAddDialog = false },
-            title = { Text("Tạo tài khoản mới") },
+            title = { Text(ContextUtils.getString(R.string.ui_text_152)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Email đăng ký") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_153)) },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isProcessing
                     )
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = { Text("Mật khẩu") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_154)) },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isProcessing
@@ -172,7 +174,7 @@ fun AdminManageUsersScreen(
                             scope.launch {
                                 val result = viewModel.addUser(email, password, context)
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Thành công!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_155), Toast.LENGTH_SHORT).show()
                                     showAddDialog = false
                                 } else {
                                     Toast.makeText(context, "Lỗi: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
@@ -180,13 +182,13 @@ fun AdminManageUsersScreen(
                                 isProcessing = false
                             }
                         } else {
-                            Toast.makeText(context, "Mật khẩu tối thiểu 6 ký tự", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_156), Toast.LENGTH_SHORT).show()
                         }
                     }
-                ) { Text("Xác nhận") }
+                ) { Text(ContextUtils.getString(R.string.ui_text_157)) }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }, enabled = !isProcessing) { Text("Hủy") }
+                TextButton(onClick = { showAddDialog = false }, enabled = !isProcessing) { Text(ContextUtils.getString(R.string.ui_text_21)) }
             }
         )
     }
@@ -195,24 +197,24 @@ fun AdminManageUsersScreen(
     if (showDeleteConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
-            title = { Text("Xác nhận xóa") },
-            text = { Text("Xóa dữ liệu Firestore của tài khoản này? Hành động không thể hoàn tác.") },
+            title = { Text(ContextUtils.getString(R.string.ui_text_158)) },
+            text = { Text(ContextUtils.getString(R.string.ui_text_159)) },
             confirmButton = {
                 TextButton(onClick = {
                     selectedUserId?.let { uid ->
                         scope.launch {
                             val result = viewModel.deleteUser(uid)
                             if (result.isSuccess) {
-                                Toast.makeText(context, "Đã xóa thành công!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, ContextUtils.getString(R.string.ui_text_160), Toast.LENGTH_SHORT).show()
                                 selectedUserId = null
                                 showDeleteConfirmDialog = false
                             }
                         }
                     }
-                }) { Text("Xác nhận", color = Color.Red) }
+                }) { Text(ContextUtils.getString(R.string.ui_text_157), color = Color.Red) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmDialog = false }) { Text("Hủy") }
+                TextButton(onClick = { showDeleteConfirmDialog = false }) { Text(ContextUtils.getString(R.string.ui_text_21)) }
             }
         )
     }

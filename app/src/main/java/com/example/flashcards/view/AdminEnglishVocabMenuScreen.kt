@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -39,7 +41,7 @@ fun AdminEnglishVocabMenuScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Tiếng Anh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_111), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -62,7 +64,7 @@ fun AdminEnglishVocabMenuScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm")
+                        Text(ContextUtils.getString(R.string.ui_text_112))
                     }
 
                     Button(
@@ -77,7 +79,7 @@ fun AdminEnglishVocabMenuScreen(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Xóa", color = Color.White)
+                        Text(ContextUtils.getString(R.string.ui_text_20), color = Color.White)
                     }
                 }
             }
@@ -160,7 +162,7 @@ fun AdminEnglishVocabMenuScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    "Chưa có danh mục. Nhấn nút thêm để khởi tạo.",
+                                    ContextUtils.getString(R.string.ui_text_114),
                                     color = Color.Gray
                                 )
                             }
@@ -178,7 +180,7 @@ fun AdminEnglishVocabMenuScreen(
         var selectedGroupName by remember { mutableStateOf("") }
         
         val groups = listOf(
-            "BASIC" to "TIẾNG ANH CƠ BẢN",
+            "BASIC" to ContextUtils.getString(R.string.ui_text_115),
             "TOEIC" to "TOEIC",
             "IELTS" to "IELTS",
             "CAMBRIDGE" to "CAMBRIDGE"
@@ -186,10 +188,10 @@ fun AdminEnglishVocabMenuScreen(
 
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Thêm cấp bậc mới", fontWeight = FontWeight.Bold) },
+            title = { Text(ContextUtils.getString(R.string.ui_text_116), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Chọn nhóm chứng chỉ:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(ContextUtils.getString(R.string.ui_text_117), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                     groups.forEach { (id, name) ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -206,8 +208,8 @@ fun AdminEnglishVocabMenuScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(value = newCategoryName, onValueChange = { newCategoryName = it }, label = { Text("Tên cấp bậc (e.g. TOEIC 450+)") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = newCategoryCode, onValueChange = { newCategoryCode = it }, label = { Text("Mã (e.g. en_toeic_450)") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = newCategoryName, onValueChange = { newCategoryName = it }, label = { Text(ContextUtils.getString(R.string.ui_text_118)) }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = newCategoryCode, onValueChange = { newCategoryCode = it }, label = { Text(ContextUtils.getString(R.string.ui_text_119)) }, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
@@ -216,10 +218,10 @@ fun AdminEnglishVocabMenuScreen(
                         viewModel.addCategory(selectedGroupId, selectedGroupName, newCategoryName, newCategoryCode)
                         showAddDialog = false
                     }
-                }) { Text("Thêm") }
+                }) { Text(ContextUtils.getString(R.string.ui_text_112)) }
             },
             dismissButton = {
-                TextButton(onClick = { showAddDialog = false }) { Text("Hủy") }
+                TextButton(onClick = { showAddDialog = false }) { Text(ContextUtils.getString(R.string.ui_text_21)) }
             }
         )
     }

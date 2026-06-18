@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,7 +38,7 @@ fun AdminQuizMenuScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý Câu hỏi Trắc nghiệm", fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_233), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -45,7 +47,7 @@ fun AdminQuizMenuScreen(
                 actions = {
                     // 3. Nút hỗ trợ khởi tạo dữ liệu mẫu
                     IconButton(onClick = { viewModel.initializeSampleCategories() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Khởi tạo dữ liệu")
+                        Icon(Icons.Default.Refresh, contentDescription = ContextUtils.getString(R.string.ui_text_234))
                     }
                 }
             )
@@ -70,7 +72,7 @@ fun AdminQuizMenuScreen(
                     items(categories) { category ->
                         // 1. Rào chắn Null Safety: Nếu ID hoặc Name trống thì hiển thị mặc định
                         val catId = category.categoryId.ifEmpty { "" }
-                        val catName = category.categoryName.ifEmpty { "Danh mục lỗi" }
+                        val catName = category.categoryName.ifEmpty { ContextUtils.getString(R.string.ui_text_235) }
 
                         Card(
                             modifier = Modifier
@@ -111,7 +113,7 @@ fun AdminQuizMenuScreen(
                                     .padding(bottom = 100.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("Chưa có danh mục nào. Hãy nhấn nút Refresh để khởi tạo.")
+                                Text(ContextUtils.getString(R.string.ui_text_236))
                             }
                         }
                     }

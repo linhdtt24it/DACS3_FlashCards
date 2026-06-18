@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.compose.animation.core.*
@@ -385,19 +387,19 @@ fun UserFlashcardScreen(
 
     val progress = if (vocabCards.isNotEmpty()) (currentIndex.toFloat() / vocabCards.size) else 0f
     val displayLevelName = when (levelId) {
-        "QUIZ_JA_N5" -> "Cấp độ N5"
-        "QUIZ_JA_N4" -> "Cấp độ N4"
-        "QUIZ_JA_N3" -> "Cấp độ N3"
-        "QUIZ_JA_N2" -> "Cấp độ N2"
-        "QUIZ_JA_N1" -> "Cấp độ N1"
+        "QUIZ_JA_N5" -> ContextUtils.getString(R.string.ui_text_327)
+        "QUIZ_JA_N4" -> ContextUtils.getString(R.string.ui_text_328)
+        "QUIZ_JA_N3" -> ContextUtils.getString(R.string.ui_text_329)
+        "QUIZ_JA_N2" -> ContextUtils.getString(R.string.ui_text_330)
+        "QUIZ_JA_N1" -> ContextUtils.getString(R.string.ui_text_331)
         "QUIZ_TOEIC_450" -> "TOEIC 450+"
         "QUIZ_TOEIC_650" -> "TOEIC 650+"
         "QUIZ_TOEIC_800" -> "TOEIC 800+"
         "QUIZ_IELTS_55" -> "IELTS Band 5.5"
         "QUIZ_IELTS_65" -> "IELTS Band 6.5"
         "QUIZ_IELTS_75" -> "IELTS Band 7.5+"
-        "QUIZ_ZH_BASIC" -> "Trung Cơ Bản"
-        "QUIZ_PA_INTRO" -> "Pali Sơ Cấp"
+        "QUIZ_ZH_BASIC" -> ContextUtils.getString(R.string.ui_text_339)
+        "QUIZ_PA_INTRO" -> ContextUtils.getString(R.string.ui_text_340)
         else -> levelId.replace("QUIZ_", "").replace("_", " ")
     }
 
@@ -407,13 +409,13 @@ fun UserFlashcardScreen(
                 title = { Text("Thẻ ghi nhớ: $displayLevelName", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.Close, contentDescription = "Đóng")
+                        Icon(Icons.Default.Close, contentDescription = ContextUtils.getString(R.string.ui_text_80))
                     }
                 },
                 actions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = if (isStudyMode) "Học" else "Duyệt",
+                            text = if (isStudyMode) ContextUtils.getString(R.string.ui_text_450) else ContextUtils.getString(R.string.ui_text_451),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = if (isStudyMode) FlowPrimary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -433,7 +435,7 @@ fun UserFlashcardScreen(
                             isFlipped = false
                             shuffleTrigger++
                         }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Học lại", tint = MaterialTheme.colorScheme.onBackground)
+                            Icon(Icons.Default.Refresh, contentDescription = ContextUtils.getString(R.string.ui_text_452), tint = MaterialTheme.colorScheme.onBackground)
                         }
                     }
                 },
@@ -476,7 +478,7 @@ fun UserFlashcardScreen(
                                     }
                                 ) {
                                     Text(
-                                        text = "Hoàn thành",
+                                        text = ContextUtils.getString(R.string.ui_text_453),
                                         color = FlowPrimary,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp
@@ -517,7 +519,7 @@ fun UserFlashcardScreen(
                 }
             } else if (vocabCards.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Cấp độ này hiện chưa có từ vựng.", color = Color.Gray)
+                    Text(ContextUtils.getString(R.string.ui_text_498), color = Color.Gray)
                 }
             } else {
                 LinearProgressIndicator(
@@ -657,63 +659,63 @@ fun getFallbackVocabList(levelId: String): List<VocabCard> {
         levelId.startsWith("QUIZ_JA") -> {
             when (levelId) {
                 "QUIZ_JA_N5" -> listOf(
-                    VocabCard(UUID.randomUUID().toString(), "食べる (taberu)", "Ăn"),
-                    VocabCard(UUID.randomUUID().toString(), "飲む (nomu)", "Uống"),
-                    VocabCard(UUID.randomUUID().toString(), "行く (iku)", "Đi"),
-                    VocabCard(UUID.randomUUID().toString(), "見る (miru)", "Xem / Nhìn"),
-                    VocabCard(UUID.randomUUID().toString(), "先生 (sensei)", "Giáo viên")
+                    VocabCard(UUID.randomUUID().toString(), "食べる (taberu)", ContextUtils.getString(R.string.ui_text_347)),
+                    VocabCard(UUID.randomUUID().toString(), "飲む (nomu)", ContextUtils.getString(R.string.ui_text_348)),
+                    VocabCard(UUID.randomUUID().toString(), "行く (iku)", ContextUtils.getString(R.string.ui_text_349)),
+                    VocabCard(UUID.randomUUID().toString(), "見る (miru)", ContextUtils.getString(R.string.ui_text_350)),
+                    VocabCard(UUID.randomUUID().toString(), "先生 (sensei)", ContextUtils.getString(R.string.ui_text_351))
                 )
                 "QUIZ_JA_N4" -> listOf(
-                    VocabCard(UUID.randomUUID().toString(), "覚える (oboyeru)", "Nhớ / Ghi nhớ"),
-                    VocabCard(UUID.randomUUID().toString(), "簡単 (kantan)", "Đơn giản / Dễ dàng"),
-                    VocabCard(UUID.randomUUID().toString(), "重い (omoi)", "Nặng"),
-                    VocabCard(UUID.randomUUID().toString(), "軽い (karui)", "Nhẹ")
+                    VocabCard(UUID.randomUUID().toString(), "覚える (oboyeru)", ContextUtils.getString(R.string.ui_text_499)),
+                    VocabCard(UUID.randomUUID().toString(), "簡単 (kantan)", ContextUtils.getString(R.string.ui_text_500)),
+                    VocabCard(UUID.randomUUID().toString(), "重い (omoi)", ContextUtils.getString(R.string.ui_text_501)),
+                    VocabCard(UUID.randomUUID().toString(), "軽い (karui)", ContextUtils.getString(R.string.ui_text_502))
                 )
                 else -> listOf(
-                    VocabCard(UUID.randomUUID().toString(), "一生懸命 (isshoukenmei)", "Nỗ lực hết sức"),
-                    VocabCard(UUID.randomUUID().toString(), "調査 (chousa)", "Điều tra / Khảo sát"),
-                    VocabCard(UUID.randomUUID().toString(), "緊張 (kinchou)", "Căng thẳng / Hồi hộp")
+                    VocabCard(UUID.randomUUID().toString(), "一生懸命 (isshoukenmei)", ContextUtils.getString(R.string.ui_text_503)),
+                    VocabCard(UUID.randomUUID().toString(), "調査 (chousa)", ContextUtils.getString(R.string.ui_text_504)),
+                    VocabCard(UUID.randomUUID().toString(), "緊張 (kinchou)", ContextUtils.getString(R.string.ui_text_505))
                 )
             }
         }
         levelId.startsWith("QUIZ_TOEIC") -> {
             when (levelId) {
                 "QUIZ_TOEIC_450" -> listOf(
-                    VocabCard(UUID.randomUUID().toString(), "Confirm", "Xác nhận"),
-                    VocabCard(UUID.randomUUID().toString(), "Submit", "Nộp / Trình"),
-                    VocabCard(UUID.randomUUID().toString(), "Delay", "Trì hoãn")
+                    VocabCard(UUID.randomUUID().toString(), "Confirm", ContextUtils.getString(R.string.ui_text_157)),
+                    VocabCard(UUID.randomUUID().toString(), "Submit", ContextUtils.getString(R.string.ui_text_506)),
+                    VocabCard(UUID.randomUUID().toString(), "Delay", ContextUtils.getString(R.string.ui_text_507))
                 )
                 else -> listOf(
-                    VocabCard(UUID.randomUUID().toString(), "Negotiate", "Thương lượng / Đàm phán"),
-                    VocabCard(UUID.randomUUID().toString(), "Implement", "Thi hành / Thực hiện"),
-                    VocabCard(UUID.randomUUID().toString(), "Collaborate", "Hợp tác")
+                    VocabCard(UUID.randomUUID().toString(), "Negotiate", ContextUtils.getString(R.string.ui_text_508)),
+                    VocabCard(UUID.randomUUID().toString(), "Implement", ContextUtils.getString(R.string.ui_text_509)),
+                    VocabCard(UUID.randomUUID().toString(), "Collaborate", ContextUtils.getString(R.string.ui_text_510))
                 )
             }
         }
         levelId.startsWith("QUIZ_IELTS") -> {
             listOf(
-                VocabCard(UUID.randomUUID().toString(), "Analyze", "Phân tích"),
-                VocabCard(UUID.randomUUID().toString(), "Synthesize", "Tổng hợp"),
-                VocabCard(UUID.randomUUID().toString(), "Hypothesis", "Giả thuyết")
+                VocabCard(UUID.randomUUID().toString(), "Analyze", ContextUtils.getString(R.string.ui_text_511)),
+                VocabCard(UUID.randomUUID().toString(), "Synthesize", ContextUtils.getString(R.string.ui_text_512)),
+                VocabCard(UUID.randomUUID().toString(), "Hypothesis", ContextUtils.getString(R.string.ui_text_513))
             )
         }
         levelId == "QUIZ_ZH_BASIC" -> {
             listOf(
-                VocabCard(UUID.randomUUID().toString(), "你好 (nǐ hǎo)", "Xin chào"),
-                VocabCard(UUID.randomUUID().toString(), "谢谢 (xièxie)", "Cảm ơn"),
-                VocabCard(UUID.randomUUID().toString(), "再见 (zàijiàn)", "Tạm biệt")
+                VocabCard(UUID.randomUUID().toString(), "你好 (nǐ hǎo)", ContextUtils.getString(R.string.ui_text_367)),
+                VocabCard(UUID.randomUUID().toString(), ContextUtils.getString(R.string.ui_text_514), ContextUtils.getString(R.string.ui_text_368)),
+                VocabCard(UUID.randomUUID().toString(), ContextUtils.getString(R.string.ui_text_515), ContextUtils.getString(R.string.ui_text_369))
             )
         }
         levelId == "QUIZ_PA_INTRO" -> {
             listOf(
-                VocabCard(UUID.randomUUID().toString(), "Buddha", "Đức Phật / Bậc Giác Ngộ"),
-                VocabCard(UUID.randomUUID().toString(), "Dhamma", "Giáo Pháp"),
-                VocabCard(UUID.randomUUID().toString(), "Sangha", "Tăng Đoàn")
+                VocabCard(UUID.randomUUID().toString(), "Buddha", ContextUtils.getString(R.string.ui_text_516)),
+                VocabCard(UUID.randomUUID().toString(), "Dhamma", ContextUtils.getString(R.string.ui_text_517)),
+                VocabCard(UUID.randomUUID().toString(), "Sangha", ContextUtils.getString(R.string.ui_text_518))
             )
         }
         else -> {
             listOf(
-                VocabCard(UUID.randomUUID().toString(), "Hello", "Xin chào")
+                VocabCard(UUID.randomUUID().toString(), "Hello", ContextUtils.getString(R.string.ui_text_367))
             )
         }
     }

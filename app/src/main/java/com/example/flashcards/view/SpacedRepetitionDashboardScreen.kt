@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,7 +17,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
-import com.example.flashcards.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,9 +78,9 @@ fun SpacedRepetitionDashboardScreen(
     }
 
     val prettyDayName = when (dayIndex) {
-        1 -> "Hôm nay (Ngày 1)"
-        2 -> "Ngày mai (Ngày 2)"
-        3 -> "Ngày kia (Ngày 3)"
+        1 -> ContextUtils.getString(R.string.ui_text_410)
+        2 -> ContextUtils.getString(R.string.ui_text_411)
+        3 -> ContextUtils.getString(R.string.ui_text_412)
         else -> "Ngày $dayIndex (Kế tiếp)"
     }
 
@@ -328,7 +329,7 @@ fun SpacedRepetitionDashboardScreen(
                         item {
                             LevelFeatureCard(
                                 title = "Flashcard",
-                                description = "Học thẻ ghi nhớ",
+                                description = ContextUtils.getString(R.string.ui_text_294),
                                 icon = Icons.Default.Style,
                                 tintColor = Color(0xFF2563EB),
                                 onClick = {
@@ -338,8 +339,8 @@ fun SpacedRepetitionDashboardScreen(
                         }
                         item {
                             LevelFeatureCard(
-                                title = "Trắc Nghiệm",
-                                description = "Luyện trắc nghiệm",
+                                title = ContextUtils.getString(R.string.ui_text_295),
+                                description = ContextUtils.getString(R.string.ui_text_296),
                                 icon = Icons.Default.Quiz,
                                 tintColor = Color(0xFFF97316),
                                 onClick = {
@@ -349,8 +350,8 @@ fun SpacedRepetitionDashboardScreen(
                         }
                         item {
                             LevelFeatureCard(
-                                title = "Tự Luận",
-                                description = "Viết câu trả lời",
+                                title = ContextUtils.getString(R.string.ui_text_297),
+                                description = ContextUtils.getString(R.string.ui_text_298),
                                 icon = Icons.Default.EditNote,
                                 tintColor = Color(0xFF10B981),
                                 onClick = {
@@ -360,8 +361,8 @@ fun SpacedRepetitionDashboardScreen(
                         }
                         item {
                             LevelFeatureCard(
-                                title = "Giải Trí",
-                                description = "Nối từ, Minigames",
+                                title = ContextUtils.getString(R.string.ui_text_299),
+                                description = ContextUtils.getString(R.string.ui_text_319),
                                 icon = Icons.Default.VideogameAsset,
                                 tintColor = Color(0xFF8B5CF6),
                                 onClick = { showGameBottomSheet = true }
@@ -372,7 +373,7 @@ fun SpacedRepetitionDashboardScreen(
 
                 // 3. Tab Title Section
                 item {
-                    Text(stringResource(R.string.ui_text_85) + totalCardsCount + " từ)",
+                    Text(stringResource(R.string.ui_text_85) + totalCardsCount + ContextUtils.getString(R.string.ui_text_413),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -383,9 +384,9 @@ fun SpacedRepetitionDashboardScreen(
                 // 4. Premium Tab Selector
                 item {
                     val tabs = listOf(
-                        "HARD" to ("Khó (" + hardVocabList.size + ")"),
-                        "GOOD" to ("Tốt (" + goodVocabList.size + ")"),
-                        "EASY" to ("Dễ (" + easyVocabList.size + ")")
+                        "HARD" to (ContextUtils.getString(R.string.ui_text_414) + hardVocabList.size + ")"),
+                        "GOOD" to (ContextUtils.getString(R.string.ui_text_415) + goodVocabList.size + ")"),
+                        "EASY" to (ContextUtils.getString(R.string.ui_text_416) + easyVocabList.size + ")")
                     )
                     
                     Row(
@@ -528,7 +529,7 @@ fun SpacedRepetitionDashboardScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.VolumeUp,
-                                            contentDescription = "Phát âm",
+                                            contentDescription = ContextUtils.getString(R.string.ui_text_301),
                                             tint = FlowPrimary,
                                             modifier = Modifier.size(22.dp)
                                         )
@@ -546,7 +547,7 @@ fun SpacedRepetitionDashboardScreen(
         val category = QuizCategoryItem(
             id = selectedDay,
             name = "Tự luận $prettyDayName",
-            description = "Luyện viết từ vựng Spaced Repetition",
+            description = ContextUtils.getString(R.string.ui_text_417),
             requiredPackage = "FREE"
         )
         EssayPlayModeBottomSheet(

@@ -1,5 +1,8 @@
 package com.example.flashcards
 
+import androidx.compose.ui.res.stringResource
+import com.example.flashcards.R
+
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.widget.Toast
@@ -306,7 +309,7 @@ fun AppNavHost(
                                     viewModel.selectSet(studySets.first())
                                     navController.navigate("deck_detail")
                                 } else {
-                                    Toast.makeText(context, "Vui lòng tạo bộ thẻ trước !", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.ui_text_588), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
@@ -659,13 +662,13 @@ fun AppNavHost(
                     onJoinBattle = { code ->
                         viewModel.joinBattleByCode(code,
                             onSuccess = { battleId -> navController.navigate("battle_session/$battleId") },
-                            onError = { Toast.makeText(context, "Mã phòng không hợp lệ hoặc phòng không tồn tại", Toast.LENGTH_SHORT).show() }
+                            onError = { Toast.makeText(context, context.getString(R.string.ui_text_589), Toast.LENGTH_SHORT).show() }
                         )
                     },
                     onJoinRandomBattle = {
                         viewModel.joinRandomBattle(set.id,
                             onSuccess = { battleId -> navController.navigate("battle_session/$battleId") },
-                            onError = { Toast.makeText(context, "Không tìm thấy phòng trống nào", Toast.LENGTH_SHORT).show() }
+                            onError = { Toast.makeText(context, context.getString(R.string.ui_text_590), Toast.LENGTH_SHORT).show() }
                         )
                     },
                     onEditDeck = { navController.navigate("edit_deck/${set.id}") },
@@ -798,11 +801,11 @@ fun AppNavHost(
                                             id = quizId,
                                             title = "Luyện tập Ngày $dayIndex",
                                             cards = listOf(
-                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "食べる (taberu)", "Ăn"),
-                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "飲む (nomu)", "Uống"),
-                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "行く (iku)", "Đi"),
-                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "見る (miru)", "Xem / Nhìn"),
-                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "先生 (sensei)", "Giáo viên")
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "食べる (taberu)", context.getString(R.string.ui_text_347)),
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "飲む (nomu)", context.getString(R.string.ui_text_348)),
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "行く (iku)", context.getString(R.string.ui_text_349)),
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "見る (miru)", context.getString(R.string.ui_text_350)),
+                                                com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "先生 (sensei)", context.getString(R.string.ui_text_351))
                                             )
                                         )
                                         isLoading = false
@@ -814,11 +817,11 @@ fun AppNavHost(
                                         id = quizId,
                                         title = "Luyện tập Ngày $dayIndex",
                                         cards = listOf(
-                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "食べる (taberu)", "Ăn"),
-                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "飲む (nomu)", "Uống"),
-                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "行く (iku)", "Đi"),
-                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "見る (miru)", "Xem / Nhìn"),
-                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "先生 (sensei)", "Giáo viên")
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "食べる (taberu)", context.getString(R.string.ui_text_347)),
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "飲む (nomu)", context.getString(R.string.ui_text_348)),
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "行く (iku)", context.getString(R.string.ui_text_349)),
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "見る (miru)", context.getString(R.string.ui_text_350)),
+                                            com.example.flashcards.model.Flashcard(java.util.UUID.randomUUID().toString(), "先生 (sensei)", context.getString(R.string.ui_text_351))
                                         )
                                     )
                                     isLoading = false

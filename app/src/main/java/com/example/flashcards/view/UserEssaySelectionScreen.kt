@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
@@ -52,7 +54,7 @@ fun UserEssaySelectionScreen(
             .addSnapshotListener { snapshot, error ->
                 isLoadingFirestore = false
                 if (error != null) {
-                    Log.e("UserEssaySelectionScreen", "Lỗi đồng bộ danh mục từ Firestore: ", error)
+                    Log.e("UserEssaySelectionScreen", ContextUtils.getString(R.string.ui_text_457), error)
                     return@addSnapshotListener
                 }
                 if (snapshot != null && !snapshot.isEmpty) {
@@ -62,7 +64,7 @@ fun UserEssaySelectionScreen(
                             val rawName = doc.getString("name") ?: ""
                             val name = CryptoUtils.decrypt(rawName)
                             val rawDesc = doc.getString("description") ?: ""
-                            val description = if (rawDesc.isNotEmpty()) CryptoUtils.decrypt(rawDesc) else "Tự luận rèn luyện"
+                            val description = if (rawDesc.isNotEmpty()) CryptoUtils.decrypt(rawDesc) else ContextUtils.getString(R.string.ui_text_458)
                             val requiredPackage = doc.getString("requiredPackage") ?: when {
                                 id.contains("N5") || id.contains("450") -> "FREE"
                                 id.contains("JA") -> "VIP_JAPANESE"
@@ -89,28 +91,28 @@ fun UserEssaySelectionScreen(
 
     // Các bộ danh mục mặc định đồng bộ cấu trúc trắc nghiệm
     val defaultJapaneseEssay = listOf(
-        QuizCategoryItem("QUIZ_JA_N5", "Tự luận N5", "Luyện viết từ vựng tiếng Nhật N5", "FREE"),
-        QuizCategoryItem("QUIZ_JA_N4", "Tự luận N4", "Luyện viết từ vựng tiếng Nhật N4", "VIP_JAPANESE"),
-        QuizCategoryItem("QUIZ_JA_N3", "Tự luận N3", "Luyện viết từ vựng tiếng Nhật N3", "VIP_JAPANESE"),
-        QuizCategoryItem("QUIZ_JA_N2", "Tự luận N2", "Luyện viết từ vựng tiếng Nhật N2", "VIP_JAPANESE"),
-        QuizCategoryItem("QUIZ_JA_N1", "Tự luận N1", "Luyện viết từ vựng tiếng Nhật N1", "VIP_JAPANESE")
+        QuizCategoryItem("QUIZ_JA_N5", ContextUtils.getString(R.string.ui_text_459), ContextUtils.getString(R.string.ui_text_460), "FREE"),
+        QuizCategoryItem("QUIZ_JA_N4", ContextUtils.getString(R.string.ui_text_461), ContextUtils.getString(R.string.ui_text_462), "VIP_JAPANESE"),
+        QuizCategoryItem("QUIZ_JA_N3", ContextUtils.getString(R.string.ui_text_463), ContextUtils.getString(R.string.ui_text_464), "VIP_JAPANESE"),
+        QuizCategoryItem("QUIZ_JA_N2", ContextUtils.getString(R.string.ui_text_465), ContextUtils.getString(R.string.ui_text_466), "VIP_JAPANESE"),
+        QuizCategoryItem("QUIZ_JA_N1", ContextUtils.getString(R.string.ui_text_467), ContextUtils.getString(R.string.ui_text_468), "VIP_JAPANESE")
     )
 
     val defaultToeicEssay = listOf(
-        QuizCategoryItem("QUIZ_TOEIC_450", "Tự luận TOEIC 450+", "Viết từ vựng TOEIC cơ bản", "FREE"),
-        QuizCategoryItem("QUIZ_TOEIC_650", "Tự luận TOEIC 650+", "Viết từ vựng TOEIC 650+", "VIP_ENGLISH"),
-        QuizCategoryItem("QUIZ_TOEIC_800", "Tự luận TOEIC 800+", "Viết từ vựng TOEIC 800+", "VIP_ENGLISH")
+        QuizCategoryItem("QUIZ_TOEIC_450", ContextUtils.getString(R.string.ui_text_469), ContextUtils.getString(R.string.ui_text_470), "FREE"),
+        QuizCategoryItem("QUIZ_TOEIC_650", ContextUtils.getString(R.string.ui_text_471), ContextUtils.getString(R.string.ui_text_472), "VIP_ENGLISH"),
+        QuizCategoryItem("QUIZ_TOEIC_800", ContextUtils.getString(R.string.ui_text_473), ContextUtils.getString(R.string.ui_text_474), "VIP_ENGLISH")
     )
 
     val defaultIeltsEssay = listOf(
-        QuizCategoryItem("QUIZ_IELTS_55", "Tự luận IELTS 5.5", "Viết từ vựng IELTS Band 5.5", "VIP_ENGLISH"),
-        QuizCategoryItem("QUIZ_IELTS_65", "Tự luận IELTS 6.5", "Viết từ vựng IELTS Band 6.5", "VIP_ENGLISH"),
-        QuizCategoryItem("QUIZ_IELTS_75", "Tự luận IELTS 7.5+", "Viết từ vựng IELTS Band 7.5+", "VIP_ENGLISH")
+        QuizCategoryItem("QUIZ_IELTS_55", ContextUtils.getString(R.string.ui_text_475), ContextUtils.getString(R.string.ui_text_476), "VIP_ENGLISH"),
+        QuizCategoryItem("QUIZ_IELTS_65", ContextUtils.getString(R.string.ui_text_477), ContextUtils.getString(R.string.ui_text_478), "VIP_ENGLISH"),
+        QuizCategoryItem("QUIZ_IELTS_75", ContextUtils.getString(R.string.ui_text_479), ContextUtils.getString(R.string.ui_text_480), "VIP_ENGLISH")
     )
 
     val defaultOtherEssay = listOf(
-        QuizCategoryItem("QUIZ_ZH_BASIC", "Tự luận Trung Cơ Bản", "Viết chữ Hán và Pinyin HSK 1-2", "VIP_CHINESE"),
-        QuizCategoryItem("QUIZ_PA_INTRO", "Tự luận Pali Sơ Cấp", "Viết từ vựng Pali sơ cấp", "VIP_PALI")
+        QuizCategoryItem("QUIZ_ZH_BASIC", ContextUtils.getString(R.string.ui_text_481), ContextUtils.getString(R.string.ui_text_482), "VIP_CHINESE"),
+        QuizCategoryItem("QUIZ_PA_INTRO", ContextUtils.getString(R.string.ui_text_483), ContextUtils.getString(R.string.ui_text_484), "VIP_PALI")
     )
 
     // Đồng bộ an toàn và bảo vệ dữ liệu null-safety
@@ -119,8 +121,8 @@ fun UserEssaySelectionScreen(
             val firestoreItem = firestoreCategories.find { it.id == defaultItem.id }
             if (firestoreItem != null) {
                 defaultItem.copy(
-                    name = if (firestoreItem.name.isNotEmpty()) firestoreItem.name.replace("Trắc nghiệm", "Tự luận") else defaultItem.name,
-                    description = if (firestoreItem.description.isNotEmpty()) firestoreItem.description.replace("Trắc nghiệm", "Tự luận") else defaultItem.description,
+                    name = if (firestoreItem.name.isNotEmpty()) firestoreItem.name.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187)) else defaultItem.name,
+                    description = if (firestoreItem.description.isNotEmpty()) firestoreItem.description.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187)) else defaultItem.description,
                     requiredPackage = firestoreItem.requiredPackage
                 )
             } else {
@@ -134,8 +136,8 @@ fun UserEssaySelectionScreen(
             val firestoreItem = firestoreCategories.find { it.id == defaultItem.id }
             if (firestoreItem != null) {
                 defaultItem.copy(
-                    name = if (firestoreItem.name.isNotEmpty()) firestoreItem.name.replace("Trắc nghiệm", "Tự luận") else defaultItem.name,
-                    description = if (firestoreItem.description.isNotEmpty()) firestoreItem.description.replace("Trắc nghiệm", "Tự luận") else defaultItem.description,
+                    name = if (firestoreItem.name.isNotEmpty()) firestoreItem.name.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187)) else defaultItem.name,
+                    description = if (firestoreItem.description.isNotEmpty()) firestoreItem.description.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187)) else defaultItem.description,
                     requiredPackage = firestoreItem.requiredPackage
                 )
             } else {
@@ -149,8 +151,8 @@ fun UserEssaySelectionScreen(
             val firestoreItem = firestoreCategories.find { it.id == defaultItem.id }
             if (firestoreItem != null) {
                 defaultItem.copy(
-                    name = if (firestoreItem.name.isNotEmpty()) firestoreItem.name.replace("Trắc nghiệm", "Tự luận") else defaultItem.name,
-                    description = if (firestoreItem.description.isNotEmpty()) firestoreItem.description.replace("Trắc nghiệm", "Tự luận") else defaultItem.description,
+                    name = if (firestoreItem.name.isNotEmpty()) firestoreItem.name.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187)) else defaultItem.name,
+                    description = if (firestoreItem.description.isNotEmpty()) firestoreItem.description.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187)) else defaultItem.description,
                     requiredPackage = firestoreItem.requiredPackage
                 )
             } else {
@@ -164,8 +166,8 @@ fun UserEssaySelectionScreen(
             val firestoreItem = firestoreCategories.find { it.id == defaultItem.id }
             if (firestoreItem != null) {
                 defaultItem.copy(
-                    name = if (firestoreItem.name.isNotEmpty()) firestoreItem.name.replace("Trắc nghiệm", "Tự luận") else defaultItem.name,
-                    description = if (firestoreItem.description.isNotEmpty()) firestoreItem.description.replace("Trắc nghiệm", "Tự luận") else defaultItem.description,
+                    name = if (firestoreItem.name.isNotEmpty()) firestoreItem.name.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187)) else defaultItem.name,
+                    description = if (firestoreItem.description.isNotEmpty()) firestoreItem.description.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187)) else defaultItem.description,
                     requiredPackage = firestoreItem.requiredPackage
                 )
             } else {
@@ -178,8 +180,8 @@ fun UserEssaySelectionScreen(
         val allMappedIds = (defaultJapaneseEssay + defaultToeicEssay + defaultIeltsEssay + defaultOtherEssay).map { it.id }.toSet()
         firestoreCategories.filter { it.id !in allMappedIds }.map { item ->
             item.copy(
-                name = item.name.replace("Trắc nghiệm", "Tự luận"),
-                description = item.description.replace("Trắc nghiệm", "Tự luận")
+                name = item.name.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187)),
+                description = item.description.replace(ContextUtils.getString(R.string.ui_text_186), ContextUtils.getString(R.string.ui_text_187))
             )
         }
     }
@@ -206,10 +208,10 @@ fun UserEssaySelectionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Luyện viết tự luận", fontWeight = FontWeight.Bold) },
+                title = { Text(ContextUtils.getString(R.string.ui_text_485), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = ContextUtils.getString(R.string.ui_text_27))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -228,7 +230,7 @@ fun UserEssaySelectionScreen(
             // THANH NGANG 1: TỰ LUẬN TIẾNG NHẬT
             item {
                 EssayGroupRow(
-                    title = "Tự luận Tiếng Nhật",
+                    title = ContextUtils.getString(R.string.ui_text_486),
                     items = japaneseQuizzes,
                     subscribedPackages = subscribedPackages,
                     onItemClick = { item -> selectedCategoryForSheet = item },
@@ -239,7 +241,7 @@ fun UserEssaySelectionScreen(
             // THANH NGANG 2: TỰ LUẬN TOEIC
             item {
                 EssayGroupRow(
-                    title = "Tự luận chứng chỉ TOEIC",
+                    title = ContextUtils.getString(R.string.ui_text_487),
                     items = toeicQuizzes,
                     subscribedPackages = subscribedPackages,
                     onItemClick = { item -> selectedCategoryForSheet = item },
@@ -250,7 +252,7 @@ fun UserEssaySelectionScreen(
             // THANH NGANG 3: TỰ LUẬN IELTS
             item {
                 EssayGroupRow(
-                    title = "Tự luận chứng chỉ IELTS",
+                    title = ContextUtils.getString(R.string.ui_text_488),
                     items = ieltsQuizzes,
                     subscribedPackages = subscribedPackages,
                     onItemClick = { item -> selectedCategoryForSheet = item },
@@ -273,7 +275,7 @@ fun UserEssaySelectionScreen(
             if (unmappedQuizzes.isNotEmpty()) {
                 item {
                     EssayGroupRow(
-                        title = "Bộ tự luận mở rộng",
+                        title = ContextUtils.getString(R.string.ui_text_490),
                         items = unmappedQuizzes,
                         subscribedPackages = subscribedPackages,
                         onItemClick = { item -> selectedCategoryForSheet = item },
@@ -361,7 +363,7 @@ fun EssayGroupRow(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = if (isUnlocked) "Sẵn sàng" else "Yêu cầu VIP",
+                                text = if (isUnlocked) ContextUtils.getString(R.string.ui_text_342) else ContextUtils.getString(R.string.ui_text_491),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isUnlocked) Color(0xFF059669) else Color(0xFFE11D48)
@@ -401,7 +403,7 @@ fun EssayPlayModeBottomSheet(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Chọn Chế Độ Luyện Tập",
+                text = ContextUtils.getString(R.string.ui_text_492),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -415,7 +417,7 @@ fun EssayPlayModeBottomSheet(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Luyện nhớ sâu từ vựng bằng cách gõ tay chính xác đáp án. Vui lòng lựa chọn chế độ chơi:",
+                text = ContextUtils.getString(R.string.ui_text_493),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -452,13 +454,13 @@ fun EssayPlayModeBottomSheet(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Nhập nghĩa Tiếng Việt",
+                            text = ContextUtils.getString(R.string.ui_text_494),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Hiển thị từ vựng nước ngoài, bạn gõ nghĩa Tiếng Việt tương ứng.",
+                            text = ContextUtils.getString(R.string.ui_text_495),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )
@@ -503,13 +505,13 @@ fun EssayPlayModeBottomSheet(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Nhập từ vựng gốc",
+                            text = ContextUtils.getString(R.string.ui_text_496),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Hiển thị nghĩa Tiếng Việt, bạn gõ đúng từ gốc (tiếng Nhật/Anh/Trung...).",
+                            text = ContextUtils.getString(R.string.ui_text_497),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )

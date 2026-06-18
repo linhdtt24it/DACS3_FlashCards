@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -53,15 +55,15 @@ fun AdminQuizLevelScreen(
 
     // Dynamic translation
     val displayQuizTypeName = when(quizType) {
-        "multiple_choice" -> "Trắc nghiệm"
-        "text_input" -> "Tự luận"
+        "multiple_choice" -> ContextUtils.getString(R.string.ui_text_186)
+        "text_input" -> ContextUtils.getString(R.string.ui_text_187)
         else -> quizType
     }
     val displayLanguageName = when(language) {
-        "japanese" -> "Tiếng Nhật"
-        "english" -> "Tiếng Anh"
-        "chinese" -> "Tiếng Trung"
-        "pali" -> "Tiếng Pali"
+        "japanese" -> ContextUtils.getString(R.string.ui_text_208)
+        "english" -> ContextUtils.getString(R.string.ui_text_209)
+        "chinese" -> ContextUtils.getString(R.string.ui_text_210)
+        "pali" -> ContextUtils.getString(R.string.ui_text_211)
         else -> language
     }
 
@@ -79,33 +81,33 @@ fun AdminQuizLevelScreen(
                     OutlinedTextField(
                         value = levelIdInput,
                         onValueChange = { levelIdInput = it },
-                        label = { Text("Mã cấp độ (e.g. QUIZ_JA_N5)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_212)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = levelNameInput,
                         onValueChange = { levelNameInput = it },
-                        label = { Text("Tên cấp độ (e.g. Cấp độ N5 / TOEIC 450+)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_213)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     if (language == "english") {
                         OutlinedTextField(
                             value = parentInput,
                             onValueChange = { parentInput = it },
-                            label = { Text("Chứng chỉ cha (e.g. TOEIC / IELTS / Cambridge)") },
+                            label = { Text(ContextUtils.getString(R.string.ui_text_214)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
                     OutlinedTextField(
                         value = reqPkgInput,
                         onValueChange = { reqPkgInput = it },
-                        label = { Text("Yêu cầu VIP (e.g. FREE, VIP_ENGLISH, VIP_JAPANESE)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_215)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = descInput,
                         onValueChange = { descInput = it },
-                        label = { Text("Mô tả khóa học") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_216)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -124,7 +126,7 @@ fun AdminQuizLevelScreen(
                                     description = descInput.trim()
                                 )
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Đã thêm cấp độ thành công!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_217), Toast.LENGTH_SHORT).show()
                                     showAddDialog = false
                                     levelIdInput = ""; levelNameInput = ""; parentInput = ""; reqPkgInput = "FREE"; descInput = ""
                                 } else {
@@ -132,16 +134,16 @@ fun AdminQuizLevelScreen(
                                 }
                             }
                         } else {
-                            Toast.makeText(context, "Vui lòng nhập đầy đủ mã và tên!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_218), Toast.LENGTH_SHORT).show()
                         }
                     }
                 ) {
-                    Text("Thêm")
+                    Text(ContextUtils.getString(R.string.ui_text_112))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddDialog = false }) {
-                    Text("Hủy")
+                    Text(ContextUtils.getString(R.string.ui_text_21))
                 }
             }
         )
@@ -154,9 +156,9 @@ fun AdminQuizLevelScreen(
             title = { Text("Xóa cấp độ ($displayLanguageName)", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Chọn cấp độ muốn xóa:")
+                    Text(ContextUtils.getString(R.string.ui_text_219))
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        val currentSelectionName = filteredLevels.find { it.id == selectedLevelToDelete }?.name ?: "Chọn cấp độ"
+                        val currentSelectionName = filteredLevels.find { it.id == selectedLevelToDelete }?.name ?: ContextUtils.getString(R.string.ui_text_220)
                         Button(
                             onClick = { expanded = true },
                             modifier = Modifier.fillMaxWidth()
@@ -188,7 +190,7 @@ fun AdminQuizLevelScreen(
                             scope.launch {
                                 val result = viewModel.deleteQuizSubLevel(selectedLevelToDelete)
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Đã xóa cấp độ!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_221), Toast.LENGTH_SHORT).show()
                                     showDeleteDialog = false
                                     selectedLevelToDelete = ""
                                 } else {
@@ -196,17 +198,17 @@ fun AdminQuizLevelScreen(
                                 }
                             }
                         } else {
-                            Toast.makeText(context, "Vui lòng chọn cấp độ để xóa!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_222), Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Xóa")
+                    Text(ContextUtils.getString(R.string.ui_text_20))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Hủy")
+                    Text(ContextUtils.getString(R.string.ui_text_21))
                 }
             }
         )
@@ -217,7 +219,7 @@ fun AdminQuizLevelScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Chọn Cấp Độ Môn Học", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(ContextUtils.getString(R.string.ui_text_223), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text("$displayQuizTypeName -> $displayLanguageName", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
                 },
@@ -246,9 +248,9 @@ fun AdminQuizLevelScreen(
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(when(language) {
-                            "japanese" -> "Thêm cấp độ Nhật"
-                            "english" -> "Thêm chứng chỉ Anh"
-                            else -> "Thêm cấp độ mới"
+                            "japanese" -> ContextUtils.getString(R.string.ui_text_224)
+                            "english" -> ContextUtils.getString(R.string.ui_text_225)
+                            else -> ContextUtils.getString(R.string.ui_text_226)
                         })
                     }
                     Button(
@@ -260,9 +262,9 @@ fun AdminQuizLevelScreen(
                         Icon(Icons.Default.Delete, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(when(language) {
-                            "japanese" -> "Xóa cấp độ Nhật"
-                            "english" -> "Xóa mức độ Anh"
-                            else -> "Xóa cấp độ"
+                            "japanese" -> ContextUtils.getString(R.string.ui_text_227)
+                            "english" -> ContextUtils.getString(R.string.ui_text_228)
+                            else -> ContextUtils.getString(R.string.ui_text_229)
                         })
                     }
                 }
@@ -292,7 +294,7 @@ fun AdminQuizLevelScreen(
                             InputChip(
                                 selected = true,
                                 onClick = { selectedEnglishParent = null },
-                                label = { Text("Quay lại chọn chứng chỉ") },
+                                label = { Text(ContextUtils.getString(R.string.ui_text_230)) },
                                 trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp)) }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -361,7 +363,7 @@ fun AdminQuizLevelScreen(
                                             .padding(bottom = 100.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("Chưa có chứng chỉ Tiếng Anh nào. Nhấn Thêm chứng chỉ.", color = Color.Gray)
+                                        Text(ContextUtils.getString(R.string.ui_text_231), color = Color.Gray)
                                     }
                                 }
                             }
@@ -431,7 +433,7 @@ fun AdminQuizLevelScreen(
                                             .padding(bottom = 100.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("Chưa có cấp độ chi tiết nào. Vui lòng nhấn nút Thêm dưới đáy.", color = Color.Gray)
+                                        Text(ContextUtils.getString(R.string.ui_text_232), color = Color.Gray)
                                     }
                                 }
                             }

@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,22 +38,22 @@ fun RandomWishDialog(
                 if (wishText == null) {
                     // Fallback default beautiful motivational quotes
                     wishText = listOf(
-                        "Hãy tiếp tục nỗ lực nhé! Bạn đang làm rất tốt! 🎉",
-                        "Mỗi ngày học thêm một chút, thành công sẽ đến với bạn! 🌟",
-                        "Bạn đã tiến bộ hơn ngày hôm qua rất nhiều! 🚀",
-                        "Sự kiên trì chính là chìa khóa của thành công! 💪",
-                        "Đừng bỏ cuộc, hành trình vạn dặm bắt đầu từ một bước chân! 🌸"
+                        ContextUtils.getString(R.string.ui_text_401),
+                        ContextUtils.getString(R.string.ui_text_402),
+                        ContextUtils.getString(R.string.ui_text_403),
+                        ContextUtils.getString(R.string.ui_text_404),
+                        ContextUtils.getString(R.string.ui_text_405)
                     ).random()
                 }
             }
             .addOnFailureListener {
                 isLoading = false
                 wishText = listOf(
-                    "Hãy tiếp tục nỗ lực nhé! Bạn đang làm rất tốt! 🎉",
-                    "Mỗi ngày học thêm một chút, thành công sẽ đến với bạn! 🌟",
-                    "Bạn đã tiến bộ hơn ngày hôm qua rất nhiều! 🚀",
-                    "Sự kiên trì chính là chìa khóa của thành công! 💪",
-                    "Đừng bỏ cuộc, hành trình vạn dặm bắt đầu từ một bước chân! 🌸"
+                    ContextUtils.getString(R.string.ui_text_401),
+                    ContextUtils.getString(R.string.ui_text_402),
+                    ContextUtils.getString(R.string.ui_text_403),
+                    ContextUtils.getString(R.string.ui_text_404),
+                    ContextUtils.getString(R.string.ui_text_405)
                 ).random()
             }
     }
@@ -65,7 +67,7 @@ fun RandomWishDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "🎉 LỜI CHÚC Ý NGHĨA 🎉",
+                    text = ContextUtils.getString(R.string.ui_text_406),
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                     color = MaterialTheme.colorScheme.primary,
@@ -108,7 +110,7 @@ fun RandomWishDialog(
                             .height(48.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("Về trang chủ", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(ContextUtils.getString(R.string.ui_text_407), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                     Button(
                         onClick = onReviewAgain,
@@ -118,7 +120,7 @@ fun RandomWishDialog(
                             .weight(1f)
                             .height(48.dp)
                     ) {
-                        Text("Học lại bộ này 🔄", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(ContextUtils.getString(R.string.ui_text_408), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
             } else {
@@ -134,7 +136,7 @@ fun RandomWishDialog(
                             .fillMaxWidth()
                             .height(48.dp)
                     ) {
-                        Text("Đóng", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(ContextUtils.getString(R.string.ui_text_80), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }

@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -45,27 +47,27 @@ fun AdminQuizLanguageScreen(
     var selectedLangToDelete by remember { mutableStateOf("") }
 
     val displayQuizTypeName = when(quizType) {
-        "multiple_choice" -> "Trắc nghiệm"
-        "text_input" -> "Tự luận"
+        "multiple_choice" -> ContextUtils.getString(R.string.ui_text_186)
+        "text_input" -> ContextUtils.getString(R.string.ui_text_187)
         else -> quizType
     }
 
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Thêm ngôn ngữ mới", fontWeight = FontWeight.Bold) },
+            title = { Text(ContextUtils.getString(R.string.ui_text_195), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = langIdInput,
                         onValueChange = { langIdInput = it },
-                        label = { Text("Mã Ngôn ngữ (e.g. japanese)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_196)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = langNameInput,
                         onValueChange = { langNameInput = it },
-                        label = { Text("Tên Ngôn ngữ (e.g. Tiếng Nhật)") },
+                        label = { Text(ContextUtils.getString(R.string.ui_text_197)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -77,7 +79,7 @@ fun AdminQuizLanguageScreen(
                             scope.launch {
                                 val result = viewModel.addQuizLanguage(langIdInput.trim().lowercase(), langNameInput.trim())
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Đã thêm ngôn ngữ!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_198), Toast.LENGTH_SHORT).show()
                                     showAddDialog = false
                                     langIdInput = ""
                                     langNameInput = ""
@@ -86,16 +88,16 @@ fun AdminQuizLanguageScreen(
                                 }
                             }
                         } else {
-                            Toast.makeText(context, "Vui lòng điền đầy đủ!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_199), Toast.LENGTH_SHORT).show()
                         }
                     }
                 ) {
-                    Text("Thêm")
+                    Text(ContextUtils.getString(R.string.ui_text_112))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddDialog = false }) {
-                    Text("Hủy")
+                    Text(ContextUtils.getString(R.string.ui_text_21))
                 }
             }
         )
@@ -105,12 +107,12 @@ fun AdminQuizLanguageScreen(
         var expanded by remember { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Xóa ngôn ngữ", fontWeight = FontWeight.Bold) },
+            title = { Text(ContextUtils.getString(R.string.ui_text_200), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Chọn ngôn ngữ muốn xóa:")
+                    Text(ContextUtils.getString(R.string.ui_text_201))
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        val currentSelectionName = quizLanguages.find { it.id == selectedLangToDelete }?.name ?: "Chọn ngôn ngữ"
+                        val currentSelectionName = quizLanguages.find { it.id == selectedLangToDelete }?.name ?: ContextUtils.getString(R.string.ui_text_202)
                         Button(
                             onClick = { expanded = true },
                             modifier = Modifier.fillMaxWidth()
@@ -142,7 +144,7 @@ fun AdminQuizLanguageScreen(
                             scope.launch {
                                 val result = viewModel.deleteQuizLanguage(selectedLangToDelete)
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Đã xóa ngôn ngữ!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, ContextUtils.getString(R.string.ui_text_203), Toast.LENGTH_SHORT).show()
                                     showDeleteDialog = false
                                     selectedLangToDelete = ""
                                 } else {
@@ -150,17 +152,17 @@ fun AdminQuizLanguageScreen(
                                 }
                             }
                         } else {
-                            Toast.makeText(context, "Vui lòng chọn ngôn ngữ để xóa!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_204), Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Xóa")
+                    Text(ContextUtils.getString(R.string.ui_text_20))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Hủy")
+                    Text(ContextUtils.getString(R.string.ui_text_21))
                 }
             }
         )
@@ -171,7 +173,7 @@ fun AdminQuizLanguageScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Chọn Ngôn Ngữ", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(ContextUtils.getString(R.string.ui_text_205), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text("Phân hệ: $displayQuizTypeName", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
                 },
@@ -199,7 +201,7 @@ fun AdminQuizLanguageScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm ngôn ngữ")
+                        Text(ContextUtils.getString(R.string.ui_text_206))
                     }
                     Button(
                         onClick = { showDeleteDialog = true },
@@ -209,7 +211,7 @@ fun AdminQuizLanguageScreen(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Xóa ngôn ngữ")
+                        Text(ContextUtils.getString(R.string.ui_text_200))
                     }
                 }
             }
@@ -280,7 +282,7 @@ fun AdminQuizLanguageScreen(
                                     .padding(bottom = 100.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("Chưa có ngôn ngữ nào. Vui lòng thêm ngôn ngữ mới.", color = Color.Gray)
+                                Text(ContextUtils.getString(R.string.ui_text_207), color = Color.Gray)
                             }
                         }
                     }

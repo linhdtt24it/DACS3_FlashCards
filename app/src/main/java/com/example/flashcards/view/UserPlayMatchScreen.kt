@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -101,26 +103,26 @@ fun UserPlayMatchScreen(
             isTimerRunning = true
         } else if (roomState?.status == "FINISHED" && gameState == MatchGameState.PLAYING) {
             isTimerRunning = false
-            winnerMessage = if (roomState?.winnerId == currentUserUid) "Bạn đã THẮNG! 🎉" else if (roomState?.winnerId == "DRAW") "HOÀ!" else "Bạn đã THUA! 😭"
+            winnerMessage = if (roomState?.winnerId == currentUserUid) ContextUtils.getString(R.string.ui_text_539) else if (roomState?.winnerId == "DRAW") ContextUtils.getString(R.string.ui_text_540) else ContextUtils.getString(R.string.ui_text_541)
             gameState = MatchGameState.FINISHED
         }
     }
 
     val displayLevelName = when {
-        levelId.startsWith("deck_") -> "Bộ thẻ tùy chỉnh"
-        levelId == "QUIZ_JA_N5" -> "Cấp độ N5"
-        levelId == "QUIZ_JA_N4" -> "Cấp độ N4"
-        levelId == "QUIZ_JA_N3" -> "Cấp độ N3"
-        levelId == "QUIZ_JA_N2" -> "Cấp độ N2"
-        levelId == "QUIZ_JA_N1" -> "Cấp độ N1"
+        levelId.startsWith("deck_") -> ContextUtils.getString(R.string.ui_text_542)
+        levelId == "QUIZ_JA_N5" -> ContextUtils.getString(R.string.ui_text_327)
+        levelId == "QUIZ_JA_N4" -> ContextUtils.getString(R.string.ui_text_328)
+        levelId == "QUIZ_JA_N3" -> ContextUtils.getString(R.string.ui_text_329)
+        levelId == "QUIZ_JA_N2" -> ContextUtils.getString(R.string.ui_text_330)
+        levelId == "QUIZ_JA_N1" -> ContextUtils.getString(R.string.ui_text_331)
         levelId == "QUIZ_TOEIC_450" -> "TOEIC 450+"
         levelId == "QUIZ_TOEIC_650" -> "TOEIC 650+"
         levelId == "QUIZ_TOEIC_800" -> "TOEIC 800+"
         levelId == "QUIZ_IELTS_55" -> "IELTS Band 5.5"
         levelId == "QUIZ_IELTS_65" -> "IELTS Band 6.5"
         levelId == "QUIZ_IELTS_75" -> "IELTS Band 7.5+"
-        levelId == "QUIZ_ZH_BASIC" -> "Trung Cơ Bản"
-        levelId == "QUIZ_PA_INTRO" -> "Pali Sơ Cấp"
+        levelId == "QUIZ_ZH_BASIC" -> ContextUtils.getString(R.string.ui_text_339)
+        levelId == "QUIZ_PA_INTRO" -> ContextUtils.getString(R.string.ui_text_340)
         else -> levelId.replace("QUIZ_", "").replace("_", " ")
     }
 
@@ -172,7 +174,7 @@ fun UserPlayMatchScreen(
                             onlineViewModel.leaveRoom()
                             navController.popBackStack() 
                         }) {
-                            Icon(Icons.Default.Close, contentDescription = "Đóng")
+                            Icon(Icons.Default.Close, contentDescription = ContextUtils.getString(R.string.ui_text_80))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -192,7 +194,7 @@ fun UserPlayMatchScreen(
                 }
             } else if (rawVocabList.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Cấp độ này hiện chưa có từ vựng.", color = Color.Gray)
+                    Text(ContextUtils.getString(R.string.ui_text_498), color = Color.Gray)
                 }
             } else {
                 when (gameState) {
@@ -235,7 +237,7 @@ fun UserPlayMatchScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Text("Mã Phòng Của Bạn", style = MaterialTheme.typography.titleLarge)
+                            Text(ContextUtils.getString(R.string.ui_text_543), style = MaterialTheme.typography.titleLarge)
                             Spacer(modifier = Modifier.height(16.dp))
                             Card(
                                 modifier = Modifier.fillMaxWidth().height(100.dp),
@@ -244,7 +246,7 @@ fun UserPlayMatchScreen(
                             ) {
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                     Text(
-                                        text = roomState?.roomId ?: "Đang tạo...",
+                                        text = roomState?.roomId ?: ContextUtils.getString(R.string.ui_text_544),
                                         style = MaterialTheme.typography.displayMedium,
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 8.sp,
@@ -255,14 +257,14 @@ fun UserPlayMatchScreen(
                             Spacer(modifier = Modifier.height(32.dp))
                             CircularProgressIndicator(color = FlowPrimary)
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("Đang chờ đối thủ tham gia...", color = Color.Gray)
+                            Text(ContextUtils.getString(R.string.ui_text_545), color = Color.Gray)
                             
                             Spacer(modifier = Modifier.height(64.dp))
                             OutlinedButton(onClick = {
                                 onlineViewModel.leaveRoom()
                                 gameState = MatchGameState.SETUP
                             }) {
-                                Text("Hủy", color = Color.Red)
+                                Text(ContextUtils.getString(R.string.ui_text_21), color = Color.Red)
                             }
                         }
                     }
@@ -272,12 +274,12 @@ fun UserPlayMatchScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Text("Nhập Mã Phòng", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(ContextUtils.getString(R.string.ui_text_546), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(24.dp))
                             OutlinedTextField(
                                 value = onlineJoinCode,
                                 onValueChange = { if (it.length <= 4) onlineJoinCode = it.uppercase() },
-                                label = { Text("Mã 4 chữ số") },
+                                label = { Text(ContextUtils.getString(R.string.ui_text_547)) },
                                 textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center, fontSize = 24.sp, letterSpacing = 8.sp),
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -294,7 +296,7 @@ fun UserPlayMatchScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary),
                                 enabled = onlineJoinCode.length == 4
                             ) {
-                                Text("Vào Phòng", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                Text(ContextUtils.getString(R.string.ui_text_311), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             OutlinedButton(
@@ -305,7 +307,7 @@ fun UserPlayMatchScreen(
                                 modifier = Modifier.fillMaxWidth().height(56.dp),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
-                                Text("Trở lại", color = FlowPrimary)
+                                Text(ContextUtils.getString(R.string.ui_text_548), color = FlowPrimary)
                             }
                         }
                     }
@@ -318,7 +320,7 @@ fun UserPlayMatchScreen(
                             Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                     Column {
-                                        Text("Bạn", fontWeight = FontWeight.Bold, color = FlowPrimary)
+                                        Text(ContextUtils.getString(R.string.ui_text_274), fontWeight = FontWeight.Bold, color = FlowPrimary)
                                         Text("${myScore} đ", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
                                     }
                                     
@@ -332,7 +334,7 @@ fun UserPlayMatchScreen(
                                     )
                                     
                                     Column(horizontalAlignment = Alignment.End) {
-                                        Text("Đối thủ", fontWeight = FontWeight.Bold, color = Color.Red)
+                                        Text(ContextUtils.getString(R.string.ui_text_275), fontWeight = FontWeight.Bold, color = Color.Red)
                                         Text("${opponentScore} đ", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = Color.Red)
                                     }
                                 }
@@ -389,7 +391,7 @@ fun UserPlayMatchScreen(
                                                     p2Items = newItems
                                                     if (newItems.all { it.isMatched }) {
                                                         isTimerRunning = false
-                                                        winnerMessage = "Người chơi 2 THẮNG! 🎉"
+                                                        winnerMessage = ContextUtils.getString(R.string.ui_text_549)
                                                         gameState = MatchGameState.FINISHED
                                                     }
                                                 }
@@ -434,7 +436,7 @@ fun UserPlayMatchScreen(
                                                     p1Items = newItems
                                                     if (newItems.all { it.isMatched }) {
                                                         isTimerRunning = false
-                                                        winnerMessage = "Người chơi 1 THẮNG! 🎉"
+                                                        winnerMessage = ContextUtils.getString(R.string.ui_text_550)
                                                         gameState = MatchGameState.FINISHED
                                                     }
                                                 }
@@ -449,7 +451,7 @@ fun UserPlayMatchScreen(
                                 val seconds = (elapsedTimeMs / 1000)
                                 val millis = (elapsedTimeMs % 1000) / 10
                                 Text(
-                                    text = String.format("Thời gian: %02d:%02d", seconds, millis),
+                                    text = String.format(ContextUtils.getString(R.string.ui_text_551), seconds, millis),
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = FlowPrimary
@@ -467,7 +469,7 @@ fun UserPlayMatchScreen(
                                                 p1Items = newItems
                                                 if (newItems.all { it.isMatched }) {
                                                     isTimerRunning = false
-                                                    winnerMessage = "Hoàn thành xuất sắc! 🎉"
+                                                    winnerMessage = ContextUtils.getString(R.string.ui_text_552)
                                                     gameState = MatchGameState.FINISHED
                                                 }
                                             }
@@ -578,21 +580,21 @@ fun MatchSetupView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Thiết Lập Trò Chơi", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = FlowPrimary)
+        Text(ContextUtils.getString(R.string.ui_text_553), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = FlowPrimary)
         Spacer(modifier = Modifier.height(32.dp))
         
-        Text("Chế Độ Chơi:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(ContextUtils.getString(R.string.ui_text_554), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             FilterChip(
                 selected = playMode == MatchPlayMode.SINGLE,
                 onClick = { onPlayModeChange(MatchPlayMode.SINGLE) },
-                label = { Text("1 Người") }
+                label = { Text(ContextUtils.getString(R.string.ui_text_555)) }
             )
             FilterChip(
                 selected = playMode == MatchPlayMode.PVP_LOCAL,
                 onClick = { onPlayModeChange(MatchPlayMode.PVP_LOCAL) },
-                label = { Text("Chung máy ⚔️") }
+                label = { Text(ContextUtils.getString(R.string.ui_text_556)) }
             )
             FilterChip(
                 selected = playMode == MatchPlayMode.ONLINE,
@@ -602,7 +604,7 @@ fun MatchSetupView(
         }
         
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Kích Thước Lưới:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(ContextUtils.getString(R.string.ui_text_557), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             listOf(5, 7, 10).forEach { size ->
@@ -623,7 +625,7 @@ fun MatchSetupView(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5CF6))
                 ) {
-                    Text("Tìm Trận Ngẫu Nhiên", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                    Text(ContextUtils.getString(R.string.ui_text_308), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(
@@ -632,7 +634,7 @@ fun MatchSetupView(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
                     ) {
-                        Text("Tạo Phòng", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(ContextUtils.getString(R.string.ui_text_558), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                     OutlinedButton(
                         onClick = onJoinOnline,
@@ -640,7 +642,7 @@ fun MatchSetupView(
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(1.dp, FlowPrimary)
                     ) {
-                        Text("Vào Phòng", color = FlowPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(ContextUtils.getString(R.string.ui_text_311), color = FlowPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }
@@ -651,7 +653,7 @@ fun MatchSetupView(
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
             ) {
-                Text("Bắt Đầu", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(ContextUtils.getString(R.string.ui_text_559), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         }
     }
@@ -771,7 +773,7 @@ fun MatchResultView(
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = FlowPrimary)
         ) {
-            Text(if(isOnline) "Thiết lập lại" else "Chơi lại 🔄", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(if(isOnline) ContextUtils.getString(R.string.ui_text_560) else ContextUtils.getString(R.string.ui_text_561), fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedButton(
@@ -780,7 +782,7 @@ fun MatchResultView(
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, FlowPrimary)
         ) {
-            Text("Thoát", color = FlowPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(ContextUtils.getString(R.string.ui_text_562), color = FlowPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
     }
 }

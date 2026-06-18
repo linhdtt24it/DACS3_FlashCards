@@ -1,5 +1,7 @@
 package com.example.flashcards.view
 
+import com.example.flashcards.utils.ContextUtils
+import com.example.flashcards.R
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -142,9 +144,9 @@ fun SpacedRepetitionScreen(navController: NavController) {
     val saveDailyWordLimit: () -> Unit = {
         val limitVal = dailyWordLimitState.toIntOrNull()
         if (limitVal == null || limitVal <= 0) {
-            Toast.makeText(context, "Vui lòng nhập số hợp lệ lớn hơn 0!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_418), Toast.LENGTH_SHORT).show()
         } else if (uid.isEmpty()) {
-            Toast.makeText(context, "Lỗi xác thực người dùng!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, ContextUtils.getString(R.string.ui_text_419), Toast.LENGTH_SHORT).show()
         } else {
             isSavingLimit = true
             firestore.collection("users").document(uid)
@@ -208,7 +210,7 @@ fun SpacedRepetitionScreen(navController: NavController) {
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = "Lặp Lại Ngắt Quãng",
+                                    text = ContextUtils.getString(R.string.ui_text_420),
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -216,7 +218,7 @@ fun SpacedRepetitionScreen(navController: NavController) {
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "Thuật toán tối ưu hóa thời gian học tập giúp ghi nhớ từ vựng lâu hơn. Từ vựng được lên lịch thông minh dựa trên đánh giá của bạn (Khó/Tốt/Dễ).",
+                                text = ContextUtils.getString(R.string.ui_text_421),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.White.copy(alpha = 0.9f)
                             )
@@ -246,7 +248,7 @@ fun SpacedRepetitionScreen(navController: NavController) {
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Mục tiêu ôn tập hàng ngày",
+                                text = ContextUtils.getString(R.string.ui_text_422),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground
@@ -254,7 +256,7 @@ fun SpacedRepetitionScreen(navController: NavController) {
                         }
                         
                         Text(
-                            text = "Hạn mức số lượng từ vựng tối đa hệ thống sẽ bốc ra để ôn luyện mỗi ngày.",
+                            text = ContextUtils.getString(R.string.ui_text_423),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -267,7 +269,7 @@ fun SpacedRepetitionScreen(navController: NavController) {
                             OutlinedTextField(
                                 value = dailyWordLimitState,
                                 onValueChange = { dailyWordLimitState = it },
-                                label = { Text("Số từ / ngày") },
+                                label = { Text(ContextUtils.getString(R.string.ui_text_424)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
@@ -293,7 +295,7 @@ fun SpacedRepetitionScreen(navController: NavController) {
                                         strokeWidth = 2.dp
                                     )
                                 } else {
-                                    Text("Lưu", fontWeight = FontWeight.Bold)
+                                    Text(ContextUtils.getString(R.string.ui_text_71), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -304,7 +306,7 @@ fun SpacedRepetitionScreen(navController: NavController) {
             // 3. TIMELINE DAYS SECTION
             item {
                 Text(
-                    text = "Chu kỳ lịch trình ôn tập (7 Ngày)",
+                    text = ContextUtils.getString(R.string.ui_text_426),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -320,13 +322,13 @@ fun SpacedRepetitionScreen(navController: NavController) {
                 }
             } else {
                 val daysList = listOf(
-                    1 to Pair("Hôm nay", "Ngày 1"),
-                    2 to Pair("Ngày mai", "Ngày 2"),
-                    3 to Pair("Ngày kia", "Ngày 3"),
-                    4 to Pair("Ngày 4", "Kế tiếp"),
-                    5 to Pair("Ngày 5", "Kế tiếp"),
-                    6 to Pair("Ngày 6", "Kế tiếp"),
-                    7 to Pair("Ngày 7", "Kế tiếp")
+                    1 to Pair(ContextUtils.getString(R.string.ui_text_427), ContextUtils.getString(R.string.ui_text_428)),
+                    2 to Pair(ContextUtils.getString(R.string.ui_text_429), ContextUtils.getString(R.string.ui_text_430)),
+                    3 to Pair(ContextUtils.getString(R.string.ui_text_431), ContextUtils.getString(R.string.ui_text_432)),
+                    4 to Pair(ContextUtils.getString(R.string.ui_text_433), ContextUtils.getString(R.string.ui_text_434)),
+                    5 to Pair(ContextUtils.getString(R.string.ui_text_435), ContextUtils.getString(R.string.ui_text_434)),
+                    6 to Pair(ContextUtils.getString(R.string.ui_text_436), ContextUtils.getString(R.string.ui_text_434)),
+                    7 to Pair(ContextUtils.getString(R.string.ui_text_437), ContextUtils.getString(R.string.ui_text_434))
                 )
                 
                 daysList.forEach { (index, names) ->
