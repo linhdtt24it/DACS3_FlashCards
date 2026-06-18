@@ -90,8 +90,31 @@ class StudySetRepository {
             
             // Sync cards to user_decks -> deckId -> cards sub-collection
             val userDecksCardsRef = db.collection("user_decks").document(studySet.id).collection("cards")
+            val userStudySetsCardsRef = studySetsCollection.document(studySet.id).collection("cards")
+            
+            // Fetch existing card documents on Firestore first
+            val existingCardsSnap = userDecksCardsRef.get().await()
+            val existingUserStudySetCardsSnap = userStudySetsCardsRef.get().await()
+            val newCardIds = studySet.cards.map { it.id }.toSet()
+            
+            // Delete cards from user_decks cards subcollection that are no longer in the updated studySet
+            existingCardsSnap.documents.forEach { doc ->
+                if (!newCardIds.contains(doc.id)) {
+                    batch.delete(userDecksCardsRef.document(doc.id))
+                }
+            }
+            
+            // Delete cards from users studySets cards subcollection that are no longer in the updated studySet
+            existingUserStudySetCardsSnap.documents.forEach { doc ->
+                if (!newCardIds.contains(doc.id)) {
+                    batch.delete(userStudySetsCardsRef.document(doc.id))
+                }
+            }
+            
+            // Write/Update remaining cards in both sub-collections
             encryptedSet.cards.forEach { card ->
                 batch.set(userDecksCardsRef.document(card.id), card)
+                batch.set(userStudySetsCardsRef.document(card.id), card)
             }
             
             batch.commit().await()
@@ -105,6 +128,28 @@ class StudySetRepository {
             val batch = db.batch()
             batch.delete(studySetsCollection.document(id))
             batch.delete(publicStudySetsCollection.document(id))
+            
+            // Clean up user_decks -> deckId -> cards sub-collection
+            val userDecksCardsRef = db.collection("user_decks").document(id).collection("cards")
+            val existingCardsSnap = userDecksCardsRef.get().await()
+            existingCardsSnap.documents.forEach { doc ->
+                batch.delete(userDecksCardsRef.document(doc.id))
+            }
+            
+            // Clean up users -> uid -> studySets -> setId -> cards sub-collection
+            val userStudySetsCardsRef = studySetsCollection.document(id).collection("cards")
+            val userStudySetsCardsSnap = userStudySetsCardsRef.get().await()
+            userStudySetsCardsSnap.documents.forEach { doc ->
+                batch.delete(userStudySetsCardsRef.document(doc.id))
+            }
+            
+            // Clean up publicStudySets -> setId -> comments sub-collection
+            val publicCommentsRef = publicStudySetsCollection.document(id).collection("comments")
+            val publicCommentsSnap = publicCommentsRef.get().await()
+            publicCommentsSnap.documents.forEach { doc ->
+                batch.delete(publicCommentsRef.document(doc.id))
+            }
+            
             batch.commit().await()
         } catch (e: Exception) {
             Log.e("StudySetRepository", "Lỗi xóa bộ thẻ", e)
