@@ -2,6 +2,7 @@ package com.example.flashcards.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.example.flashcards.model.AdminUserItem
+import com.example.flashcards.utils.CryptoUtils
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -30,10 +31,16 @@ class AdminManageUsersViewModel : ViewModel() {
             }
             if (snapshot != null) {
                 _userList.value = snapshot.documents.map { doc ->
+                    val rawEmail = doc.getString("email") ?: ""
+                    val rawRole = doc.getString("role") ?: "user"
+                    
+                    val decryptedEmail = try { CryptoUtils.decrypt(rawEmail) } catch (e: Exception) { rawEmail }
+                    val decryptedRole = try { CryptoUtils.decrypt(rawRole) } catch (e: Exception) { rawRole }
+                    
                     AdminUserItem(
                         id = doc.id,
-                        email = doc.getString("email") ?: "",
-                        role = doc.getString("role") ?: "user"
+                        email = decryptedEmail,
+                        role = decryptedRole
                     )
                 }
                 _isLoading.value = false
@@ -57,10 +64,13 @@ class AdminManageUsersViewModel : ViewModel() {
             val uid = authResult.user?.uid ?: return Result.failure(Exception("Không thể lấy UID từ Authentication"))
 
             // Tạo Document với ID chính là UID (Yêu cầu 1 & 3)
+            // Mã hóa các trường cá nhân để khớp với cấu trúc đăng ký chuẩn của ứng dụng
             val userData = mapOf(
                 "uid" to uid,
-                "email" to email,
-                "role" to "user" // Mặc định gán role = "user"
+                "name" to CryptoUtils.encrypt(email.substringBefore("@")),
+                "email" to CryptoUtils.encrypt(email),
+                "role" to CryptoUtils.encrypt("user"), // Mặc định gán role = "user"
+                "subscribedPackages" to listOf("FREE")
             )
             db.collection("users").document(uid).set(userData).await()
             
