@@ -32,10 +32,7 @@ fun AdminPackageDetailScreen(
     val allPackages by viewModel.packages.collectAsState()
 
     val filteredUsers = remember(users) {
-        users.filter { userData ->
-            val encryptedRole = userData["role"] as? String
-            CryptoUtils.decrypt(encryptedRole) == "user"
-        }
+        users // Hiển thị toàn bộ tài khoản để admin dễ dàng bật gói VIP
     }
 
     Scaffold(
@@ -67,8 +64,13 @@ fun AdminPackageDetailScreen(
             ) {
                 items(filteredUsers) { userData ->
                     val uid = userData["uid"] as? String ?: ""
-                    val email = CryptoUtils.decrypt(userData["email"] as? String) ?: "no-email"
-                    val name = CryptoUtils.decrypt(userData["name"] as? String)?.ifBlank { "Học viên" } ?: "Học viên"
+                    
+                    val rawEmail = userData["email"] as? String ?: ""
+                    val email = try { CryptoUtils.decrypt(rawEmail) } catch (e: Exception) { rawEmail }
+                    
+                    val rawName = userData["name"] as? String ?: ""
+                    val name = try { CryptoUtils.decrypt(rawName) } catch (e: Exception) { rawName }.ifBlank { "Học viên" }
+                    
                     val subscribedPackages = userData["subscribedPackages"] as? List<String> ?: listOf("FREE")
 
                     UserMultiPackageCard(

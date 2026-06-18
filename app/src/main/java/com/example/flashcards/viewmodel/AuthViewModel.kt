@@ -104,6 +104,41 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 _isAuthChecked.value = true
             }
         } else {
+            // Auto-create document if it's missing on Firestore
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            if (currentUser != null) {
+                val uid = currentUser.uid
+                val email = currentUser.email ?: ""
+                val name = currentUser.displayName ?: email.substringBefore("@")
+                val initialPackages = listOf("FREE")
+                val encryptedRole = CryptoUtils.encrypt("user")
+                
+                try {
+                    FirebaseFirestore.getInstance().collection("users").document(uid).set(
+                        mapOf(
+                            "uid" to uid,
+                            "name" to CryptoUtils.encrypt(name),
+                            "email" to CryptoUtils.encrypt(email),
+                            "role" to encryptedRole,
+                            "subscribedPackages" to initialPackages
+                        )
+                    ).await()
+                    
+                    prefs.edit().apply {
+                        putString("user_role", "user")
+                        putStringSet("subscribed_packages", initialPackages.toSet())
+                        apply()
+                    }
+                    withContext(Dispatchers.Main) {
+                        _currentUserRole.value = "user"
+                        _subscribedPackages.value = initialPackages
+                        _isAuthChecked.value = true
+                    }
+                    return
+                } catch (e: Exception) {
+                    android.util.Log.e("AuthViewModel", "Failed to create missing user document", e)
+                }
+            }
             setAuthChecked(true)
         }
     }
